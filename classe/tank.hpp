@@ -9,8 +9,8 @@ class tank{
         //accesseurs
         int get_x();
         int get_y();
-        double get_ori();
-        double get_vit();
+        float get_ori();
+        float get_vit();
         
         //setters
         void set_x(int new_x);
@@ -21,8 +21,8 @@ class tank{
     private :
         int x;
         int y;
-        double orientation;
-        double vitesse;
+        float orientation;
+        float vitesse;
 };
 
 #endif
