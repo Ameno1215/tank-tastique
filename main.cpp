@@ -13,7 +13,7 @@ int main() {
     tank mon_tank;
     // Charger les textures
     sf::Texture textureBase, textureTourelle;
-    if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle1.png"))
+    if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle2.png"))
         return -1;
     sf::Vector2u taillebase = textureBase.getSize();
     sf::Vector2u tailletourelle = textureTourelle.getSize();
@@ -21,7 +21,7 @@ int main() {
     spriteBase.setPosition(300, 200);
 
     sf::Sprite spriteTourelle(textureTourelle);
-    spriteTourelle.setPosition(spriteBase.getPosition().x+taillebase.x/2-tailletourelle.x/2,spriteBase.getPosition().y+taillebase.y/2-tailletourelle.y/2);
+    spriteTourelle.setPosition(spriteBase.getPosition().x+taillebase.x/2-tailletourelle.x/2,spriteBase.getPosition().y+taillebase.y/2-tailletourelle.y/1.8);
 
 
     // Longueur fixe du lien
