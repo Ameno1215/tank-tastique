@@ -12,8 +12,13 @@ int main() {
 
     tank mon_tank;
     // Charger les textures
+<<<<<<< HEAD
     sf::Texture textureBase, textureTourelle;
     if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle2.png"))
+=======
+    sf::Texture textureRobot, textureTable;
+    if (!textureRobot.loadFromFile("base1.png") || !textureTable.loadFromFile("tourelle1.png"))
+>>>>>>> 68d7ae8 (utilisation image)
         return -1;
     
     sf::Vector2u taillebase = textureBase.getSize();
