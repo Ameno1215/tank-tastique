@@ -13,7 +13,7 @@ int main() {
     tank mon_tank;
     // Charger les textures
     sf::Texture textureRobot, textureTable;
-    if (!textureRobot.loadFromFile("robot.png") || !textureTable.loadFromFile("table.png"))
+    if (!textureRobot.loadFromFile("base1.png") || !textureTable.loadFromFile("tourelle1.png"))
         return -1;
 
     sf::Sprite spriteRobot(textureRobot);
