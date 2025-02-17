@@ -8,22 +8,24 @@
 
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(1200, 1000), "Lien entre objets");
+    sf::RenderWindow window(sf::VideoMode(2400, 2000), "Lien entre objets");
 
     tank mon_tank;
     // Charger les textures
-    sf::Texture textureRobot, textureTable;
-    if (!textureRobot.loadFromFile("base1.png") || !textureTable.loadFromFile("tourelle1.png"))
+    sf::Texture textureBase, textureTourelle;
+    if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle1.png"))
         return -1;
+    sf::Vector2u taillebase = textureBase.getSize();
+    sf::Vector2u tailletourelle = textureTourelle.getSize();
+    sf::Sprite spriteBase(textureBase);
+    spriteBase.setPosition(300, 200);
 
-    sf::Sprite spriteRobot(textureRobot);
-    spriteRobot.setPosition(300, 200);
+    sf::Sprite spriteTourelle(textureTourelle);
+    spriteTourelle.setPosition(spriteBase.getPosition().x+taillebase.x/2-tailletourelle.x/2,spriteBase.getPosition().y+taillebase.y/2-tailletourelle.y/2);
 
-    sf::Sprite spriteTable(textureTable);
-    spriteTable.setPosition(500, 300);
 
     // Longueur fixe du lien
-    mon_tank.set_vit(1.0f);
+    mon_tank.set_vit(0.5f);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -41,29 +43,30 @@ int main() {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) mon_tank.set_x(movement.y += speed);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_x(movement.x -= speed);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_x(movement.x += speed);
-        spriteRobot.move(movement);
+        spriteBase.move(movement);
+        spriteTourelle.move(movement);
 
         // Vérifier la distance entre les objets
-        sf::Vector2f diff = spriteTable.getPosition() - spriteRobot.getPosition();
+        sf::Vector2f diff = spriteTourelle.getPosition() - spriteBase.getPosition();
         float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
 
         // Si la distance dépasse la limite, ajuster la position de l'objet attaché
-        if (distance > 1) {
-            sf::Vector2f direction = diff / distance; // Normalisation du vecteur
-            spriteTable.setPosition(spriteRobot.getPosition() + direction * speed);
-        }
+        //if (distance > 1) {
+        //    sf::Vector2f direction = diff / distance; // Normalisation du vecteur
+        //    spriteTourelle.setPosition(spriteBase.getPosition() + direction * speed);
+        //}
 
         // Affichage
         window.clear();
-        window.draw(spriteRobot);
-        window.draw(spriteTable);
+        window.draw(spriteBase);
+        window.draw(spriteTourelle);
 
         // Dessiner une ligne pour visualiser le lien
-        sf::Vertex line[] = {
-            sf::Vertex(spriteRobot.getPosition() + sf::Vector2f(25, 25), sf::Color::Red),
-            sf::Vertex(spriteTable.getPosition() + sf::Vector2f(25, 25), sf::Color::Red)
-        };
-        window.draw(line, 2, sf::Lines);
+        //sf::Vertex line[] = {
+        //    sf::Vertex(spriteBase.getPosition() + sf::Vector2f(25, 25), sf::Color::Red),
+        //    sf::Vertex(spriteTourelle.getPosition() + sf::Vector2f(25, 25), sf::Color::Red)
+        //};
+        //window.draw(line, 2, sf::Lines);
 
         window.display();
     }

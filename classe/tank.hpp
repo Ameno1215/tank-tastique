@@ -15,8 +15,8 @@ class tank{
         //setters
         void set_x(int new_x);
         void set_y(int new_y);
-        void set_ori(double new_ori);
-        void set_vit(double new_vit);
+        void set_ori(float new_ori);
+        void set_vit(float new_vit);
         
     private :
         int x;
