@@ -54,7 +54,6 @@ int main() {
         sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
         sf::Vector2f dir = worldMousePos - spriteTourelle.getPosition();
         float angle = atan2(dir.y, dir.x)* 180 / M_PI -90;
-        std::cout << "Nouvelle rotation : " << angle << " degrés." << std::endl;
 
 
         spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
