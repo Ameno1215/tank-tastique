@@ -1,65 +1,61 @@
 #include <SFML/Graphics.hpp>
+#include <cmath>
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Deplacement Robot avec Pause");
+    sf::RenderWindow window(sf::VideoMode(1200, 1000), "Lien entre objets");
 
-    // Charger la texture du fond
-    sf::Texture textureFond;
-    if (!textureFond.loadFromFile("fond.png")) {
+    // Charger les textures
+    sf::Texture textureRobot, textureTable;
+    if (!textureRobot.loadFromFile("robot.png") || !textureTable.loadFromFile("table.png"))
         return -1;
-    }
-    sf::Sprite spriteFond(textureFond);
-    spriteFond.setScale(800.0f / textureFond.getSize().x, 600.0f / textureFond.getSize().y);
 
-    // Charger la texture du robot
-    sf::Texture textureRobot;
-    if (!textureRobot.loadFromFile("robot.png")) {
-        return -1;
-    }
     sf::Sprite spriteRobot(textureRobot);
-    spriteRobot.setPosition(400 - textureRobot.getSize().x / 2, 300 - textureRobot.getSize().y / 2);
+    spriteRobot.setPosition(300, 200);
 
-    float speed = 1.0f; // Vitesse du robot
-    bool isPaused = false; // État de la pause
+    sf::Sprite spriteTable(textureTable);
+    spriteTable.setPosition(500, 300);
+
+    // Longueur fixe du lien
+    float linkDistance = 100.0f;
+    float speed = 1.0f;
 
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-
-            // Pause / Reprise avec la touche ESPACE
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space) {
-                isPaused = !isPaused;
-            }
         }
 
-        if (!isPaused) { // Si ce n'est pas en pause, on bouge
-            sf::Vector2f movement(0.f, 0.f);
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-                movement.y -= speed;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-                movement.y += speed;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                movement.x -= speed;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                movement.x += speed;
+        // Contrôle indépendant du robot
+        sf::Vector2f movement(0.f, 0.f);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) movement.y -= speed;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) movement.y += speed;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) movement.x -= speed;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) movement.x += speed;
+        spriteRobot.move(movement);
 
-            spriteRobot.move(movement);
+        // Vérifier la distance entre les objets
+        sf::Vector2f diff = spriteTable.getPosition() - spriteRobot.getPosition();
+        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
 
-            // Empêcher le sprite de sortir des limites
-            sf::Vector2f pos = spriteRobot.getPosition();
-            float spriteWidth = textureRobot.getSize().x;
-            float spriteHeight = textureRobot.getSize().y;
-            pos.x = std::max(0.f, std::min(800.f - spriteWidth, pos.x));
-            pos.y = std::max(0.f, std::min(600.f - spriteHeight, pos.y));
-            spriteRobot.setPosition(pos);
+        // Si la distance dépasse la limite, ajuster la position de l'objet attaché
+        if (distance > 1) {
+            sf::Vector2f direction = diff / distance; // Normalisation du vecteur
+            spriteTable.setPosition(spriteRobot.getPosition() + direction * speed);
         }
 
         // Affichage
         window.clear();
-        window.draw(spriteFond);
         window.draw(spriteRobot);
+        window.draw(spriteTable);
+
+        // Dessiner une ligne pour visualiser le lien
+        sf::Vertex line[] = {
+            sf::Vertex(spriteRobot.getPosition() + sf::Vector2f(25, 25), sf::Color::Red),
+            sf::Vertex(spriteTable.getPosition() + sf::Vector2f(25, 25), sf::Color::Red)
+        };
+        window.draw(line, 2, sf::Lines);
+
         window.display();
     }
 
