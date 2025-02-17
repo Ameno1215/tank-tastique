@@ -8,7 +8,7 @@
 
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(2400, 2000), "Lien entre objets");
+    sf::RenderWindow window(sf::VideoMode(1900, 1000), "Lien entre objets");
 
     tank mon_tank;
     // Charger les textures
@@ -18,16 +18,23 @@ int main() {
     
     sf::Vector2u taillebase = textureBase.getSize();
     sf::Vector2u tailletourelle = textureTourelle.getSize();
-    sf::Sprite spriteBase(textureBase);
-    spriteBase.setPosition(300, 200);
-    
+    sf::Sprite spriteBase(textureBase);    
 
     sf::Sprite spriteTourelle(textureTourelle);     
-    spriteTourelle.setPosition(spriteBase.getPosition().x+taillebase.x/2-tailletourelle.x/2,spriteBase.getPosition().y+taillebase.y/2-tailletourelle.y/1.8);
+    // Définir l'origine des sprites au centre
+    spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
+    spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
+
+    // Positionner la base au centre initial
+    spriteBase.setPosition(300, 200);
+
+    // Superposer la tourelle au centre de la base
+    spriteTourelle.setPosition(spriteBase.getPosition());
+
 
 
     // Longueur fixe du lien
-    mon_tank.set_vit(0.5f);
+    mon_tank.set_vit(0.2f);
     mon_tank.set_ori(0);
 
     while (window.isOpen()) {
@@ -43,19 +50,36 @@ int main() {
         movement.x=mon_tank.get_x();
         float speed=mon_tank.get_vit();
         float rotation=mon_tank.get_ori();
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
+        sf::Vector2f dir = worldMousePos - spriteTourelle.getPosition();
+        float angle = atan2(dir.y, dir.x)* 180 / M_PI -90;
+        std::cout << "Nouvelle rotation : " << angle << " degrés." << std::endl;
+
 
         spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) mon_tank.set_y(movement.y -= speed);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) mon_tank.set_x(movement.y += speed);
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)){
+            mon_tank.set_y(movement.y += speed*cos(rotation*M_PI/180));
+            mon_tank.set_x(movement.x -= speed*sin(rotation*M_PI/180) );
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
+            mon_tank.set_y(movement.y -= speed*cos(rotation*M_PI/180));
+            mon_tank.set_x(movement.x += speed*sin(rotation*M_PI/180));
+        }
+
         spriteBase.move(movement);
         spriteTourelle.move(movement);
+
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_ori(rotation += 0.1);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_ori(rotation -= 0.1);
+
         spriteBase.setRotation(rotation);
+    
+        spriteTourelle.setRotation(angle);
         //sprite.setRotation(angle); 
         // Vérifier la distance entre les objets
-        sf::Vector2f diff = spriteTourelle.getPosition() - spriteBase.getPosition();
-        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
 
         // Si la distance dépasse la limite, ajuster la position de l'objet attaché
         //if (distance > 1) {
