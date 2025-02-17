@@ -15,17 +15,20 @@ int main() {
     sf::Texture textureBase, textureTourelle;
     if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle2.png"))
         return -1;
+    
     sf::Vector2u taillebase = textureBase.getSize();
     sf::Vector2u tailletourelle = textureTourelle.getSize();
     sf::Sprite spriteBase(textureBase);
     spriteBase.setPosition(300, 200);
+    
 
-    sf::Sprite spriteTourelle(textureTourelle);
+    sf::Sprite spriteTourelle(textureTourelle);     
     spriteTourelle.setPosition(spriteBase.getPosition().x+taillebase.x/2-tailletourelle.x/2,spriteBase.getPosition().y+taillebase.y/2-tailletourelle.y/1.8);
 
 
     // Longueur fixe du lien
     mon_tank.set_vit(0.5f);
+    mon_tank.set_ori(0);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -34,18 +37,22 @@ int main() {
                 window.close();
         }
 
-        // Contrôle indépendant du robot
+        // Contrôle indépendant du robots
         sf::Vector2f movement(0.f, 0.f);
         movement.y=mon_tank.get_y();
         movement.x=mon_tank.get_x();
         float speed=mon_tank.get_vit();
+        float rotation=mon_tank.get_ori();
+
+        spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) mon_tank.set_y(movement.y -= speed);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) mon_tank.set_x(movement.y += speed);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_x(movement.x -= speed);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_x(movement.x += speed);
         spriteBase.move(movement);
         spriteTourelle.move(movement);
-
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_ori(rotation += 0.1);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_ori(rotation -= 0.1);
+        spriteBase.setRotation(rotation);
+        //sprite.setRotation(angle); 
         // Vérifier la distance entre les objets
         sf::Vector2f diff = spriteTourelle.getPosition() - spriteBase.getPosition();
         float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
