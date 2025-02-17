@@ -2,7 +2,6 @@
 #define CONFIG_HPP
 
 #include <string>
-#include <stdlib>
 #include <unordered_map>
 #include <iostream>
 #include <cstring>
