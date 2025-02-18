@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <cstring>
+#include <thread> 
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -54,16 +55,21 @@ public:
     }
 };
 
+class Souris{
+    public :
+        float x;
+        float y;
+};
+
 // Fonction pour envoyer un message UDP au serveur
-std::string sendMessageToServer(const std::string& message) {
+void sendMessageToServer(const std::string& message) {
     int sockfd;
     struct sockaddr_in servaddr;
-    char buffer[1024];
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         perror("Échec de la création du socket");
-        return "Erreur socket";
+        return;
     }
 
     memset(&servaddr, 0, sizeof(servaddr));
@@ -72,14 +78,46 @@ std::string sendMessageToServer(const std::string& message) {
     servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
     sendto(sockfd, message.c_str(), message.length(), 0, (const struct sockaddr*)&servaddr, sizeof(servaddr));
-
-    socklen_t len = sizeof(servaddr);
-    int n = recvfrom(sockfd, buffer, 1024, 0, (struct sockaddr*)&servaddr, &len);
-    buffer[n] = '\0';
-
     close(sockfd);
+}
 
-    return std::string(buffer);
+// Fonction pour envoyer la position de la souris en message UDP au serveur
+void sendPosToServer(float position[2]) {
+    int sockfd;
+    struct sockaddr_in servaddr;
+
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Échec de la création du socket");
+    }
+
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(SERVER_PORT);
+    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+
+    if (sendto(sockfd, position, sizeof(float) * 2, 0, (const struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+        perror("Erreur lors de l'envoi");
+        close(sockfd);
+        return;
+    }
+    
+    close(sockfd);
+}
+
+void sendUDPdata(Souris& souris, sf::Event event, Button button2){
+    while(true){
+        float position[2] = { souris.x, souris.y};
+        sf::Vector2f mousePos(souris.x, souris.y);
+        sendPosToServer(position);
+
+        if (event.type == sf::Event::MouseButtonPressed) {
+            if (button2.isClicked(mousePos)) {
+                std::cout << "Bouton cliqué" << std::endl;
+                sendMessageToServer("M Hello Server!");
+            }
+        }
+    }
 }
 
 int main() {
@@ -109,6 +147,8 @@ int main() {
     Button button1(600, 600, 400, 150, "Bouton Inactif", font);
     Button button2(600, 1000, 400, 150, "Envoyer Message", font);
 
+    //Souris
+    Souris souris;
     // Texte de réponse du serveur
     sf::Text responseText;
     responseText.setFont(font);
@@ -116,8 +156,12 @@ int main() {
     responseText.setFillColor(sf::Color::White);
     responseText.setPosition(100, 300);
 
+    sf::Event event;
+    sendMessageToServer("C 3001");
+
+    std::thread sendUDP(sendUDPdata, std::ref(souris), event, std::ref(button2));
+
     while (window.isOpen()) {
-        sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window.close();
@@ -126,14 +170,8 @@ int main() {
             sf::Vector2f mousePos(sf::Mouse::getPosition(window));
             button1.update(mousePos);
             button2.update(mousePos);
-
-            if (event.type == sf::Event::MouseButtonPressed) {
-                if (button2.isClicked(mousePos)) {
-                    std::cout << "Bouton cliqué" << std::endl;
-                    std::string response = sendMessageToServer("Hello Server!");
-                    responseText.setString("Réponse: " + response);
-                }
-            }
+            souris.x = mousePos.x;
+            souris.y = mousePos.y;
         }
 
         // Affichage
@@ -144,6 +182,8 @@ int main() {
         window.draw(responseText);
         window.display();
     }
+
+    sendUDP.join();
 
     return 0;
 }
