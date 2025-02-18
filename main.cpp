@@ -2,17 +2,18 @@
 #include <cmath>
 #include <iostream>
 #include <stdio.h>
-
 #include "config/config.hpp"
 #include "classe/tank.hpp"
 
 
 int main() {
+
     sf::RenderWindow window(sf::VideoMode(1900, 1000), "Lien entre objets");
     window.setMouseCursorVisible(false);
+
     tank mon_tank;
     sf::Texture cursorTexture,textureBase, textureTourelle;
-    cursorTexture.loadFromFile("Image/curseur_rouge.png"); // Remplace par ton image
+    cursorTexture.loadFromFile("Image/viseur_rouge.png"); // Remplace par ton image
     sf::Sprite cursorSprite(cursorTexture);
     // Charger les textures
     if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle2.png"))
@@ -33,9 +34,11 @@ int main() {
 
     // Superposer la tourelle au centre de la base
     spriteTourelle.setPosition(spriteBase.getPosition());
+
+
     spriteBase.setScale(0.5,0.5);
     spriteTourelle.setScale(0.5,0.5);
-
+    cursorSprite.setScale(0.4,0.4);
 
 
     // Longueur fixe du lien
@@ -46,7 +49,7 @@ int main() {
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
         sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
         sf::Vector2f dir = worldMousePos - spriteTourelle.getPosition();
-        float angle = atan2(dir.y + taillecurseur.y/2, dir.x+ taillecurseur.x/2)* 180 / M_PI -90;
+        float angle = atan2(dir.y , dir.x)* 180 / M_PI -90;
 
         cursorSprite.setPosition(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
 
@@ -88,24 +91,11 @@ int main() {
         //sprite.setRotation(angle); 
         // Vérifier la distance entre les objets
 
-        // Si la distance dépasse la limite, ajuster la position de l'objet attaché
-        //if (distance > 1) {
-        //    sf::Vector2f direction = diff / distance; // Normalisation du vecteur
-        //    spriteTourelle.setPosition(spriteBase.getPosition() + direction * speed);
-        //}
-
         // Affichage
         window.clear();
         window.draw(spriteBase);
         window.draw(spriteTourelle);
         window.draw(cursorSprite);
-
-        // Dessiner une ligne pour visualiser le lien
-        //sf::Vertex line[] = {
-        //    sf::Vertex(spriteBase.getPosition() + sf::Vector2f(25, 25), sf::Color::Red),
-        //    sf::Vertex(spriteTourelle.getPosition() + sf::Vector2f(25, 25), sf::Color::Red)
-        //};
-        //window.draw(line, 2, sf::Lines);
 
         window.display();
     }
