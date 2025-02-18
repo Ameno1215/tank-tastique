@@ -9,15 +9,18 @@
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(1900, 1000), "Lien entre objets");
-
+    window.setMouseCursorVisible(false);
     tank mon_tank;
+    sf::Texture cursorTexture,textureBase, textureTourelle;
+    cursorTexture.loadFromFile("Image/curseur_rouge.png"); // Remplace par ton image
+    sf::Sprite cursorSprite(cursorTexture);
     // Charger les textures
-    sf::Texture textureBase, textureTourelle;
     if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle2.png"))
         return -1;
     
     sf::Vector2u taillebase = textureBase.getSize();
     sf::Vector2u tailletourelle = textureTourelle.getSize();
+    sf::Vector2u taillecurseur = cursorTexture.getSize();
     sf::Sprite spriteBase(textureBase);    
 
     sf::Sprite spriteTourelle(textureTourelle);     
@@ -30,6 +33,8 @@ int main() {
 
     // Superposer la tourelle au centre de la base
     spriteTourelle.setPosition(spriteBase.getPosition());
+    spriteBase.setScale(0.5,0.5);
+    spriteTourelle.setScale(0.5,0.5);
 
 
 
@@ -38,6 +43,13 @@ int main() {
     mon_tank.set_ori(0);
 
     while (window.isOpen()) {
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
+        sf::Vector2f dir = worldMousePos - spriteTourelle.getPosition();
+        float angle = atan2(dir.y + taillecurseur.y/2, dir.x+ taillecurseur.x/2)* 180 / M_PI -90;
+
+        cursorSprite.setPosition(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
@@ -50,10 +62,6 @@ int main() {
         movement.x=mon_tank.get_x();
         float speed=mon_tank.get_vit();
         float rotation=mon_tank.get_ori();
-        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-        sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
-        sf::Vector2f dir = worldMousePos - spriteTourelle.getPosition();
-        float angle = atan2(dir.y, dir.x)* 180 / M_PI -90;
 
 
         spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
@@ -71,8 +79,8 @@ int main() {
         spriteBase.move(movement);
         spriteTourelle.move(movement);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_ori(rotation += 0.1);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_ori(rotation -= 0.1);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_ori(rotation += 0.05);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_ori(rotation -= 0.05);
 
         spriteBase.setRotation(rotation);
     
@@ -90,6 +98,7 @@ int main() {
         window.clear();
         window.draw(spriteBase);
         window.draw(spriteTourelle);
+        window.draw(cursorSprite);
 
         // Dessiner une ligne pour visualiser le lien
         //sf::Vertex line[] = {
