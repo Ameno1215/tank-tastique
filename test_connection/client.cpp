@@ -9,6 +9,8 @@
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 3000
 
+#include "joueur.hpp"
+
 class Button {
 public:
     sf::RectangleShape shape;
@@ -120,6 +122,19 @@ void sendUDPdata(Souris& souris, sf::Event event, Button button2){
     }
 }
 
+void initconnexion(joueur Joueur){
+    int sockfd;
+    struct sockaddr_in servaddr;
+    sendMessageToServer("C");
+    char buffer[1024];
+    socklen_t len = sizeof(servaddr);
+    int n = recvfrom(sockfd, buffer, 1024, 0, (struct sockaddr*)&servaddr, &len);
+    if(n < 0){
+        perror...;
+    }
+    Joueur.portJoueur = buffer[0];
+
+}
 int main() {
     sf::RenderWindow window(sf::VideoMode(1800, 1600), "Test Connexion UDP");
 
@@ -157,7 +172,9 @@ int main() {
     responseText.setPosition(100, 300);
 
     sf::Event event;
-    sendMessageToServer("C 3001");
+
+    initConnexion();
+
 
     std::thread sendUDP(sendUDPdata, std::ref(souris), event, std::ref(button2));
 

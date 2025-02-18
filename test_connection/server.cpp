@@ -11,11 +11,12 @@
 #define BUFFER_SIZE 1024  // Taille du buffer de réception
 
 #include "joueur.hpp"
+#include "partie.hpp"
 
 // Mutex pour synchroniser l'accès aux données partagées (position du tank)
 std::mutex joueurMutex;
 
-void udpCom(int sockfd, struct sockaddr_in& clientaddr, joueur& Joueur) {
+void udpCom(Partie& partie, int sockfd, struct sockaddr_in& clientaddr, joueur& Joueur) {
     while(true) {
         float posMouse[2];
         char buffer[BUFFER_SIZE];
@@ -34,7 +35,14 @@ void udpCom(int sockfd, struct sockaddr_in& clientaddr, joueur& Joueur) {
             std::string response = "Message bien reçu!";  // Réponse au client
             sendto(sockfd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientaddr, len);
             std::cout << "Réponse envoyée au client." << std::endl;
-        } else {
+        }
+        if(buffer[0] == 'C'){
+            partie.ajouteJoueur();
+            float msg_port[1] = {partie.get_portactuel()};
+            sendto(sockfd, msg_port, sizeof(float), 0, (struct sockaddr*)&clientaddr, len);
+            std::cout << "Port envoyé au client" << std::endl;
+        }
+        else {
             // Si c'est une position de souris
             memcpy(posMouse, buffer, sizeof(posMouse));
             // Verrouiller l'accès au joueur avant de modifier sa position
@@ -74,6 +82,8 @@ void updateVisual(sf::RenderWindow& window, sf::Sprite& backgroundSprite, sf::Sp
 
 int main() {
     joueur Joueur;
+    Partie partie;
+    partie.init();
     sf::RenderWindow window(sf::VideoMode(1800, 1600), "Test Server UDP");
 
     // Charger la texture du fond
@@ -128,7 +138,7 @@ int main() {
     std::cout << "Serveur UDP en attente sur le port " << SERVER_PORT << "..." << std::endl;
 
     // Lancer uniquement le thread pour la communication UDP
-    std::thread comThread(udpCom, sockfd, std::ref(clientaddr), std::ref(Joueur));
+    std::thread comThread(udpCom, partie, sockfd, std::ref(clientaddr), std::ref(Joueur));
 
     // Boucle principale pour gérer l'affichage graphique
     updateVisual(window, backgroundSprite, curseurSprite, taille_curseur, Joueur);
