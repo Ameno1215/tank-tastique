@@ -16,6 +16,10 @@ int main() {
     cursorTexture.loadFromFile("Image/viseur_rouge.png"); // Remplace par ton image
     sf::Sprite cursorSprite(cursorTexture);
     // Charger les textures
+<<<<<<< HEAD
+=======
+    sf::Texture textureBase, textureTourelle;
+>>>>>>> 41cc7c2 (assemblage tank)
     if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle2.png"))
         return -1;
     
@@ -32,6 +36,7 @@ int main() {
     // Positionner la base au centre initial
     spriteBase.setPosition(300, 200);
 
+<<<<<<< HEAD
     // Superposer la tourelle au centre de la base
     spriteTourelle.setPosition(spriteBase.getPosition());
 
@@ -39,6 +44,10 @@ int main() {
     spriteBase.setScale(0.5,0.5);
     spriteTourelle.setScale(0.5,0.5);
     cursorSprite.setScale(0.4,0.4);
+=======
+    sf::Sprite spriteTourelle(textureTourelle);
+    spriteTourelle.setPosition(spriteBase.getPosition().x+taillebase.x/2-tailletourelle.x/2,spriteBase.getPosition().y+taillebase.y/2-tailletourelle.y/1.8);
+>>>>>>> 41cc7c2 (assemblage tank)
 
 
     // Longueur fixe du lien
