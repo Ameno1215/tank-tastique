@@ -22,3 +22,11 @@ bool Partie::ajouteJoueur() {
 int Partie::get_portactuel(){
     return port_actuel;
 }
+
+int Partie::multiJoueur(){
+    return 2;
+}
+
+int Partie::Solo(){
+    return 1;
+}

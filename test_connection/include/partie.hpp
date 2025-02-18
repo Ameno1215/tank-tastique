@@ -11,7 +11,9 @@ class Partie {
         Partie(); // Constructeur pour initialiser les variables
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
-
+        int multiJoueur();
+        int Solo();
+        
     private:
         int joueur_courant;
         int port_actuel;
