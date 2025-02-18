@@ -11,7 +11,7 @@ SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
 # Fichiers sources
 CLIENT_SRC = client.cpp
-SERVER_SRC = server.cpp
+SERVER_SRC = server.cpp joueur.cpp ../jeu/classe/tank.cpp  # Ajout de tank.cpp
 
 # Compilation du client
 $(CLIENT_EXEC): $(CLIENT_SRC)
