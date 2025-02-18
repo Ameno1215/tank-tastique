@@ -46,7 +46,7 @@ void udpCom(int sockfd, struct sockaddr_in& clientaddr, joueur& Joueur) {
     close(sockfd);
 }
 
-void updateVisual(sf::RenderWindow& window, sf::Sprite& backgroundSprite, sf::Sprite& curseur, joueur& Joueur) {
+void updateVisual(sf::RenderWindow& window, sf::Sprite& backgroundSprite, sf::Sprite& curseur, sf::FloatRect& taille_curseur, joueur& Joueur) {
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -63,7 +63,7 @@ void updateVisual(sf::RenderWindow& window, sf::Sprite& backgroundSprite, sf::Sp
         {
             std::lock_guard<std::mutex> lock(joueurMutex);  // Protection des données partagées
             // Mettre à jour la position du curseur (tank)
-            curseur.setPosition(Joueur.Tank.get_x()-50, Joueur.Tank.get_y());  // Correction de l'accès
+            curseur.setPosition(Joueur.Tank.get_x()-(taille_curseur.width)/2, Joueur.Tank.get_y()-(taille_curseur.height)/2);  // Correction de l'accès
         }
 
         // Afficher le curseur (le tank)
@@ -95,6 +95,7 @@ int main() {
 
     sf::Sprite curseurSprite;
     curseurSprite.setTexture(curseurTexture);
+    sf::FloatRect taille_curseur = curseurSprite.getGlobalBounds();
 
     backgroundSprite.setScale(
         window.getSize().x / backgroundSprite.getGlobalBounds().width,
@@ -130,7 +131,7 @@ int main() {
     std::thread comThread(udpCom, sockfd, std::ref(clientaddr), std::ref(Joueur));
 
     // Boucle principale pour gérer l'affichage graphique
-    updateVisual(window, backgroundSprite, curseurSprite, Joueur);
+    updateVisual(window, backgroundSprite, curseurSprite, taille_curseur, Joueur);
 
     // Attendre que le thread de communication UDP se termine
     comThread.join();
