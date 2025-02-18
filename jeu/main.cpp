@@ -8,7 +8,7 @@
 
 int main() {
 
-    float speed =0.01f;
+    float vit_canon =0.01f;
     sf::RenderWindow window(sf::VideoMode(1900, 1000), "Lien entre objets");
     window.setMouseCursorVisible(false);
 
@@ -35,9 +35,9 @@ int main() {
     spriteTourelle.setPosition(spriteBase.getPosition());
 
     //diminue la taille du viseur
-    spriteBase.setScale(0.5,0.5);
-    spriteTourelle.setScale(0.5,0.5);
-    cursorSprite.setScale(0.4,0.4);
+    spriteBase.setScale(0.1,0.1);
+    spriteTourelle.setScale(0.1,0.1);
+    cursorSprite.setScale(0.08,0.08);
 
     // Longueur fixe du lien
     mon_tank.set_vit(0.2f);
@@ -79,24 +79,25 @@ int main() {
         spriteBase.move(movement);
         spriteTourelle.move(movement);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_ori(rotation += 0.05);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_ori(rotation -= 0.05);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_ori(rotation -= 0.05);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_ori(rotation += 0.05);
 
         spriteBase.setRotation(rotation);
 
-        float angle_actu = spriteTourelle.getRotation()*180/M_PI;    
-        spriteTourelle.setRotation(angle_actu+(angle_voulu-angle_actu)*speed);
-        angle_actu=angle_voulu;
-
-        //sprite.setRotation(angle); 
+        float angle_actu = spriteTourelle.getRotation();    
+        float diff = angle_voulu - angle_actu;
+        if (diff > 180) diff -= 360; // On prend le plus court chemin
+        if (diff < -180) diff += 360;
+        spriteTourelle.setRotation(angle_actu + diff * vit_canon);
         // Vérifier la distance entre les objets
-
+        //spriteBase.setColor(sf::Color(0, 255, 0)); // ver
         // Affichage
         window.clear();
         window.draw(spriteBase);
         window.draw(spriteTourelle);
         window.draw(cursorSprite);
-
+        //std::cout << "La rotation est de : " << angle_actu << " degrés." << std::endl;
+        //std::cout << "La rotation est de : " << angle_voulu- angle_actu<< " degrés." << std::endl;
         window.display();
     }
 
