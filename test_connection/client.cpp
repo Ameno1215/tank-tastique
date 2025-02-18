@@ -82,6 +82,30 @@ std::string sendMessageToServer(const std::string& message) {
     return std::string(buffer);
 }
 
+// Fonction pour envoyer la position de la souris en message UDP au serveur
+void sendPosToServer(float position[2]) {
+    int sockfd;
+    struct sockaddr_in servaddr;
+
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Échec de la création du socket");
+    }
+
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(SERVER_PORT);
+    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+
+    if (sendto(sockfd, position, sizeof(float) * 2, 0, (const struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+        perror("Erreur lors de l'envoi");
+        close(sockfd);
+        return;
+    }
+    
+    close(sockfd);
+}
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(1800, 1600), "Test Connexion UDP");
 
@@ -126,11 +150,13 @@ int main() {
             sf::Vector2f mousePos(sf::Mouse::getPosition(window));
             button1.update(mousePos);
             button2.update(mousePos);
+            float position[2] = { mousePos.x, mousePos.y};
+            sendPosToServer(position);
 
             if (event.type == sf::Event::MouseButtonPressed) {
                 if (button2.isClicked(mousePos)) {
                     std::cout << "Bouton cliqué" << std::endl;
-                    std::string response = sendMessageToServer("Hello Server!");
+                    std::string response = sendMessageToServer("M Hello Server!");
                     responseText.setString("Réponse: " + response);
                 }
             }

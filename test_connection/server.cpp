@@ -1,3 +1,4 @@
+#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
@@ -11,6 +12,7 @@ int main() {
     int sockfd;
     struct sockaddr_in servaddr, clientaddr;
     char buffer[BUFFER_SIZE];
+    float posMouse[2];
 
     // Création du socket UDP
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -41,15 +43,20 @@ int main() {
             perror("Erreur lors de la réception");
             continue;
         }
-        buffer[n] = '\0'; // Ajout du terminateur de chaîne
-
-        // Afficher le message reçu
-        std::cout << "Message reçu : " << buffer << std::endl;
-
-        // Répondre au client
-        std::string response = "Message bien reçu!";
-        sendto(sockfd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientaddr, len);
-        std::cout << "Réponse envoyée au client." << std::endl;
+        if(buffer[0] == 'M'){
+            
+            memmove(buffer, buffer + 2, strlen(buffer) -1);  // enlève le "M "
+            buffer[n] = '\0'; // Ajout du terminateur de chaîne
+            std::cout << "Message reçu : " << buffer << std::endl;  // Afficher le message reçu
+            
+            std::string response = "Message bien reçu!"; // Répondre au client
+            sendto(sockfd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientaddr, len);
+            std::cout << "Réponse envoyée au client." << std::endl;
+        }
+        else{
+            memcpy(posMouse, buffer, sizeof(posMouse)); //récupération de la position de la souris
+            std::cout << "Position Souris client : x=" << posMouse[0] << " y="<< posMouse[1]<<std::endl; 
+        }
     }
 
     close(sockfd);
