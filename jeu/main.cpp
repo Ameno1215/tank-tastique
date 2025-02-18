@@ -1,56 +1,28 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <iostream>
-#include <stdio.h>
 #include "config/config.hpp"
 #include "classe/tank.hpp"
-
+#include "deplacement.hpp"
 
 int main() {
-
-    float vit_canon =0.01f;
     sf::RenderWindow window(sf::VideoMode(1900, 1000), "Lien entre objets");
     window.setMouseCursorVisible(false);
 
     tank mon_tank;
-    sf::Texture textureCurseur,textureBase, textureTourelle;
-    textureCurseur.loadFromFile("Image/curseur_rouge.png"); // Remplace par ton image
+
+    sf::Texture textureCurseur;
+    textureCurseur.loadFromFile("Image/curseur_rouge.png");
     sf::Sprite cursorSprite(textureCurseur);
-    if (!textureBase.loadFromFile("Image/base1.png") || !textureTourelle.loadFromFile("Image/tourelle2.png"))
-        return -1;
-    
-    sf::Vector2u taillebase = textureBase.getSize();
-    sf::Vector2u tailletourelle = textureTourelle.getSize();
-    sf::Vector2u taillecurseur = textureCurseur.getSize();
-    sf::Sprite spriteBase(textureBase);    
-    sf::Sprite spriteTourelle(textureTourelle);  
-
-    // Définir l'origine des sprites au centre
-    spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
-    spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
-
-    // Positionner la base au centre initial
-    spriteBase.setPosition(300, 200);
-    // Superposer la tourelle au centre de la base
-    spriteTourelle.setPosition(spriteBase.getPosition());
-
-    //diminue la taille du viseur
-    spriteBase.setScale(0.1,0.1);
-    spriteTourelle.setScale(0.1,0.1);
-    cursorSprite.setScale(0.08,0.08);
-
-    // Longueur fixe du lien
-    mon_tank.set_vit(0.2f);
-    mon_tank.set_ori(0);
+    cursorSprite.setScale(0.08f, 0.08f);
 
     while (window.isOpen()) {
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
         sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
-        sf::Vector2f dir = worldMousePos - spriteTourelle.getPosition();
-        float angle_voulu= atan2(dir.y , dir.x)* 180 / M_PI -90;
-        // Interpolation linéaire (lerp)
+        sf::Vector2f dir = worldMousePos - mon_tank.getTourelleSprite().getPosition();
+        float angle_voulu = atan2(dir.y, dir.x) * 180 / M_PI - 90;
+
         cursorSprite.setPosition(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
-        cursorSprite.setOrigin(taillecurseur.x / 2.0f, taillecurseur.y / 2.0f); 
 
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -58,46 +30,38 @@ int main() {
                 window.close();
         }
 
-        // Contrôle indépendant du robots
         sf::Vector2f movement(0.f, 0.f);
-        movement.y=mon_tank.get_y();
-        movement.x=mon_tank.get_x();
-        float speed=mon_tank.get_vit();
-        float rotation=mon_tank.get_ori();
+        float speed = mon_tank.get_vit();
+        float rotation = mon_tank.get_ori();
+        float vit_canon = mon_tank.get_vit_canon();
 
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)){
-            mon_tank.set_y(movement.y += speed*cos(rotation*M_PI/180));
-            mon_tank.set_x(movement.x -= speed*sin(rotation*M_PI/180) );
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
+            deplacement_verticale(mon_tank, movement, rotation, mon_tank.getBaseSprite(), speed);
+            deplacement_verticale(mon_tank, movement, rotation, mon_tank.getTourelleSprite(), speed);
         }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
-            mon_tank.set_y(movement.y -= speed*cos(rotation*M_PI/180));
-            mon_tank.set_x(movement.x += speed*sin(rotation*M_PI/180));
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+            deplacement_verticale(mon_tank, movement, rotation, mon_tank.getBaseSprite(), -speed);
+            deplacement_verticale(mon_tank, movement, rotation, mon_tank.getTourelleSprite(), -speed);
         }
 
-        spriteBase.move(movement);
-        spriteTourelle.move(movement);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) 
+            deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, 0.05);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) mon_tank.set_ori(rotation -= 0.05);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) mon_tank.set_ori(rotation += 0.05);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) 
+            deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, -0.05);
 
-        spriteBase.setRotation(rotation);
-
-        float angle_actu = spriteTourelle.getRotation();    
+        float angle_actu = mon_tank.getTourelleSprite().getRotation();
         float diff = angle_voulu - angle_actu;
-        if (diff > 180) diff -= 360; // On prend le plus court chemin
+        if (diff > 180) diff -= 360;
         if (diff < -180) diff += 360;
-        spriteTourelle.setRotation(angle_actu + diff * vit_canon);
-        // Vérifier la distance entre les objets
-        //spriteBase.setColor(sf::Color(0, 255, 0)); // ver
-        // Affichage
+
+        mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon);
+
         window.clear();
-        window.draw(spriteBase);
-        window.draw(spriteTourelle);
+        window.draw(mon_tank.getBaseSprite());
+        window.draw(mon_tank.getTourelleSprite());
         window.draw(cursorSprite);
-        //std::cout << "La rotation est de : " << angle_actu << " degrés." << std::endl;
-        //std::cout << "La rotation est de : " << angle_voulu- angle_actu<< " degrés." << std::endl;
         window.display();
     }
 

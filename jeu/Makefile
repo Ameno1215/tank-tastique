@@ -6,7 +6,7 @@ CXXFLAGS = -std=c++11 -Wall -I./config -I./classe
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
 # Fichiers sources et objets
-SRC = main.cpp classe/tank.cpp
+SRC = main.cpp classe/tank.cpp deplacement.cpp
 OBJ = $(SRC:.cpp=.o)
 
 # Nom de l'exécutable
