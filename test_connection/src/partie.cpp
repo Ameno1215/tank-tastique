@@ -1,4 +1,5 @@
 #include "partie.hpp"
+#include "client.hpp"
 
 Partie::Partie() {
     this->nbJoueur = 0;
@@ -9,21 +10,24 @@ Partie::Partie() {
 // Fonction pour ajouter un joueur jusqu'à un maximum de 6
 bool Partie::ajouteJoueur() {
     if (nbJoueur < 6) {
-        Joueur[nbJoueur].portJoueur = 3001 + nbJoueur; // Attribution du port
         port_actuel = 3001 + nbJoueur;
+        Joueur[nbJoueur].portJoueur = port_actuel;
         nbJoueur++;
-        return true; // Ajout réussi
+        return true;
     } else {
         std::cout << "Nombre maximal de joueurs atteint !" << std::endl;
-        return false; // Échec de l'ajout
+        return false;
     }
 }
+
 
 int Partie::get_portactuel(){
     return port_actuel;
 }
 
 int Partie::multiJoueur(){
+    Client client;
+    client.initconnexion();
     return 2;
 }
 
