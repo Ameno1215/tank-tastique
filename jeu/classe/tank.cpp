@@ -4,8 +4,8 @@
 // Constructeur
 tank::tank() {
     // Chargement des textures
-    if (!textureBase.loadFromFile("../../jeu/Image/base1.png") || 
-        !textureTourelle.loadFromFile("../../jeu/Image/tourelle2.png")) {
+    if (!textureBase.loadFromFile("base1.png") || 
+        !textureTourelle.loadFromFile("tourelle2.png")) {
         std::cerr << "Erreur de chargement des textures !" << std::endl;
     }
 

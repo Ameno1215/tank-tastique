@@ -1,51 +1,33 @@
-#include <SFML/Graphics.hpp>
-#include <iostream>
-#include <cstring>
-#include <thread> 
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <mutex>
+#include "server.hpp"
 
-#define SERVER_PORT 3000  // Port du serveur
-#define BUFFER_SIZE 1024  // Taille du buffer de réception
-
-#include "joueur.hpp"
-#include "partie.hpp"
-
-// Mutex pour synchroniser l'accès aux données partagées (position du tank)
+// Mutex global
 std::mutex joueurMutex;
 
-void udpCom(Partie& partie, int sockfd, struct sockaddr_in& clientaddr, joueur& Joueur) {
-    while(true) {
+void udpCom(int sockfd, struct sockaddr_in& clientaddr, joueur& Joueur) {
+    while (true) {
         float posMouse[2];
         char buffer[BUFFER_SIZE];
         socklen_t len = sizeof(clientaddr);
         int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
+
+
         if (n < 0) {
             perror("Erreur lors de la réception");
             return;
         }
 
-        if(buffer[0] == 'M') {
-            // Traitement du message (si c'est un message classique et non une position)
-            memmove(buffer, buffer + 2, n - 2);  // Enlève le "M "
-            buffer[n] = '\0'; // Ajoute le terminateur de chaîne
+        if (buffer[0] == 'M') {
+            // Gestion des messages
+            memmove(buffer, buffer + 2, n - 2);  
+            buffer[n] = '\0'; 
             std::cout << "Message reçu : " << buffer << std::endl;
-            std::string response = "Message bien reçu!";  // Réponse au client
+            std::string response = "Message bien reçu!";
             sendto(sockfd, response.c_str(), response.length(), 0, (struct sockaddr*)&clientaddr, len);
             std::cout << "Réponse envoyée au client." << std::endl;
-        }
-        if(buffer[0] == 'C'){
-            partie.ajouteJoueur();
-            float msg_port[1] = {partie.get_portactuel()};
-            sendto(sockfd, msg_port, sizeof(float), 0, (struct sockaddr*)&clientaddr, len);
-            std::cout << "Port envoyé au client" << std::endl;
-        }
+        } 
         else {
-            // Si c'est une position de souris
+            // Gestion des positions
             memcpy(posMouse, buffer, sizeof(posMouse));
-            // Verrouiller l'accès au joueur avant de modifier sa position
             std::lock_guard<std::mutex> lock(joueurMutex);
             Joueur.recup_TankPos(posMouse[0], posMouse[1]);
             std::cout << "Position Souris client : x=" << posMouse[0] << " y=" << posMouse[1] << std::endl;
@@ -54,97 +36,107 @@ void udpCom(Partie& partie, int sockfd, struct sockaddr_in& clientaddr, joueur& 
     close(sockfd);
 }
 
-void updateVisual(sf::RenderWindow& window, sf::Sprite& backgroundSprite, sf::Sprite& curseur, sf::FloatRect& taille_curseur, joueur& Joueur) {
-    while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                window.close();
+void connexion(int sockfd, Partie& partie) {
+    struct sockaddr_in clientaddr;
+    socklen_t len = sizeof(clientaddr);
+    char buffer[BUFFER_SIZE];
+
+    while (!partie.partieComplete()) {
+        // Attente d'un message "C"
+        int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
+        if (n < 0) {
+            perror("Erreur lors de la réception");
+            continue;
+        }
+
+        buffer[n] = '\0';
+        if (buffer[0] == 'C') {
+            std::cout << "Message 'C' reçu. Attribution d'un port...\n";
+            if (!partie.ajouteJoueur()) {
+                continue;
             }
-        }
-        
-        window.clear();
-        // Dessiner l'image de fond
-        window.draw(backgroundSprite);
 
-        // Mise à jour de l'affichage en fonction de la position du joueur
-        {
-            std::lock_guard<std::mutex> lock(joueurMutex);  // Protection des données partagées
-            // Mettre à jour la position du curseur (tank)
-            curseur.setPosition(Joueur.Tank.get_x()-(taille_curseur.width)/2, Joueur.Tank.get_y()-(taille_curseur.height)/2);  // Correction de l'accès
-        }
+            int new_port = partie.get_portactuel();
+            int port_to_send = htonl(new_port);
+            sendto(sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&clientaddr, len);
+            std::cout << "Port " << new_port << " attribué au client.\n";
 
-        // Afficher le curseur (le tank)
-        window.draw(curseur);
-        window.display();
+            // Création d'un socket pour le client
+            int client_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+            if (client_sockfd < 0) {
+                perror("Erreur socket client");
+                continue;
+            }
+
+            struct sockaddr_in client_servaddr;
+            memset(&client_servaddr, 0, sizeof(client_servaddr));
+            client_servaddr.sin_family = AF_INET;
+            client_servaddr.sin_addr.s_addr = INADDR_ANY;
+            client_servaddr.sin_port = htons(new_port);
+
+            if (bind(client_sockfd, (struct sockaddr*)&client_servaddr, sizeof(client_servaddr)) < 0) {
+                perror("Erreur lors du bind client");
+                close(client_sockfd);
+                continue;
+            }
+
+            // Attente du message "T"
+            n = recvfrom(client_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
+            if (n < 0) {
+                perror("Erreur réception de 'T'");
+                close(client_sockfd);
+                continue;
+            }
+
+            buffer[n] = '\0';
+            if (buffer[0] == 'T') {
+                std::cout << "Client validé sur le port " << new_port << ".\n";
+                std::string confirmation = "Connexion réussie !";
+                sendto(client_sockfd, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&clientaddr, len);
+            } else {
+                std::cout << "Échec d'initialisation avec le client\n";
+            }
+
+            close(client_sockfd);
+        } else {
+            std::cout << "En attente du bon nombre de joueurs...\n";
+        }
     }
+    std::cout << "Tous les joueurs sont connectés. Début de la partie !\n";
+}
+
+void startServer() {
+    Partie partie;
+    int sockfd;
+    struct sockaddr_in servaddr;
+
+    // Création du socket UDP principal
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Erreur lors de la création du socket");
+        return;
+    }
+
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_port = htons(SERVER_PORT);
+
+    if (bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+        perror("Erreur lors du bind");
+        close(sockfd);
+        return;
+    }
+
+    std::cout << "Serveur en attente sur le port " << SERVER_PORT << "...\n";
+
+    // Lancement de la gestion des connexions
+    connexion(sockfd, partie);
+
+    close(sockfd);
 }
 
 int main() {
-    joueur Joueur;
-    Partie partie;
-    partie.init();
-    sf::RenderWindow window(sf::VideoMode(1800, 1600), "Test Server UDP");
-
-    // Charger la texture du fond
-    sf::Texture backgroundTexture;
-    if (!backgroundTexture.loadFromFile("fond.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
-        return 1;
-    }
-
-    sf::Texture curseurTexture;
-    if(!curseurTexture.loadFromFile("curseur_rouge.png")){
-        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
-        return 1;
-    }
-
-    // Créer un sprite avec la texture
-    sf::Sprite backgroundSprite;
-    backgroundSprite.setTexture(backgroundTexture);
-
-    sf::Sprite curseurSprite;
-    curseurSprite.setTexture(curseurTexture);
-    sf::FloatRect taille_curseur = curseurSprite.getGlobalBounds();
-
-    backgroundSprite.setScale(
-        window.getSize().x / backgroundSprite.getGlobalBounds().width,
-        window.getSize().y / backgroundSprite.getGlobalBounds().height
-    );
-
-    int sockfd;
-    struct sockaddr_in servaddr, clientaddr;
-
-    // Création du socket UDP
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) {
-        perror("Échec de la création du socket");
-        return 1;
-    }
-
-    // Configuration de l'adresse du serveur
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = INADDR_ANY; // Accepte toutes les connexions
-    servaddr.sin_port = htons(SERVER_PORT);
-
-    // Liaison du socket à l'adresse et au port
-    if (bind(sockfd, (const struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Échec du bind");
-        close(sockfd);
-        return 1;
-    }
-
-    std::cout << "Serveur UDP en attente sur le port " << SERVER_PORT << "..." << std::endl;
-
-    // Lancer uniquement le thread pour la communication UDP
-    std::thread comThread(udpCom, partie, sockfd, std::ref(clientaddr), std::ref(Joueur));
-
-    // Boucle principale pour gérer l'affichage graphique
-    updateVisual(window, backgroundSprite, curseurSprite, taille_curseur, Joueur);
-
-    // Attendre que le thread de communication UDP se termine
-    comThread.join();
-
+    startServer();
     return 0;
 }

@@ -1,4 +1,6 @@
 #include "partie.hpp"
+#include "client.hpp"
+#include "deplacement.hpp"
 
 Partie::Partie() {
     this->nbJoueur = 0;
@@ -9,21 +11,24 @@ Partie::Partie() {
 // Fonction pour ajouter un joueur jusqu'à un maximum de 6
 bool Partie::ajouteJoueur() {
     if (nbJoueur < 6) {
-        Joueur[nbJoueur].portJoueur = 3001 + nbJoueur; // Attribution du port
         port_actuel = 3001 + nbJoueur;
+        Joueur[nbJoueur].portJoueur = port_actuel;
         nbJoueur++;
-        return true; // Ajout réussi
+        return true;
     } else {
         std::cout << "Nombre maximal de joueurs atteint !" << std::endl;
-        return false; // Échec de l'ajout
+        return false;
     }
 }
+
 
 int Partie::get_portactuel(){
     return port_actuel;
 }
 
 int Partie::multiJoueur(){
+    Client client;
+    client.initconnexion();
     return 2;
 }
 
@@ -35,7 +40,7 @@ int Partie::Solo(){
     tank mon_tank;
 
     sf::Texture textureCurseur;
-    textureCurseur.loadFromFile("../../jeu/Image/curseur_rouge.png");
+    textureCurseur.loadFromFile("curseur_rouge.png");
     sf::Sprite cursorSprite(textureCurseur);
     cursorSprite.setScale(0.08f, 0.08f);
         while (window.isOpen()) {
