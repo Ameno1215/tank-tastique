@@ -11,12 +11,9 @@ int main() {
 
     tank mon_tank;
 
-    sf::Texture textureCurseur, textureBackground;
-    textureBackground.loadFromFile("Image/map_test.png");
+    sf::Texture textureCurseur;
     textureCurseur.loadFromFile("Image/curseur_rouge.png");
     sf::Sprite cursorSprite(textureCurseur);
-    sf::Sprite backgroundSprite(textureBackground);
-    backgroundSprite.setScale(18.f,10.f);
     cursorSprite.setScale(0.08f, 0.08f);
 
     while (window.isOpen()) {
@@ -49,10 +46,10 @@ int main() {
         }
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) 
-            deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, 0.5);
+            deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, 0.05);
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) 
-            deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, -0.5);
+            deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, -0.05);
 
         float angle_actu = mon_tank.getTourelleSprite().getRotation();
         float diff = angle_voulu - angle_actu;
@@ -62,11 +59,9 @@ int main() {
         mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon);
 
         window.clear();
-        window.draw(backgroundSprite);
         window.draw(mon_tank.getBaseSprite());
         window.draw(mon_tank.getTourelleSprite());
         window.draw(cursorSprite);
-
         window.display();
     }
 

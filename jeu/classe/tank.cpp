@@ -4,8 +4,8 @@
 // Constructeur
 tank::tank() {
     // Chargement des textures
-    if (!textureBase.loadFromFile("Image/base1.png") || 
-        !textureTourelle.loadFromFile("Image/tourelle2.png")) {
+    if (!textureBase.loadFromFile("../../jeu/Image/base1.png") || 
+        !textureTourelle.loadFromFile("../../jeu/Image/tourelle2.png")) {
         std::cerr << "Erreur de chargement des textures !" << std::endl;
     }
 
@@ -21,8 +21,8 @@ tank::tank() {
     x = 300;
     y = 200;
     orientation = 0;
-    vitesse = 0.1f;
-    vitesse_canon = 0.01f; // Valeur par défaut
+    vitesse = 0.2f;
+    vitesse_canon = 0.1f; // Valeur par défaut
 
     spriteBase.setPosition(x, y);
     spriteTourelle.setPosition(x, y);
