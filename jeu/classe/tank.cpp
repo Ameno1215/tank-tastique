@@ -3,6 +3,7 @@
 
 // Constructeur
 tank::tank() {
+
     // Chargement des textures
     if (!textureBase.loadFromFile("base1.png") || 
         !textureTourelle.loadFromFile("tourelle2.png")) {
@@ -38,7 +39,9 @@ float tank::get_y() { return y; }
 float tank::get_ori() { return orientation; }
 float tank::get_vit() { return vitesse; }
 float tank::get_vit_canon() { return vitesse_canon; }
-sf::Sprite& tank::getBaseSprite() { return spriteBase; }
+sf::Sprite& tank::getBaseSprite() { 
+    return spriteBase; 
+}
 sf::Sprite& tank::getTourelleSprite() { return spriteTourelle; }
 
 // Setters

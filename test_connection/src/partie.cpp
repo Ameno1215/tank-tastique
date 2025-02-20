@@ -120,7 +120,6 @@ int Partie::Solo() {
     window->setMouseCursorVisible(false);
     
     joueur_courant = 0;
-    joueur[0] = Joueur();  // Création du premier joueur
 
     if (!textureCurseur.loadFromFile("curseur_rouge.png")) {
         std::cerr << "Erreur lors du chargement du curseur !\n";

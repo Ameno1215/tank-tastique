@@ -14,13 +14,18 @@
 
 #include "../../jeu/classe/tank.hpp"
 
-class Joueur{
-    public :
-        tank Tank;
-        int port;
-        int id;
-        std::string pseudo;
-        void recup_TankPos(float x, float y);
+class Joueur {
+public :
+    Joueur(); // Déclaration du constructeur
+
+    // Méthode pour mettre à jour la position du tank
+    void recup_TankPos(float x, float y);
+
+    // Membres de la classe
+    tank Tank;
+    int port;
+    int id;
+    std::string pseudo;
 };
 
 #endif
