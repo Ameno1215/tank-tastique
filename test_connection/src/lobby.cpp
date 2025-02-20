@@ -6,7 +6,7 @@ int Lobby::choix(){
     sf::RenderWindow window(sf::VideoMode(1280, 720), "Test Connexion UDP", sf::Style::Titlebar | sf::Style::Close);
 
     sf::Texture backgroundTexture;
-    if (!backgroundTexture.loadFromFile("fond.png")) {
+    if (!backgroundTexture.loadFromFile("Image/fond.png")) {
         std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
     }
 

@@ -5,15 +5,15 @@
 tank::tank() {
 
     // Chargement des textures
-    if (!textureBase.loadFromFile("base1.png") || 
-        !textureTourelle.loadFromFile("tourelle2.png")) {
+    if (!textureBase.loadFromFile("Image/base1.png") || 
+        !textureTourelle.loadFromFile("Image/tourelle2.png")) {
         std::cerr << "Erreur de chargement des textures !" << std::endl;
     }
 
     // Assignation des textures aux sprites
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);
-
+    std::cout<<"ca marche";
     // Définir l'origine des sprites au centre
     spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
     spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
@@ -39,9 +39,7 @@ float tank::get_y() { return y; }
 float tank::get_ori() { return orientation; }
 float tank::get_vit() { return vitesse; }
 float tank::get_vit_canon() { return vitesse_canon; }
-sf::Sprite& tank::getBaseSprite() { 
-    return spriteBase; 
-}
+sf::Sprite& tank::getBaseSprite() { return spriteBase; }
 sf::Sprite& tank::getTourelleSprite() { return spriteTourelle; }
 
 // Setters

@@ -100,14 +100,15 @@ void Partie::update() {
     }
 }
 
-void Partie::renderWindow(){
-    tank& mon_tank = joueur[joueur_courant].Tank; 
+void Partie::renderWindow() {
+    tank& mon_tank = joueur[joueur_courant].Tank;
     window->clear();
     window->draw(mon_tank.getBaseSprite());
     window->draw(mon_tank.getTourelleSprite());
     window->draw(cursorSprite);
     window->display();
 }
+
 
 int Partie::Solo() {
     // Libérer la mémoire si une fenêtre existait déjà
@@ -121,13 +122,13 @@ int Partie::Solo() {
     
     joueur_courant = 0;
 
-    if (!textureCurseur.loadFromFile("curseur_rouge.png")) {
+    if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
         std::cerr << "Erreur lors du chargement du curseur !\n";
         return -1;
     }
 
     cursorSprite.setTexture(textureCurseur);
-    cursorSprite.setScale(0.08f, 0.08f);
+    cursorSprite.setScale(0.12f, 0.12f);
 
     // Boucle de jeu
     while (window->isOpen()) {

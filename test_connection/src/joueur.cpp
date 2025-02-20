@@ -7,7 +7,6 @@ Joueur::Joueur() { // Initialisation des membres
     this->pseudo = "Anto";   // Pseudo vide
     this->port = SERVER_PORT;      // Port à 0 par défaut
     this->Tank = tank();
-    std::cout << "tank crée (normalement)";
     Tank.set_x(0.f);     // Position du tank à (0, 0)
     Tank.set_y(0.f);     // Position du tank à (0, 0)
 }
