@@ -12,7 +12,7 @@
 #define SERVER_PORT 3000  // Port du serveur
 #define BUFFER_SIZE 1024  // Taille du buffer de réception
 
-#include "../../jeu/classe/tank.hpp"
+#include "tank.hpp"
 
 class Joueur {
 public :

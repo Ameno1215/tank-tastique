@@ -5,8 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <stdio.h>
-#include "../../jeu/config/config.hpp"
-#include "../../jeu/classe/tank.hpp"
+#include "tank.hpp"
 
 void deplacement_verticale(tank& mon_tank, sf::Vector2f& movement, float rotation, sf::Sprite& sprite, float speed);
 void deplacement_rotation(tank& mon_tank, sf::Sprite& sprite, float* rotation, float indentation);
