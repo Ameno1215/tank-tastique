@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <mutex>
+
 #include "joueur.hpp"
 #include "partie.hpp"
 
@@ -16,12 +17,11 @@
 #define BUFFER_SIZE 1024  
 #define NEW_PORT 3001
 
-#include "partie.hpp"
 
 extern std::mutex joueurMutex; // Mutex pour synchroniser les accès
 
 // Fonction de communication UDP
-void udpCom(int sockfd, struct sockaddr_in& clientaddr, joueur& Joueur);
+void udpCom(Joueur& joueur, Partie& partie);
 
 // Fonction d'initialisation et de gestion du serveur
 void startServer();

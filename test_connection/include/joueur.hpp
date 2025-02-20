@@ -14,10 +14,12 @@
 
 #include "../../jeu/classe/tank.hpp"
 
-class joueur{
+class Joueur{
     public :
         tank Tank;
-        int portJoueur;
+        int port;
+        int id;
+        std::string pseudo;
         void recup_TankPos(float x, float y);
 };
 

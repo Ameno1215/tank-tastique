@@ -11,7 +11,7 @@
 
 #include "joueur.hpp"
 
-void joueur::recup_TankPos(float x, float y) {
+void Joueur::recup_TankPos(float x, float y) {
     this->Tank.set_x(x);  
     this->Tank.set_y(y);
 }

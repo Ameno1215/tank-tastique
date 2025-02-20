@@ -16,15 +16,24 @@
 #include "joueur.hpp"
 
 class Client{
+
     public :
-        Client();
-        void sendMessageToServer(const std::string& message, int port);     // Fonction pour envoyer un message UDP au serveur
-        void sendPosToServer(float position[2]); 
-        void sendUDPdata(sf::Event event, Bouton button2);
-        void initconnexion();
-    private :
+
+        Joueur joueur;
         int num_port;
+
+        Client();
+        void sendMessageToServer(const std::string& message);     // Fonction pour envoyer un message UDP au serveur
+        void initconnexion();
+        void sendData();
+        void udpdateData(Joueur& joueur);
+        void createSocket();
+        void createBindedSocket();
+        void attendServerPret();
+
+    private :
         int sockfd;
         struct sockaddr_in servaddr, cliaddr;
+        bool serverPret = false;
 };
 #endif
