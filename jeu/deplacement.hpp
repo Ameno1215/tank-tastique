@@ -5,7 +5,6 @@
 #include <cmath>
 #include <iostream>
 #include <stdio.h>
-#include "config/config.hpp"
 #include "classe/tank.hpp"
 #include "deplacement.hpp"
 
