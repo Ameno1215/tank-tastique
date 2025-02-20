@@ -3,7 +3,6 @@
 
 // Constructeur
 tank::tank() {
-
     // Chargement des textures
     if (!textureBase.loadFromFile("Image/base1.png") || 
         !textureTourelle.loadFromFile("Image/tourelle2.png")) {
@@ -13,7 +12,7 @@ tank::tank() {
     // Assignation des textures aux sprites
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);
-    std::cout<<"ca marche";
+
     // Définir l'origine des sprites au centre
     spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
     spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);

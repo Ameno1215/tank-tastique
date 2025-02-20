@@ -6,9 +6,6 @@ Joueur::Joueur() { // Initialisation des membres
     this->id = 0;        // Identifiant du joueur
     this->pseudo = "Anto";   // Pseudo vide
     this->port = SERVER_PORT;      // Port à 0 par défaut
-    this->Tank = tank();
-    Tank.set_x(0.f);     // Position du tank à (0, 0)
-    Tank.set_y(0.f);     // Position du tank à (0, 0)
 }
 
 // Définition de la méthode recup_TankPos
