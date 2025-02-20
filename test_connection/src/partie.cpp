@@ -94,10 +94,10 @@ void Partie::update() {
     if (diff < -180) diff += 360;
     
     mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon);
-    
-    // Correction de la condition de téléportation du tank
-    if (mon_tank.get_x() >= windowSize.x)
+
+    if ( mon_tank.get_x()-mon_tank.getBaseSprite().getLocalBounds().width / 2 == windowSize.x){
         mon_tank.set_x(0);
+    }
 }
 
 void Partie::renderWindow(){
