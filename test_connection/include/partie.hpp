@@ -21,6 +21,7 @@ class Partie {
         ~Partie(); // Destructeur pour libérer la mémoire
 
         Joueur joueur[6];
+        
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
@@ -31,6 +32,7 @@ class Partie {
         void getEvent(); 
         void update();
         void renderWindow();
+        void sendData(Client& client);
         void affichageConnexion(Client& client);
 
     private:

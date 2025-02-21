@@ -113,6 +113,20 @@ void Partie::renderWindow() {
     window->display();
 }
 
+void Partie::sendData(Client& client){
+
+    char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
+    int test = 1;
+
+    sprintf(buffer, "%d %d %d %d %d %d %d",Zpressed ? 1 : 0, Qpressed ? 1 : 0, Spressed ? 1 : 0, Dpressed ? 1 : 0, static_cast<int>(mousePos.x), static_cast<int>(mousePos.y), test);
+    client.num_port = 3001;
+    int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
+    if (n < 0) {
+        perror("❌ Erreur lors de l'envoi des données");
+    } else {
+        std::cout << "📨 Données envoyées : " << buffer << std::endl;
+    }
+}
 
 int Partie::Solo() {
     // Libérer la mémoire si une fenêtre existait déjà
@@ -156,6 +170,36 @@ int Partie::multiJoueur() {
     if (connexionThread.joinable()) {
         connexionThread.join();
     }
+
+    if (window) {
+        delete window;
+    }
+    
+    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "SOLO");
+    windowSize = window->getSize();
+    window->setMouseCursorVisible(false);
+    
+    joueur_courant = 0;
+
+    if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
+        std::cerr << "Erreur lors du chargement du curseur !\n";
+        return -1;
+    }
+
+    cursorSprite.setTexture(textureCurseur);
+    cursorSprite.setScale(0.12f, 0.12f);
+
+    client.createSocket();
+    // Boucle de jeu en multi
+    while (window->isOpen()) {
+        getEvent();
+        sendData(client);
+        update(); //pour voir
+        //sendData();
+        //recievData();
+        renderWindow();
+    }
+
 
     return 0;
 }

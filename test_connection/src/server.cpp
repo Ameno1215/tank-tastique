@@ -120,24 +120,26 @@ void Server::udpCom(Joueur& joueur) {
     close(sockfd);
 }
 
-
 void Server::connexion() {
     socklen_t len = sizeof(clientaddr);
     char buffer[BUFFER_SIZE];
 
     while (!partie.partieComplete()) {
-        // Attente d'un message "C"
+    
         port_connexion = SERVER_PORT;
         createBindedSocket(); // sur le port 3000
-        int n = recvfrom(sockfdconnexion, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
+        int n = recvfrom(sockfdconnexion, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len); // Attente d'un message "C"
         close(sockfdconnexion);
         if (n < 0) {
             perror("Erreur lors de la réception");
             continue;
         }
         buffer[n] = '\0';
+
         if (buffer[0] == 'C') {
+
             std::cout << "Message 'C' reçu. Attribution d'un port...\n";
+
             if (!partie.ajouteJoueur()) { // ajoute les joueurs
                 continue;
             }
@@ -148,7 +150,7 @@ void Server::connexion() {
             close(sockfdconnexion);
             std::cout << "Port " << port_connexion << " envoyé au client\n";
 
-            port_connexion = 3000 + partie.get_nbJoueur(); 
+            port_connexion = 3000 + partie.get_nbJoueur(); //ports 3001 à 3007 si 6 joueurs
             createBindedSocket();
 
             // Attente du message "T"
@@ -178,8 +180,8 @@ void Server::connexion() {
     }
 
     const char* msg_pret = "P";  
-
     sleep(1);
+
     for (int i = 0; i < NB_JOUEUR; i++) {
         port_connexion = partie.joueur[i].port;
         createSocketConnexion();
@@ -193,6 +195,40 @@ void Server::connexion() {
     }
 }
 
+
+void Server::recevoirEvent() {
+    // Taille du buffer : 4 booléens (en fait, ce seront des entiers) + 2 entiers (pour les coordonnées)
+    char buffer[100];
+    socklen_t len = sizeof(clientaddr);
+
+    int receivedBytes = recvfrom(sockfdconnexion, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientaddr, &len);
+
+    if (receivedBytes < 0) {
+        std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
+        return;
+    }
+
+     // Variables pour les booléens (ici en tant qu'entiers) et les coordonnées de la souris
+     int bools[4];  // Changement ici, on utilise int au lieu de bool
+     int mousePosX, mousePosY;
+ 
+     // Extraction des booléens (qui sont en fait des entiers 0 ou 1)
+     sscanf(buffer,"%d %d %d %d %d %d", &bools[0], &bools[1], &bools[2], &bools[3], &mousePosX, &mousePosY);
+ 
+     // Conversion des entiers en booléens si nécessaire
+     bool Zpressed = bools[0] != 0;
+     bool Qpressed = bools[1] != 0;
+     bool Spressed = bools[2] != 0;
+     bool Dpressed = bools[3] != 0;
+  
+    // Affichage des données reçues
+    std::cout << "✅ Données reçues :\n";
+    std::cout << "Touches : " << Zpressed << " " << Qpressed << " " 
+              << Spressed << " " << Dpressed << std::endl;
+    std::cout << "Souris : " << mousePosX << " " << mousePosY << std::endl;
+}
+
+
 void Server::startServer() {
     
     connexion();  // Lancement de la gestion des connexions
@@ -204,7 +240,11 @@ void Server::startServer() {
     partie.joueur[1].id = 1;
     partie.joueur[1].port = 3002;
     partie.joueur[1].pseudo = "joueur2";
-
+    port_connexion = 3001;
+    createBindedSocket();
+    while(true){
+        recevoirEvent();
+    }
     //std::thread joueur1Thread(udpCom, std::ref(partie.joueur[0]));
     //std::thread joueur2Thread(udpCom, std::ref(partie.joueur[1]));
     

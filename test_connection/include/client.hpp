@@ -20,8 +20,9 @@ class Client{
     public :
 
         Joueur joueur;
-        int num_port;
-
+        int num_port; //cosntruire setter et accesseurs pour tout ceux la
+        int sockfd;
+        struct sockaddr_in servaddr, cliaddr;
         Client();
         void sendMessageToServer(const std::string& message);     // Fonction pour envoyer un message UDP au serveur
         void initconnexion();
@@ -32,8 +33,6 @@ class Client{
         int get_etatConnexion();
 
     private :
-        int sockfd;
-        struct sockaddr_in servaddr, cliaddr;
         bool serverPret = false;
         int etatConnexion;
 };
