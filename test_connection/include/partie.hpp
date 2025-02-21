@@ -23,6 +23,8 @@ class Partie {
         Joueur joueur[6];
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
+        int get_nbJoueur();
+
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
         int multiJoueur();
         int Solo();

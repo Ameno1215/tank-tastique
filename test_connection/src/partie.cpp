@@ -34,6 +34,10 @@ int Partie::get_portactuel(){
     return port_actuel;
 }
 
+int Partie::get_nbJoueur(){
+    return nbJoueur;
+}
+
 void Partie::getEvent() {
     if (!window) return;
 
@@ -144,17 +148,23 @@ int Partie::multiJoueur() {
     Client client;
     client.initconnexion();
 
-    sf::RenderWindow window(sf::VideoMode(1900, 1000), "Lien entre objets");
-    sf::Vector2u windowSize = window.getSize();
-    window.setMouseCursorVisible(false);
+    if (window) {
+        delete window;
+    }
+    
+    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "SOLO");
+    windowSize = window->getSize();
+    window->setMouseCursorVisible(false);
+    
+    joueur_courant = 0;
 
-    tank mon_tank = client.joueur.Tank;
+    if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
+        std::cerr << "Erreur lors du chargement du curseur !\n";
+        return -1;
+    }
 
-    sf::Texture textureCurseur;
-    textureCurseur.loadFromFile("curseur_rouge.png");
-    sf::Sprite cursorSprite(textureCurseur);
-    cursorSprite.setScale(0.08f, 0.08f);
-
+    cursorSprite.setTexture(textureCurseur);
+    cursorSprite.setScale(0.12f, 0.12f);
     // Thread pour attendre la confirmation du serveur
     std::atomic<bool> serverReady = false;
     std::thread waitServerThread([&]() {
@@ -164,7 +174,7 @@ int Partie::multiJoueur() {
 
     std::thread receiveThread;
 
-    while (window.isOpen()) {
+    while (window->isOpen()) {
         renderWindow();
         client.sendData();
 

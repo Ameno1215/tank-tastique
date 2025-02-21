@@ -1,8 +1,63 @@
 #include "server.hpp"
 
-void udpCom(Joueur& joueur, Partie& partie) {
+Server::Server() {
+    std::memset(sockfd, 0, sizeof(sockfd));
+    std::cout << "Serveur initialisé." << std::endl;
+}
+
+Server::~Server() {
+    for (int i = 0; i < 6; ++i) {
+        if (sockfd[i] > 0) {
+            close(sockfd[i]);
+        }
+    }
+    std::cout << "Serveur arrêté." << std::endl;
+}
+
+void Server::createSocketConnexion(){
+    sockfdconnexion = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfdconnexion < 0) {
+        perror("Échec de la création du socket");
+        return;
+    }
+    memset(&clientaddr, 0, sizeof(clientaddr));
+    clientaddr.sin_family = AF_INET;
+    clientaddr.sin_port = htons(SERVER_PORT);
+    clientaddr.sin_addr.s_addr = INADDR_ANY;
+}
+
+void Server::createBindedSocket(){
+    //std::cout << "TEEEEEEEEEEEEEEEESSSSTTTT" << std::endl;
+
+    sockfdconnexion = socket(AF_INET, SOCK_DGRAM, 0);
+    
+    if (sockfdconnexion < 0) {
+        perror("Échec de la création du socket");
+        return;
+    }
+
+    int opt = 1;
+    setsockopt(sockfdconnexion, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    // Configuration de l'adresse du serveur
+    memset(&servaddr, 0, sizeof(servaddr));
+    clientaddr.sin_family = AF_INET;
+    clientaddr.sin_port = htons(port_connexion);
+    clientaddr.sin_addr.s_addr = inet_addr(SERVER_IP); // Accepter les connexions de n'importe quelle adresse
+
+    // Liaison du socket au port spécifié
+    if (bind(sockfdconnexion, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) < 0) {
+        perror("Échec du bind du socket");
+        close(sockfdconnexion);
+        return;
+    }
+
+    std::cout << "Socket créée et bindée sur le port " << port_connexion << std::endl;
+}
+
+void Server::udpCom(Joueur& joueur) {
     int sockfd;
-    struct sockaddr_in servaddr, clientaddr;
+    struct sockaddr_in clientaddr;
 
     // Création du socket UDP principal
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -70,68 +125,56 @@ void udpCom(Joueur& joueur, Partie& partie) {
 }
 
 
-void connexion(int sockfd, Partie& partie) {
-    struct sockaddr_in clientaddr;
+void Server::connexion() {
     socklen_t len = sizeof(clientaddr);
     char buffer[BUFFER_SIZE];
 
     while (!partie.partieComplete()) {
         // Attente d'un message "C"
-        int n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
+        port_connexion = SERVER_PORT;
+        createBindedSocket(); // sur le port 3000
+        int n = recvfrom(sockfdconnexion, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
+        close(sockfdconnexion);
         if (n < 0) {
             perror("Erreur lors de la réception");
             continue;
         }
-
         buffer[n] = '\0';
         if (buffer[0] == 'C') {
             std::cout << "Message 'C' reçu. Attribution d'un port...\n";
-            if (!partie.ajouteJoueur()) {
+            if (!partie.ajouteJoueur()) { // ajoute les joueurs
                 continue;
             }
 
-            int new_port = partie.get_portactuel();
-            int port_to_send = htonl(new_port);
-            sendto(sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&clientaddr, len);
-            std::cout << "Port " << new_port << " attribué au client.\n";
+            port_connexion = 3000 + partie.get_nbJoueur(); // sur les port 3001 à 3007 si 6 joueurs
+            int port_to_send = htonl(port_connexion);
+            createSocketConnexion();
+            sendto(sockfdconnexion, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&clientaddr, len);
+            close(sockfdconnexion);
+            std::cout << "Port " << port_connexion << " attribué au client.\n";
 
-            // Création d'un socket pour le client
-            int client_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-            if (client_sockfd < 0) {
-                perror("Erreur socket client");
-                continue;
-            }
-
-            struct sockaddr_in client_servaddr;
-            memset(&client_servaddr, 0, sizeof(client_servaddr));
-            client_servaddr.sin_family = AF_INET;
-            client_servaddr.sin_addr.s_addr = INADDR_ANY;
-            client_servaddr.sin_port = htons(new_port);
-
-            if (bind(client_sockfd, (struct sockaddr*)&client_servaddr, sizeof(client_servaddr)) < 0) {
-                perror("Erreur lors du bind client");
-                close(client_sockfd);
-                continue;
-            }
+            createBindedSocket();
 
             // Attente du message "T"
-            n = recvfrom(client_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
+            n = recvfrom(sockfdconnexion, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&clientaddr, &len);
             if (n < 0) {
                 perror("Erreur réception de 'T'");
-                close(client_sockfd);
+                close(sockfdconnexion);
                 continue;
             }
-
+            close(close(sockfdconnexion));
             buffer[n] = '\0';
+
             if (buffer[0] == 'T') {
-                std::cout << "Client validé sur le port " << new_port << ".\n";
+                std::cout << "Client validé sur le port " << port_connexion << ".\n";
                 std::string confirmation = "Connexion réussie !";
-                sendto(client_sockfd, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&clientaddr, len);
+                createSocketConnexion();
+                sendto(port_connexion, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&clientaddr, len);
             } else {
                 std::cout << "Échec d'initialisation avec le client\n";
             }
 
-            close(client_sockfd);
+            close(sockfdconnexion);
         } else {
             std::cout << "En attente du bon nombre de joueurs...\n";
         }
@@ -147,7 +190,7 @@ void connexion(int sockfd, Partie& partie) {
         sendaddr.sin_addr.s_addr = inet_addr(SERVER_IP);  
         sendaddr.sin_port = htons(partie.joueur[i].port);
 
-        int sent = sendto(sockfd, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&sendaddr, sizeof(sendaddr));
+        int sent = sendto(sockfdconnexion, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&sendaddr, sizeof(sendaddr));
 
         if (sent < 0) {
             perror("Erreur lors de l'envoi du message au joueur");
@@ -157,32 +200,9 @@ void connexion(int sockfd, Partie& partie) {
     }
 }
 
-void startServer() {
-    Partie partie;
-    int sockfd;
-    struct sockaddr_in servaddr;
-
-    // Création du socket UDP principal
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) {
-        perror("Erreur lors de la création du socket");
-        return;
-    }
-
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = INADDR_ANY;
-    servaddr.sin_port = htons(SERVER_PORT);
-
-    if (bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Erreur lors du bind");
-        close(sockfd);
-        return;
-    }
-
-    std::cout << "Serveur en attente sur le port " << SERVER_PORT << "...\n";
-
-    connexion(sockfd, partie);  // Lancement de la gestion des connexions
+void Server::startServer() {
+    
+    connexion();  // Lancement de la gestion des connexions
 
     partie.joueur[0].id = 0;
     partie.joueur[0].port = 3001;
@@ -192,15 +212,16 @@ void startServer() {
     partie.joueur[1].port = 3002;
     partie.joueur[1].pseudo = "joueur2";
 
-    std::thread joueur1Thread(udpCom, std::ref(partie.joueur[0]), std::ref(partie));
-    std::thread joueur2Thread(udpCom, std::ref(partie.joueur[1]), std::ref(partie));
+    //std::thread joueur1Thread(udpCom, std::ref(partie.joueur[0]));
+    //std::thread joueur2Thread(udpCom, std::ref(partie.joueur[1]));
     
-    joueur1Thread.join();
-    joueur2Thread.join();
-    close(sockfd);
+    //joueur1Thread.join();
+    //joueur2Thread.join();
+    close(sockfdconnexion);
 }
 
 int main() {
-    startServer();
+    Server server;
+    server.startServer();
     return 0;
 }

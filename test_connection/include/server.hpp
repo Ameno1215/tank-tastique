@@ -4,7 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <cstring>
-#include <thread> 
+#include <thread>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -17,15 +17,26 @@
 #define BUFFER_SIZE 1024  
 #define NEW_PORT 3001
 
+class Server {
+private:
+    
+    Partie partie;
+    int sockfdconnexion = SERVER_PORT;
+    int port_connexion;
+    int sockfd[6];
+    struct sockaddr_in clientaddr, servaddr;
+    std::mutex joueurMutex; // Mutex pour synchroniser les accès
 
-extern std::mutex joueurMutex; // Mutex pour synchroniser les accès
+    void createSocketConnexion();
+    void createBindedSocket();
+    void udpCom(Joueur& joueur);
+    void connexion();
+    
+public:
+    Server();
+    ~Server();
 
-// Fonction de communication UDP
-void udpCom(Joueur& joueur, Partie& partie);
-
-// Fonction d'initialisation et de gestion du serveur
-void startServer();
-
-void connexion(Partie& partie, int sockfd, struct sockaddr_in& clientaddr);
+    void startServer();
+};
 
 #endif

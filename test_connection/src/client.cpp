@@ -16,8 +16,9 @@ void Client::createSocket(){
     servaddr.sin_port = htons(num_port);
     servaddr.sin_addr.s_addr = INADDR_ANY;
 }
+
 void Client::createBindedSocket(){
-    std::cout << "TEEEEEEEEEEEEEEEESSSSTTTT" << std::endl;
+    //std::cout << "TEEEEEEEEEEEEEEEESSSSTTTT" << std::endl;
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     
@@ -68,15 +69,14 @@ void Client::initconnexion(){
         close(sockfd);
         return;
     }
+    close(sockfd); 
 
     received_port = ntohl(received_port);
     num_port = received_port;
     std::cout << "Nouveau port reçu du serveur : " << received_port << "\n";
-    close(sockfd); 
-
-    
-    message = "T";          // Envoie du message test sur le nouveau port
-    sendMessageToServer(message);                                                              
+    message = "T";          
+    sleep(0.001);
+    sendMessageToServer(message);// Envoie du message test sur le nouveau port                                                            
     std::cout << "Message 'T' envoyé au serveur sur le port " << received_port << ".\n";
 
     createBindedSocket();
