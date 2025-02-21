@@ -13,7 +13,7 @@
 
 #include "joueur.hpp" 
 #include "client.hpp"
-#define NB_JOUEUR 2
+#define NB_JOUEUR 1
 
 class Partie {
     public:
@@ -31,6 +31,7 @@ class Partie {
         void getEvent(); 
         void update();
         void renderWindow();
+        void affichageConnexion(Client& client);
 
     private:
         bool Zpressed = false;
@@ -47,6 +48,7 @@ class Partie {
         int nbJoueur;
         int port_actuel;
         int joueur_courant;
+        bool serverPret;
 };
 
 #endif

@@ -18,7 +18,6 @@ void Client::createSocket(){
 }
 
 void Client::createBindedSocket(){
-    //std::cout << "TEEEEEEEEEEEEEEEESSSSTTTT" << std::endl;
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     
@@ -46,8 +45,6 @@ void Client::createBindedSocket(){
     std::cout << "Socket créée et bindée sur le port " << num_port << std::endl;
 }
 
-
-
 // Fonction pour envoyer un message UDP au serveur
 void Client::sendMessageToServer(const std::string& message) {
     createSocket();
@@ -55,103 +52,63 @@ void Client::sendMessageToServer(const std::string& message) {
     close(sockfd);
 }
 
-void Client::initconnexion(){
+void Client::initconnexion() {
+    etatConnexion = -1; //connexion avec le server
     int received_port;
     std::string message = "C";
     socklen_t len = sizeof(servaddr);
-    sendMessageToServer(message);                                                              //envoie du premier messsage sur le port 3000
+
+    sendMessageToServer(message);  // Envoi du premier message sur le port 3000
     std::cout << "ICI Message 'C' envoyé au serveur.\n";
 
+    num_port = SERVER_PORT; //3000
     createBindedSocket();
+
     int n = recvfrom(sockfd, &received_port, sizeof(received_port), 0, (struct sockaddr*)&servaddr, &len); // Réception du nouveau port du serveur
     if (n < 0) {
         perror("Erreur lors de la réception du port");
         close(sockfd);
         return;
     }
-    close(sockfd); 
+    close(sockfd);
 
-    received_port = ntohl(received_port);
-    num_port = received_port;
-    std::cout << "Nouveau port reçu du serveur : " << received_port << "\n";
-    message = "T";          
+    num_port = ntohs(received_port);
+    std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
+
     sleep(0.001);
-    sendMessageToServer(message);// Envoie du message test sur le nouveau port                                                            
-    std::cout << "Message 'T' envoyé au serveur sur le port " << received_port << ".\n";
+    sendMessageToServer("T");  // Envoi du message test sur le nouveau port
+    std::cout << "Message 'T' envoyé au serveur sur le port " << num_port << ".\n";
 
     createBindedSocket();
     char buffer[1024];
-    n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&servaddr, &len); // Attente de la confirmation du serveur
-    if (n < 0) { 
+
+    // Attente de la confirmation du serveur
+    n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&servaddr, &len);
+    if (n < 0) {
+        perror("Erreur lors de la réception de la confirmation");
+        close(sockfd);
+        return;
+    }
+    buffer[n] = '\0';
+    std::cout << "Confirmation du serveur : " << buffer << "\n";
+    etatConnexion = 0; //attente des joueurs
+
+    // Attente du message "P" du serveur
+    n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&servaddr, &len);
+    if (n < 0) {
         perror("Erreur lors de la réception de la confirmation");
         close(sockfd);
         return;
     }
 
-    buffer[n] = '\0';
-    std::cout << "Confirmation du serveur : " << buffer << "\n";
-    
-    close(sockfd);
-} 
-
-void Client::attendServerPret() {
-    struct sockaddr_in serverAddr, clientAddr;
-    socklen_t addrLen = sizeof(serverAddr);
-    char msg_pret[1024] = {0};  
-
-    // Si le socket n'est pas déjà créé, le créer
-    if (sockfd <= 0) {
-        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (sockfd < 0) {
-            std::cerr << "❌ Erreur: Impossible de créer le socket UDP. Code erreur: " << errno << " (" << strerror(errno) << ")\n";
-            return;
-        }
-        std::cout << "✅ Socket UDP créé avec succès: " << sockfd << std::endl;
-
-        // Configuration de l'adresse du client
-        memset(&clientAddr, 0, sizeof(clientAddr));
-        clientAddr.sin_family = AF_INET;
-        clientAddr.sin_addr.s_addr = INADDR_ANY;  
-        clientAddr.sin_port = htons(num_port);
-
-        int opt = 1;
-        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-        // Liaison du socket au port
-        if (bind(sockfd, (struct sockaddr*)&clientAddr, sizeof(clientAddr)) < 0) {
-            std::cerr << "❌ Erreur: Impossible de lier le socket. Code erreur: " << errno << " (" << strerror(errno) << ")\n";
-            close(sockfd);
-            sockfd = -1;  
-            return;
-        }
-        std::cout << "✅ Socket lié au port " << num_port << std::endl;
+    if (strcmp(buffer, "P") == 0) {
+        serverPret = true;
+        std::cout << "✅ Serveur prêt !\n";
     }
 
-    std::cout << "🟡 En attente du serveur... sur le port" << num_port<<std::endl;
-
-    while (!serverPret) {
-        if (sockfd < 0) {
-            std::cerr << "❌ ERREUR: `sockfd` est invalide avant `recvfrom()`\n";
-            return;
-        }
-
-        int n = recvfrom(sockfd, msg_pret, sizeof(msg_pret) - 1, 0, (struct sockaddr*)&serverAddr, &addrLen);
-        if (n > 0) {
-            msg_pret[n] = '\0';  
-            if (strcmp(msg_pret, "P") == 0) {
-                serverPret = true;
-                std::cout << "✅ Serveur prêt !\n";
-            }
-        } else {
-            std::cerr << "❌ Erreur lors de la réception du message du serveur\n";
-            std::cerr << "Code erreur: " << errno << " (" << strerror(errno) << ")\n";
-        }
-    }
-
+    etatConnexion = 1; // server Prêt
     close(sockfd);
-    sockfd = -1;  
 }
-
 
 void Client::sendData(){
     char buffer[1024];
@@ -216,4 +173,8 @@ void Client::udpdateData(Joueur& joueur){
         std::cerr << "Message non valide reçu : " << buffer << std::endl;
     }
 
+}
+
+int Client::get_etatConnexion(){
+    return etatConnexion;
 }

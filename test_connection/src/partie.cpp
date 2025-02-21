@@ -145,52 +145,99 @@ int Partie::Solo() {
 }
 
 int Partie::multiJoueur() {
+    joueur_courant = 0;
     Client client;
-    client.initconnexion();
 
-    if (window) {
+    std::thread connexionThread(&Client::initconnexion, &client);
+
+    affichageConnexion(client);
+
+    // Arrêter le thread proprement
+    if (connexionThread.joinable()) {
+        connexionThread.join();
+    }
+
+    return 0;
+}
+
+void Partie::affichageConnexion(Client& client){
+    if (window) {  // Pour libérer la mémoire si une fenêtre existait déjà
         delete window;
     }
     
-    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "SOLO");
+    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "MULTI");
     windowSize = window->getSize();
-    window->setMouseCursorVisible(false);
-    
-    joueur_courant = 0;
 
-    if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
-        std::cerr << "Erreur lors du chargement du curseur !\n";
-        return -1;
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("Image/fond.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
     }
 
-    cursorSprite.setTexture(textureCurseur);
-    cursorSprite.setScale(0.12f, 0.12f);
-    // Thread pour attendre la confirmation du serveur
-    std::atomic<bool> serverReady = false;
-    std::thread waitServerThread([&]() {
-        client.attendServerPret();
-        serverReady = true;
-    });
+    sf::Sprite backgroundSprite;
+    backgroundSprite.setTexture(backgroundTexture);
+    backgroundSprite.setScale(
+        static_cast<float>(window->getSize().x) / backgroundSprite.getGlobalBounds().width,
+        static_cast<float>(window->getSize().y) / backgroundSprite.getGlobalBounds().height
+    );
 
-    std::thread receiveThread;
+    // Chargement de la police
+    sf::Font font;
+    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+        std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
+    }
 
+    // Création du texte d'affichage
+    sf::Text statusText;
+    statusText.setFont(font);
+    statusText.setCharacterSize(50);
+    statusText.setFillColor(sf::Color::White);
+    statusText.setStyle(sf::Text::Bold);
+
+    // Afficher "Connexion avec le serveur..." pendant 1 seconde avant la boucle principale
+    statusText.setString("Connexion avec le serveur...");
+
+    // Centrer le texte au milieu de la fenêtre
+    sf::FloatRect textBounds = statusText.getLocalBounds();
+    statusText.setPosition(
+        (windowSize.x - textBounds.width) / 2.0f,
+        (windowSize.y - textBounds.height) / 2.0f
+    );
+
+    // Affichage initial
+    window->clear();
+    window->draw(backgroundSprite);
+    window->draw(statusText);
+    window->display();
+
+    // Pause de 1 seconde
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     while (window->isOpen()) {
-        renderWindow();
-        client.sendData();
-
-        // Lancer le thread receiveThread une seule fois quand le serveur est prêt
-        if (serverReady && !receiveThread.joinable()) {
-            std::cout << "Serveur prêt, démarrage du thread de réception" << std::endl;
-            receiveThread = std::thread(&Client::udpdateData, &client, std::ref(client.joueur));
+        sf::Event event;
+        while (window->pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window->close();
+            }
         }
-    }
 
-    // Nettoyage des threads
-    waitServerThread.join();
-    if (receiveThread.joinable()) {
-        receiveThread.join();
-    }
+        // Mettre à jour le texte en fonction de l'état de connexion
+        if (client.get_etatConnexion() == -1) {
+            statusText.setString("Connexion avec le serveur...");
+        } else if (client.get_etatConnexion() == 0) {
+            statusText.setString("En attente des joueurs...");
+        } else if (client.get_etatConnexion() == 1) {
+            window->close();
+        }
 
-    return 2;
+        // Centrer le texte au milieu de la fenêtre
+        sf::FloatRect textBounds = statusText.getLocalBounds();
+        statusText.setPosition(
+            (windowSize.x - textBounds.width) / 2.0f,
+            (windowSize.y - textBounds.height) / 2.0f
+        );
+
+        window->clear();
+        window->draw(backgroundSprite);
+        window->draw(statusText);
+        window->display();
+    }
 }
-

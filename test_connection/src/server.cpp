@@ -22,20 +22,17 @@ void Server::createSocketConnexion(){
     }
     memset(&clientaddr, 0, sizeof(clientaddr));
     clientaddr.sin_family = AF_INET;
-    clientaddr.sin_port = htons(SERVER_PORT);
+    clientaddr.sin_port = htons(port_connexion);
     clientaddr.sin_addr.s_addr = INADDR_ANY;
+    std::cout << "Socket créée pret à l'envoi sur le port " << port_connexion << std::endl;
 }
 
 void Server::createBindedSocket(){
-    //std::cout << "TEEEEEEEEEEEEEEEESSSSTTTT" << std::endl;
-
     sockfdconnexion = socket(AF_INET, SOCK_DGRAM, 0);
-    
     if (sockfdconnexion < 0) {
         perror("Échec de la création du socket");
         return;
     }
-
     int opt = 1;
     setsockopt(sockfdconnexion, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -43,7 +40,7 @@ void Server::createBindedSocket(){
     memset(&servaddr, 0, sizeof(servaddr));
     clientaddr.sin_family = AF_INET;
     clientaddr.sin_port = htons(port_connexion);
-    clientaddr.sin_addr.s_addr = inet_addr(SERVER_IP); // Accepter les connexions de n'importe quelle adresse
+    clientaddr.sin_addr.s_addr = INADDR_ANY; // Accepter les connexions de n'importe quelle adresse
 
     // Liaison du socket au port spécifié
     if (bind(sockfdconnexion, (struct sockaddr*)&clientaddr, sizeof(clientaddr)) < 0) {
@@ -51,7 +48,6 @@ void Server::createBindedSocket(){
         close(sockfdconnexion);
         return;
     }
-
     std::cout << "Socket créée et bindée sur le port " << port_connexion << std::endl;
 }
 
@@ -146,13 +142,13 @@ void Server::connexion() {
                 continue;
             }
 
-            port_connexion = 3000 + partie.get_nbJoueur(); // sur les port 3001 à 3007 si 6 joueurs
-            int port_to_send = htonl(port_connexion);
+            int port_to_send = htons(3000 + partie.get_nbJoueur()); //ports 3001 à 3007 si 6 joueurs
             createSocketConnexion();
             sendto(sockfdconnexion, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&clientaddr, len);
             close(sockfdconnexion);
-            std::cout << "Port " << port_connexion << " attribué au client.\n";
+            std::cout << "Port " << port_connexion << " envoyé au client\n";
 
+            port_connexion = 3000 + partie.get_nbJoueur(); 
             createBindedSocket();
 
             // Attente du message "T"
@@ -169,12 +165,13 @@ void Server::connexion() {
                 std::cout << "Client validé sur le port " << port_connexion << ".\n";
                 std::string confirmation = "Connexion réussie !";
                 createSocketConnexion();
-                sendto(port_connexion, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&clientaddr, len);
+                sendto(sockfdconnexion, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&clientaddr, len);
             } else {
                 std::cout << "Échec d'initialisation avec le client\n";
             }
 
             close(sockfdconnexion);
+            std::cout<<"Nombre de joueur : "<<partie.get_nbJoueur()<<std::endl;
         } else {
             std::cout << "En attente du bon nombre de joueurs...\n";
         }
@@ -184,19 +181,15 @@ void Server::connexion() {
 
     sleep(1);
     for (int i = 0; i < NB_JOUEUR; i++) {
-        struct sockaddr_in sendaddr;
-        memset(&sendaddr, 0, sizeof(sendaddr));
-        sendaddr.sin_family = AF_INET;
-        sendaddr.sin_addr.s_addr = inet_addr(SERVER_IP);  
-        sendaddr.sin_port = htons(partie.joueur[i].port);
-
-        int sent = sendto(sockfdconnexion, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&sendaddr, sizeof(sendaddr));
-
+        port_connexion = partie.joueur[i].port;
+        createSocketConnexion();
+        int sent = sendto(sockfdconnexion, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
         if (sent < 0) {
             perror("Erreur lors de l'envoi du message au joueur");
         } else {
-            std::cout << "Message 'P' envoyé au joueur " << partie.joueur[i].id  << " sur le port " << partie.joueur[i].port << ".\n";
+            std::cout << "Message 'P' envoyé au joueur " << partie.joueur[i].id  << " sur le port " << port_connexion << ".\n";
         }
+        close(sockfdconnexion);
     }
 }
 

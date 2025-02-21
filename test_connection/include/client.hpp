@@ -29,11 +29,12 @@ class Client{
         void udpdateData(Joueur& joueur);
         void createSocket();
         void createBindedSocket();
-        void attendServerPret();
+        int get_etatConnexion();
 
     private :
         int sockfd;
         struct sockaddr_in servaddr, cliaddr;
         bool serverPret = false;
+        int etatConnexion;
 };
 #endif
