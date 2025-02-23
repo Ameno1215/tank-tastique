@@ -44,6 +44,7 @@ void Partie::getEvent() { //par convention le joueur qui joue est joueur[0], pou
 
     joueur[0].mousePos = sf::Mouse::getPosition(*window); //recupération de la position de la souris
     joueur[0].worldMousePos = window->mapPixelToCoords(joueur[0].mousePos);
+    
 
     sf::Event event;
     while (window->pollEvent(event)) {
@@ -119,7 +120,7 @@ void Partie::sendData(){
     char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
     int test = 1;
 
-    sprintf(buffer, "%d %d %d %d %d %d %d %d",0, joueur[0].Zpressed ? 1 : 0, joueur[0].Qpressed ? 1 : 0, joueur[0].Spressed ? 1 : 0, joueur[0].Dpressed ? 1 : 0, static_cast<int>(joueur[0].mousePos.x), static_cast<int>(joueur[0].mousePos.y), test);
+    sprintf(buffer, "%d %d %d %d %d %d %d %d",0, joueur[0].Zpressed ? 1 : 0, joueur[0].Qpressed ? 1 : 0, joueur[0].Spressed ? 1 : 0, joueur[0].Dpressed ? 1 : 0, static_cast<int>(joueur[0].worldMousePos.x), static_cast<int>(joueur[0].worldMousePos.y), test);
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
         //perror("❌ Erreur lors de l'envoi des données");

@@ -156,7 +156,7 @@ void Server::recevoirEvent() {
     partie.joueur[i].Qpressed = (q != 0);
     partie.joueur[i].Spressed = (s != 0);
     partie.joueur[i].Dpressed = (d != 0);
-    partie.joueur[i].mousePos = sf::Vector2i(mouseX, mouseY);
+    partie.joueur[i].worldMousePos = sf::Vector2f(mouseX, mouseY);
 
     // Affichage des données reçues pour débogage
     std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
