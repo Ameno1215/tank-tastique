@@ -19,26 +19,26 @@ void Client::createSocket(){
 
 void Client::createBindedSocket(){
 
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    recieve_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     
-    if (sockfd < 0) {
+    if (recieve_sockfd < 0) {
         perror("Échec de la création du socket");
         return;
     }
 
     int opt = 1;
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    setsockopt(recieve_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     // Configuration de l'adresse du serveur
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(num_port);
-    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP); // Accepter les connexions de n'importe quelle adresse
+    memset(&recieve_servaddr, 0, sizeof(recieve_servaddr));
+    recieve_servaddr.sin_family = AF_INET;
+    recieve_servaddr.sin_port = htons(num_port);
+    recieve_servaddr.sin_addr.s_addr = inet_addr(SERVER_IP); // Accepter les connexions de n'importe quelle adresse
 
     // Liaison du socket au port spécifié
-    if (bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+    if (bind(recieve_sockfd, (struct sockaddr*)&recieve_servaddr, sizeof(recieve_servaddr)) < 0) {
         perror("Échec du bind du socket");
-        close(sockfd);
+        close(recieve_sockfd);
         return;
     }
 
@@ -57,20 +57,20 @@ void Client::initconnexion() {
     int received_port;
     std::string message = "C";
     socklen_t len = sizeof(servaddr);
-
+    socklen_t recieve_len = sizeof(recieve_servaddr);
     sendMessageToServer(message);  // Envoi du premier message sur le port 3000
     std::cout << "ICI Message 'C' envoyé au serveur.\n";
 
     num_port = SERVER_PORT; //3000
     createBindedSocket();
 
-    int n = recvfrom(sockfd, &received_port, sizeof(received_port), 0, (struct sockaddr*)&servaddr, &len); // Réception du nouveau port du serveur
+    int n = recvfrom(recieve_sockfd, &received_port, sizeof(received_port), 0, (struct sockaddr*)&recieve_servaddr, &recieve_len); // Réception du nouveau port du serveur
     if (n < 0) {
         perror("Erreur lors de la réception du port");
-        close(sockfd);
+        close(recieve_sockfd);
         return;
     }
-    close(sockfd);
+    close(recieve_sockfd);
 
     num_port = ntohs(received_port);
     std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
@@ -83,10 +83,10 @@ void Client::initconnexion() {
     char buffer[1024];
 
     // Attente de la confirmation du serveur
-    n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&servaddr, &len);
+    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);
     if (n < 0) {
         perror("Erreur lors de la réception de la confirmation");
-        close(sockfd);
+        close(recieve_sockfd);
         return;
     }
     buffer[n] = '\0';
@@ -94,10 +94,10 @@ void Client::initconnexion() {
     etatConnexion = 0; //attente des joueurs
 
     // Attente du message "P" du serveur
-    n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&servaddr, &len);
+    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);
     if (n < 0) {
         perror("Erreur lors de la réception de la confirmation");
-        close(sockfd);
+        close(recieve_sockfd);
         return;
     }
 
@@ -105,9 +105,9 @@ void Client::initconnexion() {
         serverPret = true;
         std::cout << "✅ Serveur prêt !\n";
     }
-
+    
     etatConnexion = 1; // server Prêt
-    close(sockfd);
+    close(recieve_sockfd);
 }
 
 void Client::sendData(){

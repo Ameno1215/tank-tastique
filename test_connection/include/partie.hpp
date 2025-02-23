@@ -21,27 +21,29 @@ class Partie {
         ~Partie(); // Destructeur pour libérer la mémoire
 
         Joueur joueur[6];
+        Client client;
+
+        Joueur& joueur0 = client.joueur; //lien entre les deux
         
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
 
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
-        int multiJoueur();
+        
         int Solo();
         void getEvent(); 
         void update();
         void renderWindow();
-        void sendData(Client& client);
-        void affichageConnexion(Client& client);
-
+        
+        int multiJoueur();
+        void affichageConnexion();
+        void sendData();
+        void recieveData();
+        void updatefromUDP();
+        int joueur_courant;
+        
     private:
-        bool Zpressed = false;
-        bool Spressed = false;        
-        bool Qpressed = false;
-        bool Dpressed = false;
-        sf::Vector2i mousePos;
-
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
         sf::Vector2u windowSize;
         sf::Sprite cursorSprite;
@@ -49,7 +51,6 @@ class Partie {
 
         int nbJoueur;
         int port_actuel;
-        int joueur_courant;
         bool serverPret;
 };
 

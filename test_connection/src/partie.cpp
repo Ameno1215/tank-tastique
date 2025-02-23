@@ -23,6 +23,7 @@ bool Partie::ajouteJoueur() {
         joueur[nbJoueur].port = port_actuel;
         joueur[nbJoueur].id = nbJoueur; 
         nbJoueur++;
+        std::cout << "nb de joueur :"<< nbJoueur;
         return true;
     } else {
         std::cout << "Nombre maximal de joueurs atteint !" << std::endl;
@@ -38,11 +39,12 @@ int Partie::get_nbJoueur(){
     return nbJoueur;
 }
 
-void Partie::getEvent() {
+void Partie::getEvent() { //par convention le joueur qui joue est joueur[0], pourrait etre rendu dynamique avec joueur[joueurcourant] mais blc c'est les event, plutot adapter joueurcourant en numjoueur
     if (!window) return;
 
-    mousePos = sf::Mouse::getPosition(*window); //recupération de la position de la souris
-   
+    joueur[0].mousePos = sf::Mouse::getPosition(*window); //recupération de la position de la souris
+    joueur[0].worldMousePos = window->mapPixelToCoords(joueur[0].mousePos);
+
     sf::Event event;
     while (window->pollEvent(event)) {
         if (event.type == sf::Event::Closed)
@@ -50,45 +52,42 @@ void Partie::getEvent() {
     }
 
     // Réinitialiser les entrées clavier
-    Zpressed = Spressed = Qpressed = Dpressed = false;
+    joueur[0].Zpressed = joueur[0].Spressed = joueur[0].Qpressed = joueur[0].Dpressed = false;
 
     if (window->hasFocus()) {                   // récupération de touche pressée
-        Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
-        Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
-        Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
-        Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+        joueur[0].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
+        joueur[0].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
+        joueur[0].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
+        joueur[0].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
     }
 }
 
 void Partie::update() {
 
     tank& mon_tank = joueur[joueur_courant].Tank; 
-    cursorSprite.setPosition(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
 
-    sf::Vector2f worldMousePos = window->mapPixelToCoords(mousePos);
-    sf::Vector2f dir = worldMousePos - mon_tank.getTourelleSprite().getPosition();  
-
-    sf::Vector2f movement(0.f, 0.f); 
-
+    sf::Vector2f dir = joueur[joueur_courant].worldMousePos - mon_tank.getTourelleSprite().getPosition();  
+    
     float speed = mon_tank.get_vit();
     float rotation = mon_tank.get_ori();
     float vit_canon = mon_tank.get_vit_canon();
 
-    if (Zpressed) {
-        deplacement_verticale(mon_tank, movement, rotation, mon_tank.getBaseSprite(), speed);
-        deplacement_verticale(mon_tank, movement, rotation, mon_tank.getTourelleSprite(), speed);
+
+    if (joueur[0].Zpressed) {
+        deplacement_verticale(mon_tank, mon_tank.get_ori(), speed);
+        deplacement_verticale(mon_tank, rotation, speed);
     }
 
-    if (Spressed) {
-        deplacement_verticale(mon_tank, movement, rotation, mon_tank.getBaseSprite(), -speed);
-        deplacement_verticale(mon_tank, movement, rotation, mon_tank.getTourelleSprite(), -speed);
+    if (joueur[0].Spressed) {
+        deplacement_verticale(mon_tank, rotation, -speed);
+        deplacement_verticale(mon_tank, rotation, -speed);
     }
 
-    if (Qpressed)
-        deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, 0.2);
+    if (joueur[0].Qpressed)
+        deplacement_rotation(mon_tank, &rotation, 0.2);
     
-    if (Dpressed)
-        deplacement_rotation(mon_tank, mon_tank.getBaseSprite(), &rotation, -0.2);
+    if (joueur[0].Dpressed)
+        deplacement_rotation(mon_tank, &rotation, -0.2);
     
     // Mise à jour de l'angle de la tourelle
     float angle_actu = mon_tank.getTourelleSprite().getRotation();
@@ -102,10 +101,12 @@ void Partie::update() {
     if ( mon_tank.get_x()-mon_tank.getBaseSprite().getLocalBounds().width / 2 == windowSize.x){
         mon_tank.set_x(0);
     }
+    std::cout<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<std::endl;
 }
 
 void Partie::renderWindow() {
     tank& mon_tank = joueur[joueur_courant].Tank;
+    cursorSprite.setPosition(static_cast<float>(joueur[0].mousePos.x), static_cast<float>(joueur[0].mousePos.y));
     window->clear();
     window->draw(mon_tank.getBaseSprite());
     window->draw(mon_tank.getTourelleSprite());
@@ -113,19 +114,51 @@ void Partie::renderWindow() {
     window->display();
 }
 
-void Partie::sendData(Client& client){
+void Partie::sendData(){
 
     char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
     int test = 1;
 
-    sprintf(buffer, "%d %d %d %d %d %d %d",Zpressed ? 1 : 0, Qpressed ? 1 : 0, Spressed ? 1 : 0, Dpressed ? 1 : 0, static_cast<int>(mousePos.x), static_cast<int>(mousePos.y), test);
-    client.num_port = 3001;
+    sprintf(buffer, "%d %d %d %d %d %d %d %d",0, joueur[0].Zpressed ? 1 : 0, joueur[0].Qpressed ? 1 : 0, joueur[0].Spressed ? 1 : 0, joueur[0].Dpressed ? 1 : 0, static_cast<int>(joueur[0].mousePos.x), static_cast<int>(joueur[0].mousePos.y), test);
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
-        perror("❌ Erreur lors de l'envoi des données");
+        //perror("❌ Erreur lors de l'envoi des données");
+        return;
     } else {
         std::cout << "📨 Données envoyées : " << buffer << std::endl;
     }
+}
+
+void Partie::recieveData(){
+    char buffer[1024];
+    tank tankjoueur0 = joueur[joueur_courant].Tank;
+
+    socklen_t addr_len = sizeof(client.recieve_servaddr);
+    ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    float x,y,ori, oritourelle;
+    sscanf(buffer, "%f %f %f %f", &x, &y, &ori, &oritourelle);
+    tankjoueur0.set_x(x);
+    tankjoueur0.set_y(y);
+    tankjoueur0.set_ori(ori);
+    tankjoueur0.getTourelleSprite().setRotation(oritourelle);
+    if (n < 0) {
+        perror("Erreur lors de la réception de la confirmation");
+        close(client.recieve_sockfd);
+        return;
+    }
+    // Affichage du buffer reçu
+    printf("Buffer reçu : %s\n", buffer);
+
+}
+
+void Partie::updatefromUDP() {
+
+    tank& mon_tank = joueur[joueur_courant].Tank; 
+    cursorSprite.setPosition(static_cast<float>(joueur[0].mousePos.x), static_cast<float>(joueur[0].mousePos.y));  //le server n'y touche pas
+    mon_tank.set_ori(client.new_ori);
+    mon_tank.set_x(client.new_x);
+    mon_tank.set_y(client.new_y);
+    mon_tank.getTourelleSprite().setRotation(client.new_angle);
 }
 
 int Partie::Solo() {
@@ -160,11 +193,10 @@ int Partie::Solo() {
 
 int Partie::multiJoueur() {
     joueur_courant = 0;
-    Client client;
+    
+    std::thread connexionThread(&Client::initconnexion, &this->client);
 
-    std::thread connexionThread(&Client::initconnexion, &client);
-
-    affichageConnexion(client);
+    affichageConnexion();
 
     // Arrêter le thread proprement
     if (connexionThread.joinable()) {
@@ -175,7 +207,7 @@ int Partie::multiJoueur() {
         delete window;
     }
     
-    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "SOLO");
+    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "MULTIJOUEUR");
     windowSize = window->getSize();
     window->setMouseCursorVisible(false);
     
@@ -189,14 +221,15 @@ int Partie::multiJoueur() {
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
 
+    client.num_port = 3000;
     client.createSocket();
+    client.num_port = 3001;
+    client.createBindedSocket();
     // Boucle de jeu en multi
     while (window->isOpen()) {
         getEvent();
-        sendData(client);
-        update(); //pour voir
-        //sendData();
-        //recievData();
+        sendData();
+        recieveData();
         renderWindow();
     }
 
@@ -204,7 +237,7 @@ int Partie::multiJoueur() {
     return 0;
 }
 
-void Partie::affichageConnexion(Client& client){
+void Partie::affichageConnexion(){
     if (window) {  // Pour libérer la mémoire si une fenêtre existait déjà
         delete window;
     }

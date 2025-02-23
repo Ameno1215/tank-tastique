@@ -10,7 +10,7 @@ SERVER_EXEC = $(BIN_DIR)/server
 
 # Compilateur et options
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -I$(INCLUDE_DIR)
+CXXFLAGS = -g -Wall -Wextra -std=c++17 -I$(INCLUDE_DIR)
 
 # Flags SFML (ajustez si nécessaire)
 SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system

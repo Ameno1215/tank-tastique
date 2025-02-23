@@ -26,6 +26,12 @@ public :
     int port;
     int id;
     std::string pseudo;
+    bool Zpressed = false;
+    bool Spressed = false;        
+    bool Qpressed = false;
+    bool Dpressed = false;
+    sf::Vector2i mousePos;
+    sf::Vector2f worldMousePos;
 };
 
 #endif

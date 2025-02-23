@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include "tank.hpp"
 
-void deplacement_verticale(tank& mon_tank, sf::Vector2f& movement, float rotation, sf::Sprite& sprite, float speed);
-void deplacement_rotation(tank& mon_tank, sf::Sprite& sprite, float* rotation, float indentation);
+void deplacement_verticale(tank& mon_tank, float rotation, float speed);
+void deplacement_rotation(tank& mon_tank, float* rotation, float indentation);
 
 #endif // DEPLACEMENT_HPP
