@@ -173,10 +173,10 @@ void Server::sendToClient(){
     char buffer_processed_data[100];  // Par exemple, assez grand pour 4 entiers et quelques espaces
 
     // Récupère les données du tank du joueur 0
-    tank tankjoueur0 = partie.joueur[0].Tank;
+    tank& tankjoueur0 = partie.joueur[0].Tank;
 
     // Formate les données dans le buffer
-    sprintf(buffer_processed_data, "%f %f %f %f", tankjoueur0.get_x(), tankjoueur0.get_y(), tankjoueur0.get_ori(), tankjoueur0.getTourelleSprite().getRotation());
+    sprintf(buffer_processed_data, "%f %f %f %f %d", tankjoueur0.get_x(), tankjoueur0.get_y(), tankjoueur0.get_ori(), tankjoueur0.getTourelleSprite().getRotation(), 1);
 
     // Envoi des données
     int n = sendto(send_sockfd, buffer_processed_data, strlen(buffer_processed_data), 0, 

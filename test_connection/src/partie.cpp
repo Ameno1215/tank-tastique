@@ -101,7 +101,7 @@ void Partie::update() {
     if ( mon_tank.get_x()-mon_tank.getBaseSprite().getLocalBounds().width / 2 == windowSize.x){
         mon_tank.set_x(0);
     }
-    std::cout<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<std::endl;
+    std::cout<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
 }
 
 void Partie::renderWindow() {
@@ -131,7 +131,7 @@ void Partie::sendData(){
 
 void Partie::recieveData(){
     char buffer[1024];
-    tank tankjoueur0 = joueur[joueur_courant].Tank;
+    tank& tankjoueur0 = joueur[joueur_courant].Tank;  // Utilisation d'une référence
 
     socklen_t addr_len = sizeof(client.recieve_servaddr);
     ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
@@ -148,8 +148,8 @@ void Partie::recieveData(){
     }
     // Affichage du buffer reçu
     printf("Buffer reçu : %s\n", buffer);
-
 }
+
 
 void Partie::updatefromUDP() {
 
