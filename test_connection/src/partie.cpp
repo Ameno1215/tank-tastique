@@ -23,7 +23,7 @@ bool Partie::ajouteJoueur() {
         joueur[nbJoueur].port = port_actuel;
         joueur[nbJoueur].id = nbJoueur; 
         nbJoueur++;
-        std::cout << "nb de joueur :"<< nbJoueur;
+        std::cout << "joueur ajouté nb de joueur :"<< nbJoueur;
         return true;
     } else {
         std::cout << "Nombre maximal de joueurs atteint !" << std::endl;
@@ -39,7 +39,8 @@ int Partie::get_nbJoueur(){
     return nbJoueur;
 }
 
-void Partie::getEvent() { //par convention le joueur qui joue est joueur[0], pourrait etre rendu dynamique avec joueur[joueurcourant] mais blc c'est les event, plutot adapter joueurcourant en numjoueur
+void Partie::getEvent() { 
+
     if (!window) return;
 
     sf::Event event;
@@ -51,11 +52,10 @@ void Partie::getEvent() { //par convention le joueur qui joue est joueur[0], pou
     // Réinitialiser les entrées clavier
     joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = false;
 
-    if (window->hasFocus()) {                   // récupération de touche pressée
-        joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window); //recupération de la position de la souris
-        joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);
-    
-        joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
+    if (window->hasFocus()) { //uniquement si on est sur la fenetre 
+        joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
+        joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);   //la mettre dans le repère de la fenetre (je crois)
+        joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);                      //recuperation des touches pressées
         joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
         joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
         joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
@@ -64,7 +64,7 @@ void Partie::getEvent() { //par convention le joueur qui joue est joueur[0], pou
 
 void Partie::update() {
 
-    tank& mon_tank = joueur[joueur_courant].Tank; 
+    tank& mon_tank = joueur[joueur_courant].Tank; //pour pas que ca rallonge le code
 
     sf::Vector2f dir = joueur[joueur_courant].worldMousePos - mon_tank.getTourelleSprite().getPosition();  
     
@@ -88,81 +88,79 @@ void Partie::update() {
     if (joueur[joueur_courant].Dpressed)
         deplacement_rotation(mon_tank, &rotation, -1.2);
     
-    // Mise à jour de l'angle de la tourelle
+    // Mise à jour de l'angle de la tourelle truc à Joshua
     float angle_actu = mon_tank.getTourelleSprite().getRotation();
     float angle_voulu = atan2(dir.y, dir.x) * 180 / M_PI - 90;
     float diff = angle_voulu - angle_actu;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
     
-    mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon);
+    mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon); //rotation tourelle
 
-    if ( mon_tank.get_x()-mon_tank.getBaseSprite().getLocalBounds().width / 2 == windowSize.x){
-        mon_tank.set_x(0);
-    }
-    std::cout<<"Joueur "<<joueur_courant<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
+    //message de debugage
+    //std::cout<<"Joueur "<<joueur_courant<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
 }
 
 void Partie::renderWindow() {
+
     window->clear();
+    //affichage souris
     cursorSprite.setPosition(static_cast<float>(joueur[joueur_courant].mousePos.x), static_cast<float>(joueur[joueur_courant].mousePos.y));
+    window->draw(cursorSprite);
+
+    //affichage de chaque tank
     for(int i = 0; i<nbJoueur; i++){
         tank& mon_tank = joueur[i].Tank;
         std::cout<<"Draw tank :"<<i<<std::endl;
         window->draw(mon_tank.getBaseSprite());
         window->draw(mon_tank.getTourelleSprite());
     }
-    window->draw(cursorSprite);
+
+    //affchage des missiles 
+    //........
+    
     window->display();
 }
 
 void Partie::sendData(){
 
     char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
-    int test = 1;
+    int test = 1;      // valeur à mettre par précaution à la fin du buffer
 
     sprintf(buffer, "%d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), test);
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
-        //perror("❌ Erreur lors de l'envoi des données");
+        perror("❌ Erreur lors de l'envoi des données");
         return;
     } else {
         std::cout << "📨 Données envoyées : " << buffer << std::endl;
-        //std::cout << "NB joueur initalisé du client : " << nbJoueur << std::endl;
-        //std::cout << "ID client : " << joueur_courant << std::endl;
     }
 }
 
 void Partie::recieveData(){
+
     char buffer[1024];
-    
     socklen_t addr_len = sizeof(client.recieve_servaddr);
+
     ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
-    int i;
+
+    int indice_joueur;
     float x,y,ori, oritourelle;
-    sscanf(buffer, "%d %f %f %f %f",&i, &x, &y, &ori, &oritourelle);
-    tank& tankjoueur0 = joueur[i].Tank;  // Utilisation d'une référence
-    tankjoueur0.set_x(x);
-    tankjoueur0.set_y(y);
-    tankjoueur0.set_ori(ori);
-    tankjoueur0.getTourelleSprite().setRotation(oritourelle);
+    sscanf(buffer, "%d %f %f %f %f",&indice_joueur, &x, &y, &ori, &oritourelle);
+
+    tank& tankjoueur = joueur[indice_joueur].Tank;  // Utilisation d'une référence
+    tankjoueur.set_x(x);
+    tankjoueur.set_y(y);
+    tankjoueur.set_ori(ori);
+    tankjoueur.getTourelleSprite().setRotation(oritourelle);
+
     if (n < 0) {
         perror("Erreur lors de la réception de la confirmation");
         close(client.recieve_sockfd);
         return;
     }
     // Affichage du buffer reçu
-    printf("Buffer reçu : %s du port %d\n", buffer, client.num_port);
-}
-
-void Partie::updatefromUDP() {
-
-    tank& mon_tank = joueur[joueur_courant].Tank; 
-    cursorSprite.setPosition(static_cast<float>(joueur[0].mousePos.x), static_cast<float>(joueur[0].mousePos.y));  //le server n'y touche pas
-    mon_tank.set_ori(client.new_ori);
-    mon_tank.set_x(client.new_x);
-    mon_tank.set_y(client.new_y);
-    mon_tank.getTourelleSprite().setRotation(client.new_angle);
+    //printf("Buffer reçu : %s du port %d\n", buffer, client.num_port);
 }
 
 int Partie::Solo() {
@@ -233,20 +231,13 @@ int Partie::multiJoueur() {
 
     
     int numport = client.num_port;
-    client.num_port = 3000;
+    client.num_port = 3000;         //creation du port d'envoie sur le port 3000
     client.createSocket();
     client.num_port = numport;
-    client.createBindedSocket(); //sur numPort
+    client.createBindedSocket();    //creation du port d'écoute sur les ports de chaque client
     
     // Boucle de jeu en multi
-    int i = 0;
     while (window->isOpen()) {
-
-        if(i<10){
-            i++;
-        }
-        else i =0;
-        std::cout<<"boucle "<< i<<" \n";
         getEvent();
         sendData();
         recieveData();

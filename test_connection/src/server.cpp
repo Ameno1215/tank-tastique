@@ -134,23 +134,20 @@ void Server::recevoirEvent() {
     // Initialiser le buffer pour éviter des problèmes de lecture
     memset(buffer, 0, sizeof(buffer));
 
+    //recupère n'importe quel message sur le port 3000
     int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
     std::cout << "buffer recu " << buffer << " :\n";
-    if (receivedBytes < 0) {
+
+    if (receivedBytes < 0) {   //verifie
         std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
         return;
     }
 
-    int i, z, q, s, d, mouseX, mouseY; // Variables temporaires
+    //recupère les données 
+    int i, z, q, s, d, mouseX, mouseY; 
     int valuesRead = sscanf(buffer, "%d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &mouseX, &mouseY);
 
-    if (valuesRead != 7) {
-        std::cerr << "❌ Erreur de parsing des données reçues (sscanf a lu " << valuesRead << " valeurs)" << std::endl;
-        std::cerr << "Contenu du buffer : " << buffer << std::endl;
-        return;
-    }
-
-    // Mise à jour des touches et de la position de la souris
+    // Stockage des données dans le tableau de la partie
     partie.joueur[i].Zpressed = (z != 0);
     partie.joueur[i].Qpressed = (q != 0);
     partie.joueur[i].Spressed = (s != 0);
@@ -159,31 +156,29 @@ void Server::recevoirEvent() {
 
     // Affichage des données reçues pour débogage
     std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
-    std::cout << "Touches : Z=" << partie.joueur[i].Zpressed 
-              << " Q=" << partie.joueur[i].Qpressed 
-              << " S=" << partie.joueur[i].Spressed 
-              << " D=" << partie.joueur[i].Dpressed << std::endl;
-    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x 
-              << " Y=" << partie.joueur[i].worldMousePos.y << std::endl;
+    std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
+    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << std::endl;
 }
 
 void Server::sendToClient(){
-    char buffer_processed_data[100];  // Par exemple, assez grand pour 4 entiers et quelques espaces
-    for(int i = 0; i<NB_JOUEUR; i++){
-        // Récupère les données du tank du joueur 0
-        for(int j = 0; j<NB_JOUEUR; j++){
-            tank& tankjoueur = partie.joueur[j].Tank;
+    char buffer_processed_data[100];  
+    for(int i = 0; i<NB_JOUEUR; i++){   
 
-            // Formate les données dans le buffer
+        for(int j = 0; j<NB_JOUEUR; j++){
+
+            //recupère les tank/data processed de chaque joueur
+            tank& tankjoueur = partie.joueur[j].Tank;
             sprintf(buffer_processed_data, "%d %f %f %f %f %d", partie.joueur[j].id, tankjoueur.get_x(), tankjoueur.get_y(), tankjoueur.get_ori(), tankjoueur.getTourelleSprite().getRotation(), 1);
 
-            // Envoi des données
+            //les envoies à chaque autre client
             int n = sendto(sockfd[i], buffer_processed_data, strlen(buffer_processed_data), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
-                        
+            
+            //verifiacation
             if (n < 0) {
                 perror("❌ Erreur lors de l'envoi des données");
                 return;
             } else {
+                //debugage
                 //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
@@ -199,15 +194,22 @@ void Server::processEvent(){
 }
 
 void Server::init_send_fd(){
+
+    port_connexion = 3000;
+    createBindedSocket();
+
     std::cout << "Initialisation des sockfd et clientaddr de chaque client\n";
-    int recup = send_sockfd;
+
+    int recup = send_sockfd;              //pour ne pas tout casse
     int port = port_connexion;
+
     for(int i=0; i<NB_JOUEUR; i++){
         port_connexion = 3001 + i;
         createSocketConnexion();
         sockfd[i] = send_sockfd;
         client[i] = send_clientaddr;
     }
+
     send_sockfd = recup;
     port_connexion = port; 
     std::cout << "Fin de l'initialisation\n";
@@ -216,18 +218,6 @@ void Server::init_send_fd(){
 void Server::startServer() {
     
     connexion();  // Lancement de la gestion des connexions
-
-    partie.joueur[0].id = 0;
-    partie.joueur[0].port = 3001;
-    partie.joueur[0].pseudo = "joueur1";
-
-    partie.joueur[1].id = 1;
-    partie.joueur[1].port = 3002;
-    partie.joueur[1].pseudo = "joueur2";
-    port_connexion = 3000;
-    createBindedSocket();
-    port_connexion = 3001;
-    createSocketConnexion();
 
     init_send_fd();
 

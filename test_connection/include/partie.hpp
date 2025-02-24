@@ -13,7 +13,7 @@
 
 #include "joueur.hpp" 
 #include "client.hpp"
-#define NB_JOUEUR 4
+#define NB_JOUEUR 2
 
 class Partie {
     public:
@@ -31,16 +31,20 @@ class Partie {
 
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
         
+        //méthode que pour solo
         int Solo();
+        
+        //methode pour Solo/Multi
         void getEvent(); 
         void update();
         void renderWindow();
         
+        //methodes que pour multi
         int multiJoueur();
         void affichageConnexion();
         void sendData();
         void recieveData();
-        void updatefromUDP();
+
         int joueur_courant;
         
     private:
