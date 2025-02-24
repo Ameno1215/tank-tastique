@@ -24,6 +24,7 @@ class Client{
         int sockfd, recieve_sockfd;
         struct sockaddr_in servaddr, recieve_servaddr;
         float new_ori, new_x, new_y, new_angle = 0;
+        int nbJoueur;
 
         Client();
         void sendMessageToServer(const std::string& message);     // Fonction pour envoyer un message UDP au serveur
@@ -35,7 +36,6 @@ class Client{
         int get_etatConnexion();
 
     private :
-        bool serverPret = false;
         int etatConnexion;
 };
 #endif

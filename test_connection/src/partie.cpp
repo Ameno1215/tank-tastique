@@ -42,10 +42,6 @@ int Partie::get_nbJoueur(){
 void Partie::getEvent() { //par convention le joueur qui joue est joueur[0], pourrait etre rendu dynamique avec joueur[joueurcourant] mais blc c'est les event, plutot adapter joueurcourant en numjoueur
     if (!window) return;
 
-    joueur[0].mousePos = sf::Mouse::getPosition(*window); //recupération de la position de la souris
-    joueur[0].worldMousePos = window->mapPixelToCoords(joueur[0].mousePos);
-    
-
     sf::Event event;
     while (window->pollEvent(event)) {
         if (event.type == sf::Event::Closed)
@@ -53,13 +49,16 @@ void Partie::getEvent() { //par convention le joueur qui joue est joueur[0], pou
     }
 
     // Réinitialiser les entrées clavier
-    joueur[0].Zpressed = joueur[0].Spressed = joueur[0].Qpressed = joueur[0].Dpressed = false;
+    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = false;
 
     if (window->hasFocus()) {                   // récupération de touche pressée
-        joueur[0].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
-        joueur[0].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
-        joueur[0].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
-        joueur[0].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+        joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window); //recupération de la position de la souris
+        joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);
+    
+        joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
+        joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
+        joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
+        joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
     }
 }
 
@@ -73,22 +72,21 @@ void Partie::update() {
     float rotation = mon_tank.get_ori();
     float vit_canon = mon_tank.get_vit_canon();
 
-
-    if (joueur[0].Zpressed) {
-        deplacement_verticale(mon_tank, mon_tank.get_ori(), speed);
+    if (joueur[joueur_courant].Zpressed) {
+        deplacement_verticale(mon_tank, rotation, speed);
         deplacement_verticale(mon_tank, rotation, speed);
     }
 
-    if (joueur[0].Spressed) {
+    if (joueur[joueur_courant].Spressed) {
         deplacement_verticale(mon_tank, rotation, -speed);
         deplacement_verticale(mon_tank, rotation, -speed);
     }
 
-    if (joueur[0].Qpressed)
-        deplacement_rotation(mon_tank, &rotation, 0.2);
+    if (joueur[joueur_courant].Qpressed)
+        deplacement_rotation(mon_tank, &rotation, 1.2);
     
-    if (joueur[0].Dpressed)
-        deplacement_rotation(mon_tank, &rotation, -0.2);
+    if (joueur[joueur_courant].Dpressed)
+        deplacement_rotation(mon_tank, &rotation, -1.2);
     
     // Mise à jour de l'angle de la tourelle
     float angle_actu = mon_tank.getTourelleSprite().getRotation();
@@ -102,15 +100,18 @@ void Partie::update() {
     if ( mon_tank.get_x()-mon_tank.getBaseSprite().getLocalBounds().width / 2 == windowSize.x){
         mon_tank.set_x(0);
     }
-    std::cout<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
+    std::cout<<"Joueur "<<joueur_courant<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
 }
 
 void Partie::renderWindow() {
-    tank& mon_tank = joueur[joueur_courant].Tank;
-    cursorSprite.setPosition(static_cast<float>(joueur[0].mousePos.x), static_cast<float>(joueur[0].mousePos.y));
     window->clear();
-    window->draw(mon_tank.getBaseSprite());
-    window->draw(mon_tank.getTourelleSprite());
+    cursorSprite.setPosition(static_cast<float>(joueur[joueur_courant].mousePos.x), static_cast<float>(joueur[joueur_courant].mousePos.y));
+    for(int i = 0; i<nbJoueur; i++){
+        tank& mon_tank = joueur[i].Tank;
+        std::cout<<"Draw tank :"<<i<<std::endl;
+        window->draw(mon_tank.getBaseSprite());
+        window->draw(mon_tank.getTourelleSprite());
+    }
     window->draw(cursorSprite);
     window->display();
 }
@@ -120,24 +121,27 @@ void Partie::sendData(){
     char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
     int test = 1;
 
-    sprintf(buffer, "%d %d %d %d %d %d %d %d",0, joueur[0].Zpressed ? 1 : 0, joueur[0].Qpressed ? 1 : 0, joueur[0].Spressed ? 1 : 0, joueur[0].Dpressed ? 1 : 0, static_cast<int>(joueur[0].worldMousePos.x), static_cast<int>(joueur[0].worldMousePos.y), test);
+    sprintf(buffer, "%d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), test);
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
         //perror("❌ Erreur lors de l'envoi des données");
         return;
     } else {
         std::cout << "📨 Données envoyées : " << buffer << std::endl;
+        //std::cout << "NB joueur initalisé du client : " << nbJoueur << std::endl;
+        //std::cout << "ID client : " << joueur_courant << std::endl;
     }
 }
 
 void Partie::recieveData(){
     char buffer[1024];
-    tank& tankjoueur0 = joueur[joueur_courant].Tank;  // Utilisation d'une référence
-
+    
     socklen_t addr_len = sizeof(client.recieve_servaddr);
     ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    int i;
     float x,y,ori, oritourelle;
-    sscanf(buffer, "%f %f %f %f", &x, &y, &ori, &oritourelle);
+    sscanf(buffer, "%d %f %f %f %f",&i, &x, &y, &ori, &oritourelle);
+    tank& tankjoueur0 = joueur[i].Tank;  // Utilisation d'une référence
     tankjoueur0.set_x(x);
     tankjoueur0.set_y(y);
     tankjoueur0.set_ori(ori);
@@ -148,9 +152,8 @@ void Partie::recieveData(){
         return;
     }
     // Affichage du buffer reçu
-    printf("Buffer reçu : %s\n", buffer);
+    printf("Buffer reçu : %s du port %d\n", buffer, client.num_port);
 }
-
 
 void Partie::updatefromUDP() {
 
@@ -173,6 +176,7 @@ int Partie::Solo() {
     window->setMouseCursorVisible(false);
     
     joueur_courant = 0;
+    nbJoueur =  1;
 
     if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
         std::cerr << "Erreur lors du chargement du curseur !\n";
@@ -184,6 +188,7 @@ int Partie::Solo() {
 
     // Boucle de jeu
     while (window->isOpen()) {
+        std::cout<<"joueur courant : "<<joueur_courant<<std::endl;
         getEvent();
         update();
         renderWindow();
@@ -204,16 +209,20 @@ int Partie::multiJoueur() {
         connexionThread.join();
     }
 
+    nbJoueur = client.nbJoueur;
+    joueur_courant = client.joueur.id;
+
     if (window) {
         delete window;
     }
     
-    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "MULTIJOUEUR");
+    char title[50];
+    sprintf(title, "MULTIJOUEUR JOUEUR %d", joueur_courant);
+
+    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), title);
     windowSize = window->getSize();
     window->setMouseCursorVisible(false);
     
-    joueur_courant = 0;
-
     if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
         std::cerr << "Erreur lors du chargement du curseur !\n";
         return -1;
@@ -222,18 +231,27 @@ int Partie::multiJoueur() {
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
 
+    
+    int numport = client.num_port;
     client.num_port = 3000;
     client.createSocket();
-    client.num_port = 3001;
-    client.createBindedSocket();
+    client.num_port = numport;
+    client.createBindedSocket(); //sur numPort
+    
     // Boucle de jeu en multi
+    int i = 0;
     while (window->isOpen()) {
+
+        if(i<10){
+            i++;
+        }
+        else i =0;
+        std::cout<<"boucle "<< i<<" \n";
         getEvent();
         sendData();
         recieveData();
         renderWindow();
     }
-
 
     return 0;
 }

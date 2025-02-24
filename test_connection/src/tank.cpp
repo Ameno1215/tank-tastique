@@ -21,8 +21,8 @@ tank::tank() {
     x = 300;
     y = 200;
     orientation = 0;
-    vitesse = 0.2f;
-    vitesse_canon = 0.1f; // Valeur par défaut
+    vitesse = 1.2f;
+    vitesse_canon = 1.1f; // Valeur par défaut
 
     spriteBase.setPosition(x, y);
     spriteTourelle.setPosition(x, y);

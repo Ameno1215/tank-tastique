@@ -111,8 +111,8 @@ void Server::connexion() {
         }
     }
 
-    std::cout << "TEEEEEEEEEEEEEEEEESSSSSSSSSSSSSSSSSSTTTTTT";
-    const char* msg_pret = "P";  
+    char msg_pret[32];
+    sprintf(msg_pret,"P %d",partie.get_nbJoueur());
     sleep(1);
 
     for (int i = 0; i < NB_JOUEUR; i++) {
@@ -128,7 +128,6 @@ void Server::connexion() {
     }
 }
 
-
 void Server::recevoirEvent() {
     socklen_t len = sizeof(recieve_clientaddr);
 
@@ -136,7 +135,7 @@ void Server::recevoirEvent() {
     memset(buffer, 0, sizeof(buffer));
 
     int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
-
+    std::cout << "buffer recu " << buffer << " :\n";
     if (receivedBytes < 0) {
         std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
         return;
@@ -164,34 +163,54 @@ void Server::recevoirEvent() {
               << " Q=" << partie.joueur[i].Qpressed 
               << " S=" << partie.joueur[i].Spressed 
               << " D=" << partie.joueur[i].Dpressed << std::endl;
-    std::cout << "Souris : X=" << partie.joueur[i].mousePos.x 
-              << " Y=" << partie.joueur[i].mousePos.y << std::endl;
+    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x 
+              << " Y=" << partie.joueur[i].worldMousePos.y << std::endl;
 }
-
 
 void Server::sendToClient(){
     char buffer_processed_data[100];  // Par exemple, assez grand pour 4 entiers et quelques espaces
+    for(int i = 0; i<NB_JOUEUR; i++){
+        // Récupère les données du tank du joueur 0
+        for(int j = 0; j<NB_JOUEUR; j++){
+            tank& tankjoueur = partie.joueur[j].Tank;
 
-    // Récupère les données du tank du joueur 0
-    tank& tankjoueur0 = partie.joueur[0].Tank;
+            // Formate les données dans le buffer
+            sprintf(buffer_processed_data, "%d %f %f %f %f %d", partie.joueur[j].id, tankjoueur.get_x(), tankjoueur.get_y(), tankjoueur.get_ori(), tankjoueur.getTourelleSprite().getRotation(), 1);
 
-    // Formate les données dans le buffer
-    sprintf(buffer_processed_data, "%f %f %f %f %d", tankjoueur0.get_x(), tankjoueur0.get_y(), tankjoueur0.get_ori(), tankjoueur0.getTourelleSprite().getRotation(), 1);
-
-    // Envoi des données
-    int n = sendto(send_sockfd, buffer_processed_data, strlen(buffer_processed_data), 0, 
-                (const struct sockaddr*)&send_clientaddr, sizeof(send_clientaddr));
-    if (n < 0) {
-        perror("❌ Erreur lors de l'envoi des données");
-        return;
-    } else {
-        std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
+            // Envoi des données
+            int n = sendto(sockfd[i], buffer_processed_data, strlen(buffer_processed_data), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+                        
+            if (n < 0) {
+                perror("❌ Erreur lors de l'envoi des données");
+                return;
+            } else {
+                //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
+                //std::cout << "Sur le port " << sockfd[0] << std::endl;
+            }
+        }
     }
 }
 
 void Server::processEvent(){
-    partie.joueur_courant = 0;
-    partie.update();
+    for(int i = 0; i<NB_JOUEUR; i++){
+        partie.joueur_courant = i;
+        partie.update();
+    }
+}
+
+void Server::init_send_fd(){
+    std::cout << "Initialisation des sockfd et clientaddr de chaque client\n";
+    int recup = send_sockfd;
+    int port = port_connexion;
+    for(int i=0; i<NB_JOUEUR; i++){
+        port_connexion = 3001 + i;
+        createSocketConnexion();
+        sockfd[i] = send_sockfd;
+        client[i] = send_clientaddr;
+    }
+    send_sockfd = recup;
+    port_connexion = port; 
+    std::cout << "Fin de l'initialisation\n";
 }
 
 void Server::startServer() {
@@ -210,25 +229,27 @@ void Server::startServer() {
     port_connexion = 3001;
     createSocketConnexion();
 
+    init_send_fd();
+
     // Thread dédié pour recevoir les événements des clients
-    /*std::thread receptionThread([this]() {
+    std::thread receptionThread([this]() {
         while (running) {
             recevoirEvent();
         }
-    });*/
+    });
 
     // Boucle principale du serveur
     while (running) {
-        recevoirEvent();
+        //recevoirEvent();
         processEvent();  
         sendToClient();
-        //std::this_thread::sleep_for(std::chrono::milliseconds(50));  // Ajout d'un délai pour éviter une boucle trop rapide
+        std::this_thread::sleep_for(std::chrono::milliseconds(4));  // Ajout d'un délai pour éviter une boucle trop rapide
     }
 
     // Fermeture propre du serveur
-    /*if (receptionThread.joinable()) {
+    if (receptionThread.joinable()) {
         receptionThread.join();
-    }*/
+    }
 
     close(recieve_sockfd);  //pas toucher
 }

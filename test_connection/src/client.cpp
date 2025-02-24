@@ -74,7 +74,7 @@ void Client::initconnexion() {
 
     num_port = ntohs(received_port);
     std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
-
+    joueur.id = num_port - 3001;
     sleep(0.001);
     sendMessageToServer("T");  // Envoi du message test sur le nouveau port
     std::cout << "Message 'T' envoyé au serveur sur le port " << num_port << ".\n";
@@ -101,12 +101,21 @@ void Client::initconnexion() {
         return;
     }
 
-    if (strcmp(buffer, "P") == 0) {
-        serverPret = true;
-        std::cout << "✅ Serveur prêt !\n";
+    if (buffer[0] == 'P') {
+        int parsed = sscanf(buffer, "P %d", &nbJoueur);
+        
+        if (parsed == 1) {  // Vérifie que sscanf a bien trouvé un nombre
+            std::cout << "CLIENT nb joueurs : " << nbJoueur << std::endl;
+            std::cout << "✅ Serveur prêt !\n";
+            etatConnexion = 1;
+        } else {
+            std::cerr << "❌ Erreur : format du message incorrect (" << buffer << ")" << std::endl;
+        }
+    }
+    else{
+        std::cout << "Mauvais message du serveur !\n";
     }
     
-    etatConnexion = 1; // server Prêt
     close(recieve_sockfd);
 }
 

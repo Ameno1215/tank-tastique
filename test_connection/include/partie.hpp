@@ -13,7 +13,7 @@
 
 #include "joueur.hpp" 
 #include "client.hpp"
-#define NB_JOUEUR 1
+#define NB_JOUEUR 4
 
 class Partie {
     public:
