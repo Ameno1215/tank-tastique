@@ -228,20 +228,29 @@ int Partie::multiJoueur() {
 
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
-
     
     int numport = client.num_port;
     client.num_port = 3000;         //creation du port d'envoie sur le port 3000
     client.createSocket();
     client.num_port = numport;
-    client.createBindedSocket();    //creation du port d'écoute sur les ports de chaque client
+    client.createBindedSocket();    //creation du port d'écoute sur le port dédié au client
     
+    std::thread recievethread([this]() { //thread qui recoit les données processed par le server
+        while (window->isOpen()) {
+            recieveData();
+        }
+    });
+
     // Boucle de jeu en multi
     while (window->isOpen()) {
         getEvent();
         sendData();
-        recieveData();
         renderWindow();
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));  // Ajout d'un délai pour éviter une boucle trop rapide
+    }
+
+    if (recievethread.joinable()) {     // Fermeture du thread
+        recievethread.join();
     }
 
     return 0;
