@@ -25,6 +25,7 @@ public :
     tank Tank;
     int port;
     int id;
+    int pV = 5;
     std::string pseudo;
     bool Zpressed = false;
     bool Spressed = false;        

@@ -6,6 +6,13 @@ Partie::Partie() {
     nbJoueur = 0;
     port_actuel = 0;
     joueur_courant = 0;
+    if (!pvTexture.loadFromFile("Image/obus.png")) {
+        std::cerr << "Erreur lors du chargement de la texture des PV !\n";
+    }
+
+    pvSprite.setTexture(pvTexture);
+    pvSprite.setScale(0.2f, 0.2f);
+
 }
 
 // Destructeur pour éviter les fuites mémoire
@@ -14,7 +21,10 @@ Partie::~Partie() {
         delete window;
         window = nullptr;
     }
+    
 }
+
+sf::Sprite& Partie::getpvSprite() { return pvSprite; }
 
 // Fonction pour ajouter un joueur jusqu'à un maximum de 6
 bool Partie::ajouteJoueur() {
@@ -111,14 +121,16 @@ void Partie::renderWindow() {
     //affichage de chaque tank
     for(int i = 0; i<nbJoueur; i++){
         tank& mon_tank = joueur[i].Tank;
-        std::cout<<"Draw tank :"<<i<<std::endl;
         window->draw(mon_tank.getBaseSprite());
         window->draw(mon_tank.getTourelleSprite());
     }
 
-    //affchage des missiles 
-    //........
-    
+    //affchage des missiles
+    for (int i = 0; i < joueur[joueur_courant].pV; i++) {
+        getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
+        window->draw(getpvSprite());
+    }
+
     window->display();
 }
 
@@ -133,7 +145,7 @@ void Partie::sendData(){
         perror("❌ Erreur lors de l'envoi des données");
         return;
     } else {
-        std::cout << "📨 Données envoyées : " << buffer << std::endl;
+        //std::cout << "📨 Données envoyées : " << buffer << std::endl;
     }
 }
 
@@ -186,7 +198,6 @@ int Partie::Solo() {
 
     // Boucle de jeu
     while (window->isOpen()) {
-        std::cout<<"joueur courant : "<<joueur_courant<<std::endl;
         getEvent();
         update();
         renderWindow();

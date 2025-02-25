@@ -28,7 +28,7 @@ class Partie {
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
-
+        sf::Sprite& getpvSprite();
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
         
         //méthode que pour solo
@@ -52,6 +52,8 @@ class Partie {
         sf::Vector2u windowSize;
         sf::Sprite cursorSprite;
         sf::Texture textureCurseur;
+        sf::Sprite pvSprite;
+        sf::Texture pvTexture;
 
         int nbJoueur;
         int port_actuel;
