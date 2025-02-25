@@ -4,16 +4,13 @@
 // Constructeur
 tank::tank() {
 
-<<<<<<< HEAD
-=======
     // liste des obus tiré par le tank
     liste_obus = ListeObus();
 
     
->>>>>>> intChauvet
     // Chargement des textures
-    if (!textureBase.loadFromFile("base1.png") || 
-        !textureTourelle.loadFromFile("tourelle2.png")) {
+    if (!textureBase.loadFromFile("Image/base1.png") || 
+        !textureTourelle.loadFromFile("Image/tourelle2.png")) {
         std::cerr << "Erreur de chargement des textures !" << std::endl;
     }
 
@@ -29,14 +26,9 @@ tank::tank() {
     x = 300;
     y = 200;
     orientation = 0;
-<<<<<<< HEAD
-    vitesse = 0.2f;
-    vitesse_canon = 0.1f; // Valeur par défaut
-=======
     vitesse = 0.1f;
     vitesse_canon = 0.01f; // Valeur par défaut
     cadence_tir = 0.5;
->>>>>>> intChauvet
 
     spriteBase.setPosition(x, y);
     spriteTourelle.setPosition(x, y);
@@ -52,14 +44,8 @@ float tank::get_y() { return y; }
 float tank::get_ori() { return orientation; }
 float tank::get_vit() { return vitesse; }
 float tank::get_vit_canon() { return vitesse_canon; }
-<<<<<<< HEAD
-sf::Sprite& tank::getBaseSprite() { 
-    return spriteBase; 
-}
-=======
 float tank::get_cadence_tir() { return cadence_tir; }
 sf::Sprite& tank::getBaseSprite() { return spriteBase; }
->>>>>>> intChauvet
 sf::Sprite& tank::getTourelleSprite() { return spriteTourelle; }
 ListeObus& tank::getListeObus() { return liste_obus; }
 
