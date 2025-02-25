@@ -30,6 +30,7 @@ public :
     bool Spressed = false;        
     bool Qpressed = false;
     bool Dpressed = false;
+    bool Clicked = false;
     sf::Vector2i mousePos;
     sf::Vector2f worldMousePos;
 };

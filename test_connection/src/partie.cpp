@@ -1,6 +1,7 @@
 #include "partie.hpp"
 #include "client.hpp"
 #include "deplacement.hpp"
+#include "tir.cpp"
 
 Partie::Partie() {
     nbJoueur = 0;
@@ -50,7 +51,7 @@ void Partie::getEvent() {
     }
 
     // Réinitialiser les entrées clavier
-    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = false;
+    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = joueur[joueur_courant].Clicked = false;
 
     if (window->hasFocus()) { //uniquement si on est sur la fenetre 
         joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
@@ -59,6 +60,7 @@ void Partie::getEvent() {
         joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
         joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
         joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+        joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
     }
 }
 
@@ -87,6 +89,7 @@ void Partie::update() {
     
     if (joueur[joueur_courant].Dpressed)
         deplacement_rotation(mon_tank, &rotation, -1.2);
+
     
     // Mise à jour de l'angle de la tourelle truc à Joshua
     float angle_actu = mon_tank.getTourelleSprite().getRotation();
@@ -96,6 +99,46 @@ void Partie::update() {
     if (diff < -180) diff += 360;
     
     mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon); //rotation tourelle
+
+
+
+    // CALCUL DEPLACEMENT OBUS
+    Noeud* courant = mon_tank.getListeObus().get_tete();
+    while (courant) {
+        if (courant->obus.get_status()) {
+            // Calcul du déplacement
+            sf::Vector2f deltaMove;
+            deltaMove.x = courant->obus.get_vitesse() * sin(courant->obus.get_Sprite().getRotation() * M_PI / 180);
+            deltaMove.y = -courant->obus.get_vitesse() * cos(courant->obus.get_Sprite().getRotation() * M_PI / 180);
+            
+            // position = position + déplacement
+            courant->obus.get_Sprite().setPosition(courant->obus.get_Sprite().getPosition().x + deltaMove.x, courant->obus.get_Sprite().getPosition().y + deltaMove.y);
+
+            // test si depassement de la porté du tir
+            int longueur = sqrt(pow(courant->obus.get_Sprite().getPosition().x - courant->obus.get_position_tir().x, 2) + pow(courant->obus.get_Sprite().getPosition().y - courant->obus.get_position_tir().y, 2));
+            if (longueur > courant->obus.get_porte()) {
+                courant->obus.set_status(0); // destruction obus
+                Noeud * temp = courant->suivant;
+                mon_tank.getListeObus().supprimer(courant->index);
+                courant = temp;
+            }
+            else courant = courant->suivant;
+        }
+    }
+
+    // TIR NOUVEL OBUS
+    if (joueur[joueur_courant].Clicked) {
+         if ((get_time_seconds() - mon_tank.getListeObus().get_time_dernier_tir()) > mon_tank.get_cadence_tir()) {
+            // ajout création du nouvel obus et l'ajouter à la liste d'obus du tank
+            int index = mon_tank.getListeObus().ajouterFin(mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getRotation(), 0.2, 500, "Image/obus.png");
+            mon_tank.getListeObus().set_time_dernier_tir(get_time_seconds());
+            mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y);
+            // window.draw(mon_tank.getListeObus().trouverNoeud(index)->obus.get_Sprite());
+
+
+            mon_tank.getListeObus().afficher();
+            }
+    }
 
     //message de debugage
     //std::cout<<"Joueur "<<joueur_courant<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
@@ -111,9 +154,19 @@ void Partie::renderWindow() {
     //affichage de chaque tank
     for(int i = 0; i<nbJoueur; i++){
         tank& mon_tank = joueur[i].Tank;
-        std::cout<<"Draw tank :"<<i<<std::endl;
+        // std::cout<<"Draw tank :"<<i<<std::endl;
         window->draw(mon_tank.getBaseSprite());
         window->draw(mon_tank.getTourelleSprite());
+
+
+        // Affichage Obus
+        Noeud* courant = mon_tank.getListeObus().get_tete();
+        while (courant) {
+            if (courant->obus.get_status()) {
+                window->draw(courant->obus.get_Sprite());
+                courant = courant->suivant;
+            }
+        }
     }
 
     //affchage des missiles 
@@ -183,10 +236,10 @@ int Partie::Solo() {
 
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
+    joueur[joueur_courant].Tank.set_vit(0.2f);
 
     // Boucle de jeu
     while (window->isOpen()) {
-        std::cout<<"joueur courant : "<<joueur_courant<<std::endl;
         getEvent();
         update();
         renderWindow();
