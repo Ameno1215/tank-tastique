@@ -267,6 +267,29 @@ void Partie::affichageConnexion(){
         static_cast<float>(window->getSize().y) / backgroundSprite.getGlobalBounds().height
     );
 
+    sf::Texture tankChargementTexture;
+    if (!tankChargementTexture.loadFromFile("Image/tank_chargement.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image du tank de chargement.\n";
+    }
+    sf::Sprite tankChargementSprite;
+    tankChargementSprite.setTexture(tankChargementTexture);
+    tankChargementSprite.setPosition(100, windowSize.y - tankChargementSprite.getGlobalBounds().height - 40);  // Position en bas à gauche
+
+    sf::Texture obusTexture;
+    if (!obusTexture.loadFromFile("Image/obus.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de l'obus de chargement.\n";
+    }
+    sf::Sprite obusSprite;
+
+    obusSprite.setTexture(obusTexture);
+    obusSprite.setScale(0.5f,0.5f);
+    // Position initiale de l'obus (sort du canon)
+    float obusStartX = tankChargementSprite.getPosition().x + (tankChargementSprite.getGlobalBounds().width)*1.12;
+    float obusStartY = tankChargementSprite.getPosition().y*1.33;   
+    obusSprite.setPosition(obusStartX, obusStartY);
+    obusSprite.setRotation(90);
+
+
     // Chargement de la police
     sf::Font font;
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
@@ -283,12 +306,12 @@ void Partie::affichageConnexion(){
     // Afficher "Connexion avec le serveur..." pendant 1 seconde avant la boucle principale
     statusText.setString("Connexion avec le serveur...");
 
-    // Centrer le texte au milieu de la fenêtre
+    // Centrage du texte
     sf::FloatRect textBounds = statusText.getLocalBounds();
     statusText.setPosition(
-        (windowSize.x - textBounds.width) / 2.0f,
-        (windowSize.y - textBounds.height) / 2.0f
+        (windowSize.x - textBounds.width) / 2.0f, 200 // Position en haut
     );
+   
 
     // Affichage initial
     window->clear();
@@ -296,8 +319,12 @@ void Partie::affichageConnexion(){
     window->draw(statusText);
     window->display();
 
-    // Pause de 1 seconde
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    float obusSpeed = 5.0f;  // Vitesse de l'obus
+   
+    sf::Clock clock; // Déclare un chrono
+    sf::Clock timerClock; // Chrono pour mesurer 1 seconde
+    bool oneSecondPassed = false; // Indicateur de passage de 1 seconde
+    
     while (window->isOpen()) {
         sf::Event event;
         while (window->pollEvent(event)) {
@@ -306,25 +333,43 @@ void Partie::affichageConnexion(){
             }
         }
 
+        // Vérifier si 1 seconde est passée
+        if (!oneSecondPassed && timerClock.getElapsedTime().asSeconds() >= 1.0f) {
+            oneSecondPassed = true;
+        }
+
+
+        // Calcul du temps écoulé depuis la dernière frame
+        sf::Time elapsed = clock.restart(); 
+        float deltaTime = elapsed.asSeconds(); // Temps en secondes
+
         // Mettre à jour le texte en fonction de l'état de connexion
-        if (client.get_etatConnexion() == -1) {
+        if (client.get_etatConnexion() == -1 && oneSecondPassed) {
             statusText.setString("Connexion avec le serveur...");
-        } else if (client.get_etatConnexion() == 0) {
+        } else if (client.get_etatConnexion() == 0 && oneSecondPassed) {
             statusText.setString("En attente des joueurs...");
-        } else if (client.get_etatConnexion() == 1) {
+        } else if (client.get_etatConnexion() == 1 && oneSecondPassed) {
             window->close();
         }
 
-        // Centrer le texte au milieu de la fenêtre
-        sf::FloatRect textBounds = statusText.getLocalBounds();
-        statusText.setPosition(
-            (windowSize.x - textBounds.width) / 2.0f,
-            (windowSize.y - textBounds.height) / 2.0f
-        );
+        // Centrer le texte en haut
+        textBounds = statusText.getLocalBounds();
+        statusText.setPosition((windowSize.x - textBounds.width) / 2.0f, 200);
+
+        // Déplacer l'obus avec une vitesse ajustée au temps écoulé
+        obusSprite.move(obusSpeed * deltaTime * 100, 0); // 100 est un facteur d'ajustement
+
+
+        // Remettre l'obus à sa position initiale s'il sort de l'écran
+        if (obusSprite.getPosition().x > windowSize.x - 120) {
+            obusSprite.setPosition(obusStartX, obusStartY);
+        }
 
         window->clear();
         window->draw(backgroundSprite);
         window->draw(statusText);
+        window->draw(tankChargementSprite);
+        window->draw(obusSprite);
         window->display();
     }
 }
