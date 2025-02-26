@@ -56,6 +56,15 @@
         "thread": "cpp",
         "condition_variable": "cpp",
         "mutex": "cpp",
+<<<<<<< HEAD
         "sstream": "cpp"
+=======
+        "charconv": "cpp",
+        "format": "cpp",
+        "iomanip": "cpp",
+        "span": "cpp",
+        "sstream": "cpp",
+        "variant": "cpp"
+>>>>>>> intCensier
     }
 }

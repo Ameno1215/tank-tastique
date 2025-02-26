@@ -25,12 +25,15 @@ public :
     tank Tank;
     int port;
     int id;
+    int pV = 5;
+    int pts = 0;
     std::string pseudo;
     bool Zpressed = false;
     bool Spressed = false;        
     bool Qpressed = false;
     bool Dpressed = false;
     bool Clicked = false;
+    bool Tabpressed = false;
     sf::Vector2i mousePos;
     sf::Vector2f worldMousePos;
 };

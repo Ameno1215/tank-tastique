@@ -168,7 +168,8 @@ void Server::recevoirEvent() {
 
 void Server::sendToClient(){
     char buffer_processed_data[100];
-    // char buffer_nb_obus[10];
+    char buffer_pV[100];
+    sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
 
     for(int i = 0; i<NB_JOUEUR; i++){   
 
@@ -224,6 +225,17 @@ void Server::sendToClient(){
                 //std::cout << "📨 Données processed envoyées au client : " << buffer_nb_obus << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
+        }
+        int n = sendto(sockfd[i], buffer_pV, strlen(buffer_pV), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+            
+        //verifiacation
+        if (n < 0) {
+            perror("❌ Erreur lors de l'envoi des données des pV");
+            return;
+        } else {
+            //debugage
+            //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
+            //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
     }
 }
@@ -286,7 +298,7 @@ void Server::startServer() {
         //recevoirEvent();
         processEvent();  
         sendToClient();
-        std::this_thread::sleep_for(std::chrono::milliseconds(4));  // Ajout d'un délai pour éviter une boucle trop rapide
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));  // Ajout d'un délai pour éviter une boucle trop rapide
     }
 
     // Fermeture propre du serveur

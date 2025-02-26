@@ -7,6 +7,22 @@ Partie::Partie() {
     nbJoueur = 0;
     port_actuel = 0;
     joueur_courant = 0;
+    if (!pvTexture.loadFromFile("Image/obus.png")) {
+        std::cerr << "Erreur lors du chargement de la texture des PV !\n";
+    }
+
+    pvSprite.setTexture(pvTexture);
+    pvSprite.setScale(0.2f, 0.2f);
+
+    for (int i = 0; i < 10; i++) {
+        std::string filename = "Image/explosion/explosion_frame" + std::to_string(i + 1) + ".png";
+        if (!explosionTextureFrames[i].loadFromFile(filename)) {
+            std::cerr << "Erreur : Impossible de charger l'image d'explosion (" << filename << ").\n";
+        }
+    }
+
+    explosionSprite.setScale(4.0f,4.0f);
+
 }
 
 // Destructeur pour éviter les fuites mémoire
@@ -15,7 +31,10 @@ Partie::~Partie() {
         delete window;
         window = nullptr;
     }
+    
 }
+
+sf::Sprite& Partie::getpvSprite() { return pvSprite; }
 
 // Fonction pour ajouter un joueur jusqu'à un maximum de 6
 bool Partie::ajouteJoueur() {
@@ -57,9 +76,9 @@ void Partie::getEvent() {
         if (event.type == sf::Event::Closed)
             window->close();
     }
-
+    
     // Réinitialiser les entrées clavier
-    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = joueur[joueur_courant].Clicked = false;
+    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = joueur[joueur_courant].Clicked = joueur[joueur_courant].Tabpressed = false;
 
     if (window->hasFocus()) { //uniquement si on est sur la fenetre 
         joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
@@ -69,6 +88,7 @@ void Partie::getEvent() {
         joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
         joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
         joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+        joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
     }
 }
 
@@ -85,6 +105,7 @@ void Partie::update() {
     if (joueur[joueur_courant].Zpressed) {
         deplacement_verticale(mon_tank, rotation, speed);
         deplacement_verticale(mon_tank, rotation, speed);
+        //joueur[0].pV--; //test pour le PV 
     }
 
     if (joueur[joueur_courant].Spressed) {
@@ -156,13 +177,16 @@ void Partie::renderWindow() {
 
     window->clear();
     //affichage souris
-    cursorSprite.setPosition(static_cast<float>(joueur[joueur_courant].mousePos.x), static_cast<float>(joueur[joueur_courant].mousePos.y));
+    cursorSprite.setPosition(
+        static_cast<float>(joueur[joueur_courant].mousePos.x) - cursorSprite.getGlobalBounds().width / 2,
+        static_cast<float>(joueur[joueur_courant].mousePos.y) - cursorSprite.getGlobalBounds().height / 2
+    );
     window->draw(cursorSprite);
 
     //affichage de chaque tank
     for(int i = 0; i<nbJoueur; i++){
         tank& mon_tank = joueur[i].Tank;
-        // std::cout<<"Draw tank :"<<i<<std::endl;
+
         window->draw(mon_tank.getBaseSprite());
         window->draw(mon_tank.getTourelleSprite());
 
@@ -205,9 +229,18 @@ void Partie::renderWindow() {
         }
     }
 
-    //affchage des missiles 
-    //........
-    
+    //affchage des pV
+    for (int i = 0; i < joueur[joueur_courant].pV; i++) {
+        getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
+        window->draw(getpvSprite());
+    }
+
+    //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
+    if(joueur[joueur_courant].Tabpressed){
+        afficheTableauScore();
+        std::cout<<"Tab pressed \n"<<std::endl;
+    }
+
     window->display();
 }
 
@@ -222,7 +255,7 @@ void Partie::sendData(){
         perror("❌ Erreur lors de l'envoi des données");
         return;
     } else {
-        std::cout << "📨 Données envoyées : " << buffer << std::endl;
+        //std::cout << "📨 Données envoyées : " << buffer << std::endl;
     }
 }
 
@@ -257,6 +290,25 @@ void Partie::recieveData(){
     if (buffer[0] == 'O') { 
         setBufferMissile(std::string(buffer));
     }
+    
+    if(buffer[0] == 'V'){
+        int pV[6];
+        sscanf(buffer, "V %d %d %d %d %d %d", &pV[0], &pV[1], &pV[2], &pV[3], &pV[4], &pV[5]);
+
+        for(int i = 0; i< NB_JOUEUR; i++){
+            Joueur& joueuri = joueur[i];  
+            joueuri.pV = pV[i];
+        }
+        
+        if (n < 0) {
+            perror("Erreur lors de la réception de la confirmation");
+            close(client.recieve_sockfd);
+            return;
+        }
+        // Affichage du buffer reçu
+        //printf("Buffer pV reçu : %s tesssstttt \n", buffer);
+    }
+    
 }
 
 int Partie::Solo() {
@@ -342,7 +394,7 @@ int Partie::multiJoueur() {
         getEvent();
         sendData();
         renderWindow();
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));  // Ajout d'un délai pour éviter une boucle trop rapide
+        std::this_thread::sleep_for(std::chrono::milliseconds(8));  // Ajout d'un délai pour éviter une boucle trop rapide
     }
 
     if (recievethread.joinable()) {     // Fermeture du thread
@@ -352,57 +404,66 @@ int Partie::multiJoueur() {
     return 0;
 }
 
-void Partie::affichageConnexion(){
-    if (window) {  // Pour libérer la mémoire si une fenêtre existait déjà
+void Partie::affichageConnexion() {
+    if (window) {  
         delete window;
     }
-    
+
     window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "MULTI");
     windowSize = window->getSize();
 
     sf::Texture backgroundTexture;
-    if (!backgroundTexture.loadFromFile("Image/fond.png")) {
+    if (!backgroundTexture.loadFromFile("Image/imagechargement.png")) {
         std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
     }
-
-    sf::Sprite backgroundSprite;
-    backgroundSprite.setTexture(backgroundTexture);
+    sf::Sprite backgroundSprite(backgroundTexture);
     backgroundSprite.setScale(
         static_cast<float>(window->getSize().x) / backgroundSprite.getGlobalBounds().width,
         static_cast<float>(window->getSize().y) / backgroundSprite.getGlobalBounds().height
     );
 
-    // Chargement de la police
+    sf::Texture tankChargementTexture;
+    if (!tankChargementTexture.loadFromFile("Image/tank_chargement.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image du tank de chargement.\n";
+    }
+    sf::Sprite tankChargementSprite(tankChargementTexture);
+    tankChargementSprite.setPosition(100, windowSize.y - tankChargementSprite.getGlobalBounds().height - 230);
+
+    sf::Texture obusTexture;
+    if (!obusTexture.loadFromFile("Image/obus.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de l'obus.\n";
+    }
+    sf::Sprite obusSprite(obusTexture);
+    obusSprite.setScale(0.5f, 0.5f);
+    float obusStartX = tankChargementSprite.getPosition().x + (tankChargementSprite.getGlobalBounds().width) * 1.12;
+    float obusStartY = tankChargementSprite.getPosition().y * 1.6;
+    obusSprite.setPosition(obusStartX, obusStartY);
+    obusSprite.setRotation(90);
+
     sf::Font font;
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
-        std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
+        std::cerr << "Impossible de charger la police.\n";
     }
 
-    // Création du texte d'affichage
     sf::Text statusText;
     statusText.setFont(font);
     statusText.setCharacterSize(50);
     statusText.setFillColor(sf::Color::White);
     statusText.setStyle(sf::Text::Bold);
-
-    // Afficher "Connexion avec le serveur..." pendant 1 seconde avant la boucle principale
     statusText.setString("Connexion avec le serveur...");
-
-    // Centrer le texte au milieu de la fenêtre
     sf::FloatRect textBounds = statusText.getLocalBounds();
-    statusText.setPosition(
-        (windowSize.x - textBounds.width) / 2.0f,
-        (windowSize.y - textBounds.height) / 2.0f
-    );
+    statusText.setPosition((windowSize.x - textBounds.width) / 2.0f, 200);
 
-    // Affichage initial
     window->clear();
     window->draw(backgroundSprite);
     window->draw(statusText);
     window->display();
 
-    // Pause de 1 seconde
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    float obusSpeed = 5.0f; 
+    sf::Clock clock;
+    sf::Clock timerClock;
+    bool oneSecondPassed = false;
+    int xexplosion, yexplosion;
     while (window->isOpen()) {
         sf::Event event;
         while (window->pollEvent(event)) {
@@ -411,25 +472,52 @@ void Partie::affichageConnexion(){
             }
         }
 
-        // Mettre à jour le texte en fonction de l'état de connexion
-        if (client.get_etatConnexion() == -1) {
+        if (!oneSecondPassed && timerClock.getElapsedTime().asSeconds() >= 1.0f) {
+            oneSecondPassed = true;
+        }
+
+        sf::Time elapsed = clock.restart();
+        float deltaTime = elapsed.asSeconds();
+
+        if (client.get_etatConnexion() == -1 && oneSecondPassed) {
             statusText.setString("Connexion avec le serveur...");
-        } else if (client.get_etatConnexion() == 0) {
+        } else if (client.get_etatConnexion() == 0 && oneSecondPassed) {
             statusText.setString("En attente des joueurs...");
-        } else if (client.get_etatConnexion() == 1) {
+        } else if (client.get_etatConnexion() == 1 && oneSecondPassed) {
             window->close();
         }
 
-        // Centrer le texte au milieu de la fenêtre
-        sf::FloatRect textBounds = statusText.getLocalBounds();
-        statusText.setPosition(
-            (windowSize.x - textBounds.width) / 2.0f,
-            (windowSize.y - textBounds.height) / 2.0f
-        );
+        textBounds = statusText.getLocalBounds();
+        statusText.setPosition((windowSize.x - textBounds.width) / 2.0f, 200);
+
+        obusSprite.move(obusSpeed * deltaTime * 100, 0);
+
+        // Si l'obus dépasse la limite droite de l'écran, on lance l'animation de l'explosion
+        if (obusSprite.getPosition().x > windowSize.x - 200) {
+            if (!explosionActive) {
+                // Si l'explosion n'est pas déjà active, on l'active
+                explosionActive = true;
+                explosionClock.restart();  // Redémarre le chrono de l'explosion
+                xexplosion = obusSprite.getPosition().x + 50;
+                yexplosion = obusSprite.getPosition().y + 80;
+            }
+            // Réinitialiser l'obus à sa position de départ
+            obusSprite.setPosition(obusStartX, obusStartY);
+        }
 
         window->clear();
         window->draw(backgroundSprite);
         window->draw(statusText);
+        window->draw(tankChargementSprite);
+        window->draw(obusSprite);
+
+        // Si l'explosion est active, on la dessine et on met à jour son animation
+        if (explosionActive) {
+            renderExplosion(xexplosion , yexplosion);
+            window->draw(explosionSprite);
+        }
+
+
         window->display();
     }
 }
@@ -473,8 +561,74 @@ void Partie::string_obus(std::string& chaine) {
             courant = courant->suivant;
         }
     }
-
-
-
+    
     chaine += "1";
+}
+
+void Partie::renderExplosion(int x, int y) {
+
+    // Gérer le temps écoulé pour passer à la frame suivante de l'explosion
+    if (explosionClock.getElapsedTime().asSeconds() > 0.05f) {  // 50ms entre chaque frame
+        explosionClock.restart();  // Réinitialiser le chrono pour la prochaine frame
+
+        // Passer à la frame suivante
+        currentFrameExplo++;
+        if (currentFrameExplo >= 10) {
+            currentFrameExplo = 0;  // Revenir à la première frame après la dernière
+            explosionActive = false;  // Terminer l'animation après avoir fait le cycle complet
+        }
+
+        // Mettre à jour la texture de l'explosion avec la frame actuelle
+        explosionSprite.setTexture(explosionTextureFrames[currentFrameExplo]);
+    }
+
+    // Centrer l'explosion sur les coordonnées données
+    explosionSprite.setPosition(x - explosionSprite.getGlobalBounds().width / 2,
+                                y - explosionSprite.getGlobalBounds().height / 2);
+}
+
+
+void Partie::afficheTableauScore() {
+    if (!window) return;
+
+    // Définir la taille et la position de la boîte centrale
+    sf::RectangleShape scoreBox(sf::Vector2f(400, 300)); // Largeur x Hauteur
+    scoreBox.setFillColor(sf::Color(0, 0, 0, 150)); // Fond noir semi-transparent
+    scoreBox.setOutlineThickness(3);
+    scoreBox.setOutlineColor(sf::Color::White);
+    scoreBox.setPosition((window->getSize().x - scoreBox.getSize().x) / 2,
+                         (window->getSize().y - scoreBox.getSize().y) / 2);
+
+    window->draw(scoreBox); // Affichage de la boîte
+
+    // Charger une police
+    static sf::Font font;
+    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) { // Assure-toi d'avoir une police dans ton projet
+        std::cerr << "Erreur: Impossible de charger la police!" << std::endl;
+        return;
+    }
+
+    // Afficher le titre
+    sf::Text title("Tableau des Scores", font, 24);
+    title.setFillColor(sf::Color::White);
+    title.setStyle(sf::Text::Bold);
+    title.setPosition(scoreBox.getPosition().x + 100, scoreBox.getPosition().y + 10);
+    window->draw(title);
+
+    // Afficher les joueurs et leurs stats
+    for (int i = 0; i < nbJoueur; i++) {
+        sf::Text playerText;
+        playerText.setFont(font);
+        playerText.setCharacterSize(20);
+        playerText.setFillColor(sf::Color::White);
+
+        // Construire la ligne du joueur (Nom - Pv - Score)
+        std::string playerInfo = joueur[i].pseudo + " - Pv: " + std::to_string(joueur[i].pV) + " - Score: " + std::to_string(joueur[i].pts);
+        playerText.setString(playerInfo);
+
+        // Positionner le texte dans la boîte
+        playerText.setPosition(scoreBox.getPosition().x + 20, scoreBox.getPosition().y + 50 + i * 30);
+
+        window->draw(playerText);
+    }
 }
