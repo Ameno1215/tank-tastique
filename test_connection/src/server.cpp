@@ -144,8 +144,8 @@ void Server::recevoirEvent() {
     }
 
     //recupère les données 
-    int i, z, q, s, d, mouseX, mouseY; 
-    int valuesRead = sscanf(buffer, "%d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &mouseX, &mouseY);
+    int i, z, q, s, d, mouseX, mouseY, clicked; 
+    int valuesRead = sscanf(buffer, "%d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &mouseX, &mouseY, &clicked);
 
     // Stockage des données dans le tableau de la partie
     partie.joueur[i].Zpressed = (z != 0);
@@ -153,36 +153,78 @@ void Server::recevoirEvent() {
     partie.joueur[i].Spressed = (s != 0);
     partie.joueur[i].Dpressed = (d != 0);
     partie.joueur[i].worldMousePos = sf::Vector2f(mouseX, mouseY);
+    partie.joueur[i].Clicked = (clicked != 0);
 
     // Affichage des données reçues pour débogage
     std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
     std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
-    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << std::endl;
+    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl; 
 }
 
 void Server::sendToClient(){
-    char buffer_processed_data[100];  
+    char buffer_processed_data[100];
+    char buffer_nb_obus[10];
+
     for(int i = 0; i<NB_JOUEUR; i++){   
 
         for(int j = 0; j<NB_JOUEUR; j++){
 
             //recupère les tank/data processed de chaque joueur
             tank& tankjoueur = partie.joueur[j].Tank;
-            sprintf(buffer_processed_data, "%d %f %f %f %f %d", partie.joueur[j].id, tankjoueur.get_x(), tankjoueur.get_y(), tankjoueur.get_ori(), tankjoueur.getTourelleSprite().getRotation(), 1);
+            sprintf(buffer_processed_data, "T %d %f %f %f %f %d", partie.joueur[j].id, tankjoueur.get_x(), tankjoueur.get_y(), tankjoueur.get_ori(), tankjoueur.getTourelleSprite().getRotation(), 1);
 
             //les envoies à chaque autre client
             int n = sendto(sockfd[i], buffer_processed_data, strlen(buffer_processed_data), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
             
             //verifiacation
             if (n < 0) {
-                perror("❌ Erreur lors de l'envoi des données");
+                perror("❌ Erreur lors de l'envoi des données du tank");
                 return;
             } else {
                 //debugage
                 //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
+
+            // envoie du nombre d'obus
+            sprintf(buffer_nb_obus, "N %d %d", partie.nb_obus(), 1);
+
+            //les envoies à chaque autre client
+            n = sendto(sockfd[i], buffer_nb_obus, strlen(buffer_nb_obus), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+            
+            //verifiacation
+            if (n < 0) {
+                perror("❌ Erreur lors de l'envoi des données du nombre d'obus");
+                return;
+            } else {
+                //debugage
+                //std::cout << "📨 Données processed envoyées au client : " << buffer_nb_obus << std::endl;
+                //std::cout << "Sur le port " << sockfd[0] << std::endl;
+            }
+
+            // creation du tableau des obus
+            char buffer[partie.nb_obus() + 1][4]; // ajouter une ligne pour lui passer le type du message 'O'
+            buffer[0][0] = 'O';
+
+            // remplir le buffer
+            partie.remplir_tableau_obus(buffer, 1);
+
+            afficher_buffer(buffer, partie.nb_obus() + 1);
+
+            //ici t'envoie les infos des missiles avec n = sendto et la verif, pense au debug 
+
         }
+    }
+}
+
+void Server::afficher_buffer(char tab[][4], int nb_lignes) {
+    printf("Tableau buffer obus\n");
+    for (int i = 0; i < nb_lignes; i++) {
+        std::cout << "Ligne " << i << " : ";
+        for (int j = 0; j < 4; j++) {
+            std::cout << static_cast<int>(tab[i][j]) << " "; // Convertir en int pour affichage lisible
+        }
+        std::cout << std::endl;
     }
 }
 

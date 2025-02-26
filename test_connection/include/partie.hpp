@@ -45,7 +45,13 @@ class Partie {
         void sendData();
         void recieveData();
 
+        // retourne le nombre d'obus actif dans la partie
+        int nb_obus();
+        void remplir_tableau_obus(char tab[][4], int type);
+
+
         int joueur_courant;
+        
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
@@ -57,5 +63,9 @@ class Partie {
         int port_actuel;
         bool serverPret;
 };
+
+
+
+
 
 #endif

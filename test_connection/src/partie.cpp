@@ -128,16 +128,16 @@ void Partie::update() {
 
     // TIR NOUVEL OBUS
     if (joueur[joueur_courant].Clicked) {
-         if ((get_time_seconds() - mon_tank.getListeObus().get_time_dernier_tir()) > mon_tank.get_cadence_tir()) {
+        if ((get_time_seconds() - mon_tank.getListeObus().get_time_dernier_tir()) > mon_tank.get_cadence_tir()) {
             // ajout création du nouvel obus et l'ajouter à la liste d'obus du tank
             int index = mon_tank.getListeObus().ajouterFin(mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getRotation(), 0.2, 500, "Image/obus.png");
             mon_tank.getListeObus().set_time_dernier_tir(get_time_seconds());
             mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y);
             // window.draw(mon_tank.getListeObus().trouverNoeud(index)->obus.get_Sprite());
 
-
-            mon_tank.getListeObus().afficher();
-            }
+            // printf("%d\n", nb_obus());
+            //mon_tank.getListeObus().afficher();
+        }
     }
 
     //message de debugage
@@ -180,7 +180,7 @@ void Partie::sendData(){
     char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
     int test = 1;      // valeur à mettre par précaution à la fin du buffer
 
-    sprintf(buffer, "%d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), test);
+    sprintf(buffer, "%d %d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), joueur[joueur_courant].Clicked ? 1 : 0, test);
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
         perror("❌ Erreur lors de l'envoi des données");
@@ -196,22 +196,39 @@ void Partie::recieveData(){
     socklen_t addr_len = sizeof(client.recieve_servaddr);
 
     ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    buffer[n] = '\0';
 
-    int indice_joueur;
-    float x,y,ori, oritourelle;
-    sscanf(buffer, "%d %f %f %f %f",&indice_joueur, &x, &y, &ori, &oritourelle);
+    if (buffer[0] == 'T') {
+        int indice_joueur;
+        float x,y,ori, oritourelle;
+        sscanf(buffer, "T %d %f %f %f %f",&indice_joueur, &x, &y, &ori, &oritourelle);
 
-    tank& tankjoueur = joueur[indice_joueur].Tank;  // Utilisation d'une référence
-    tankjoueur.set_x(x);
-    tankjoueur.set_y(y);
-    tankjoueur.set_ori(ori);
-    tankjoueur.getTourelleSprite().setRotation(oritourelle);
+        tank& tankjoueur = joueur[indice_joueur].Tank;  // Utilisation d'une référence
+        tankjoueur.set_x(x);
+        tankjoueur.set_y(y);
+        tankjoueur.set_ori(ori);
+        tankjoueur.getTourelleSprite().setRotation(oritourelle);
 
-    if (n < 0) {
-        perror("Erreur lors de la réception de la confirmation");
-        close(client.recieve_sockfd);
-        return;
+        if (n < 0) {
+            perror("Erreur lors de la réception de la confirmation");
+            close(client.recieve_sockfd);
+            return;
+        }
     }
+
+    int nb_obus;
+    if (buffer[0] == 'N') {
+        sscanf(buffer, "N %d",&nb_obus);
+
+        if (n < 0) {
+            perror("Erreur lors de la réception de la confirmation");
+            close(client.recieve_sockfd);
+            return;
+        }
+        printf("nb Obus de la partie : %d\n", nb_obus);
+    }
+
+
     // Affichage du buffer reçu
     //printf("Buffer reçu : %s du port %d\n", buffer, client.num_port);
 }
@@ -281,20 +298,29 @@ int Partie::multiJoueur() {
 
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
-
     
     int numport = client.num_port;
     client.num_port = 3000;         //creation du port d'envoie sur le port 3000
     client.createSocket();
     client.num_port = numport;
-    client.createBindedSocket();    //creation du port d'écoute sur les ports de chaque client
+    client.createBindedSocket();    //creation du port d'écoute sur le port dédié au client
     
+    std::thread recievethread([this]() { //thread qui recoit les données processed par le server
+        while (window->isOpen()) {
+            recieveData();
+        }
+    });
+
     // Boucle de jeu en multi
     while (window->isOpen()) {
         getEvent();
         sendData();
-        recieveData();
         renderWindow();
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));  // Ajout d'un délai pour éviter une boucle trop rapide
+    }
+
+    if (recievethread.joinable()) {     // Fermeture du thread
+        recievethread.join();
     }
 
     return 0;
@@ -381,3 +407,43 @@ void Partie::affichageConnexion(){
         window->display();
     }
 }
+
+
+int Partie::nb_obus() {
+    int compteur_obus = 0;
+
+    for (int i = 0; i < nbJoueur; i++) {
+        tank& mon_tank = joueur[i].Tank;
+    
+        Noeud* courant = mon_tank.getListeObus().get_tete();
+
+        while (courant) {
+            compteur_obus++;
+            courant = courant->suivant;
+        }
+    }
+    
+    return compteur_obus;
+}
+
+
+void Partie::remplir_tableau_obus(char tab[][4], int type) {
+    int j = 1; // index de l'obus qui commmence à 1, 0 c'est 'O'
+
+    for (int i = 0; i < nbJoueur; i++) {
+        tank& mon_tank = joueur[i].Tank;
+    
+        Noeud* courant = mon_tank.getListeObus().get_tete();
+
+        while (courant) {
+            tab[j][0] = type;
+            tab[j][1] = courant->obus.get_Sprite().getPosition().x;
+            tab[j][2] = courant->obus.get_Sprite().getPosition().y;
+            tab[j][3] = courant->obus.get_Sprite().getRotation();
+            
+            j++;
+            courant = courant->suivant;
+        }
+    }
+}
+
