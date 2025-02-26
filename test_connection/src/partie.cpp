@@ -60,7 +60,7 @@ void Partie::getEvent() {
     }
 
     // Réinitialiser les entrées clavier
-    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = false;
+    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = joueur[joueur_courant].Tabpressed = false;
 
     if (window->hasFocus()) { //uniquement si on est sur la fenetre 
         joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
@@ -69,6 +69,7 @@ void Partie::getEvent() {
         joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
         joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
         joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+        //joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
     }
 }
 
@@ -85,6 +86,7 @@ void Partie::update() {
     if (joueur[joueur_courant].Zpressed) {
         deplacement_verticale(mon_tank, rotation, speed);
         deplacement_verticale(mon_tank, rotation, speed);
+        //joueur[0].pV--; //test pour le PV 
     }
 
     if (joueur[joueur_courant].Spressed) {
@@ -125,11 +127,14 @@ void Partie::renderWindow() {
         window->draw(mon_tank.getTourelleSprite());
     }
 
-    //affchage des missiles
+    //affchage des pV
     for (int i = 0; i < joueur[joueur_courant].pV; i++) {
         getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
         window->draw(getpvSprite());
     }
+
+    //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
+
 
     window->display();
 }
@@ -155,24 +160,45 @@ void Partie::recieveData(){
     socklen_t addr_len = sizeof(client.recieve_servaddr);
 
     ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    buffer[n] = '\0';  // Assurer que la chaîne est bien terminée
 
-    int indice_joueur;
-    float x,y,ori, oritourelle;
-    sscanf(buffer, "%d %f %f %f %f",&indice_joueur, &x, &y, &ori, &oritourelle);
+    if(buffer[0] == 'T'){
+        int indice_joueur;
+        float x,y,ori, oritourelle;
+        sscanf(buffer, "T %d %f %f %f %f",&indice_joueur, &x, &y, &ori, &oritourelle);
 
-    tank& tankjoueur = joueur[indice_joueur].Tank;  // Utilisation d'une référence
-    tankjoueur.set_x(x);
-    tankjoueur.set_y(y);
-    tankjoueur.set_ori(ori);
-    tankjoueur.getTourelleSprite().setRotation(oritourelle);
+        tank& tankjoueur = joueur[indice_joueur].Tank;  // Utilisation d'une référence
+        tankjoueur.set_x(x);
+        tankjoueur.set_y(y);
+        tankjoueur.set_ori(ori);
+        tankjoueur.getTourelleSprite().setRotation(oritourelle);
 
-    if (n < 0) {
-        perror("Erreur lors de la réception de la confirmation");
-        close(client.recieve_sockfd);
-        return;
+        if (n < 0) {
+            perror("Erreur lors de la réception de la confirmation");
+            close(client.recieve_sockfd);
+            return;
+        }
+        // Affichage du buffer reçu
+        //printf("Buffer reçu : %s du port %d\n", buffer, client.num_port);
     }
-    // Affichage du buffer reçu
-    //printf("Buffer reçu : %s du port %d\n", buffer, client.num_port);
+    if(buffer[0] == 'V'){
+        int pV[6];
+        sscanf(buffer, "V %d %d %d %d %d %d", &pV[0], &pV[1], &pV[2], &pV[3], &pV[4], &pV[5]);
+
+        for(int i = 0; i< NB_JOUEUR; i++){
+            Joueur& joueuri = joueur[i];  
+            joueuri.pV = pV[i];
+        }
+        
+        if (n < 0) {
+            perror("Erreur lors de la réception de la confirmation");
+            close(client.recieve_sockfd);
+            return;
+        }
+        // Affichage du buffer reçu
+        printf("Buffer pV reçu : %s tesssstttt \n", buffer);
+    }
+    
 }
 
 int Partie::Solo() {
@@ -257,7 +283,7 @@ int Partie::multiJoueur() {
         getEvent();
         sendData();
         renderWindow();
-        std::this_thread::sleep_for(std::chrono::milliseconds(2));  // Ajout d'un délai pour éviter une boucle trop rapide
+        std::this_thread::sleep_for(std::chrono::milliseconds(8));  // Ajout d'un délai pour éviter une boucle trop rapide
     }
 
     if (recievethread.joinable()) {     // Fermeture du thread
