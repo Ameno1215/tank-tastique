@@ -30,6 +30,7 @@ class Partie {
         int get_nbJoueur();
         sf::Sprite& getpvSprite();
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
+        void afficheTableauScore();
         
         //méthode que pour solo
         int Solo();

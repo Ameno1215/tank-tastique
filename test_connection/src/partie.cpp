@@ -69,7 +69,7 @@ void Partie::getEvent() {
         joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
         joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
         joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
-        //joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
+        joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
     }
 }
 
@@ -134,7 +134,10 @@ void Partie::renderWindow() {
     }
 
     //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
-
+    if(joueur[joueur_courant].Tabpressed){
+        afficheTableauScore();
+        std::cout<<"Tab pressed \n"<<std::endl;
+    }
 
     window->display();
 }
@@ -196,7 +199,7 @@ void Partie::recieveData(){
             return;
         }
         // Affichage du buffer reçu
-        printf("Buffer pV reçu : %s tesssstttt \n", buffer);
+        //printf("Buffer pV reçu : %s tesssstttt \n", buffer);
     }
     
 }
@@ -418,4 +421,8 @@ void Partie::affichageConnexion(){
         window->draw(obusSprite);
         window->display();
     }
+}
+
+void Partie::afficheTableauScore(){
+    return;
 }
