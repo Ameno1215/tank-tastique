@@ -31,6 +31,7 @@ class Partie {
         sf::Sprite& getpvSprite();
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
         void afficheTableauScore();
+        void renderExplosion(int x, int y);
         
         //méthode que pour solo
         int Solo();
@@ -59,6 +60,13 @@ class Partie {
         int nbJoueur;
         int port_actuel;
         bool serverPret;
+
+        bool explosionActive = false;
+        int currentFrameExplo = 0;
+        sf::Clock explosionClock;
+        sf::Texture explosionTexture;
+        sf::Texture explosionTextureFrames[20];
+        sf::Sprite explosionSprite;
 };
 
 #endif
