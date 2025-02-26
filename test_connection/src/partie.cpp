@@ -20,7 +20,7 @@ Partie::Partie() {
         }
     }
 
-    explosionSprite.setScale(3.0f,3.0f);
+    explosionSprite.setScale(4.0f,4.0f);
 
 }
 
@@ -67,7 +67,7 @@ void Partie::getEvent() {
         if (event.type == sf::Event::Closed)
             window->close();
     }
-
+    
     // Réinitialiser les entrées clavier
     joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = joueur[joueur_courant].Tabpressed = false;
 
@@ -484,7 +484,7 @@ void Partie::afficheTableauScore() {
         playerText.setFillColor(sf::Color::White);
 
         // Construire la ligne du joueur (Nom - Pv - Score)
-        std::string playerInfo = joueur[i].pseudo + " - Pv: " + std::to_string(joueur[i].pV) + " - Score: 0";
+        std::string playerInfo = joueur[i].pseudo + " - Pv: " + std::to_string(joueur[i].pV) + " - Score: " + std::to_string(joueur[i].pts);
         playerText.setString(playerInfo);
 
         // Positionner le texte dans la boîte

@@ -26,6 +26,7 @@ public :
     int port;
     int id;
     int pV = 5;
+    int pts = 0;
     std::string pseudo;
     bool Zpressed = false;
     bool Spressed = false;        
