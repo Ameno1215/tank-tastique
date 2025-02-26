@@ -9,8 +9,9 @@ Obus::Obus(int x, int y, float orientation, float vitesse, int porte, const std:
     set_texture(nomTexture);  // Charge la texture
     spriteObus.setTexture(texture);  // Applique la texture au sprite
     spriteObus.setPosition(x, y);  // Définit la position du sprite
+    spriteObus.setRotation(orientation);
     spriteObus.setScale(0.06f, 0.06f);
-    set_status(0);
+    set_status(1);
 }
 
 //accesseurs
@@ -183,11 +184,12 @@ void ListeObus::afficher() const {
     Noeud* courant = tete;
     while (courant) {
         std::cout << "Obus Index: " << courant->index
-                  << " | Position: (" << courant->obus.get_position_tir().x << ", " << courant->obus.get_position_tir().y << ")"
+                  << " | Position: (" << courant->obus.get_Sprite().getPosition().x << ", " << courant->obus.get_Sprite().getPosition().y << ")"
                   << " | Orientation: " << courant->obus.get_orientation()
                   << " | Vitesse: " << courant->obus.get_vitesse()
                   << " | Portée: " << courant->obus.get_porte()
                   << " | Temps: " << courant->obus.get_time_tir()
+                  << " | Status: " << courant->obus.get_status()
                   << std::endl;
         courant = courant->suivant;
     }
@@ -197,3 +199,13 @@ Noeud* ListeObus::get_tete() {
     return tete;
 }
 
+
+void ListeObus::vider() {
+    while (tete != nullptr) {
+        Noeud* temp = tete;
+        tete = tete->suivant;
+        delete temp;
+    }
+    queue = nullptr;
+    compteur = 0;
+}

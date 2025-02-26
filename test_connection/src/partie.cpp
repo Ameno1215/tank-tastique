@@ -32,12 +32,20 @@ bool Partie::ajouteJoueur() {
     }
 }
 
+std::string& Partie::get_buffer_missile() {
+    return buffer_missile;
+}
+
 int Partie::get_portactuel(){
     return port_actuel;
 }
 
 int Partie::get_nbJoueur(){
     return nbJoueur;
+}
+
+void Partie::setBufferMissile(const std::string& newBuffer) {
+        buffer_missile = newBuffer;
 }
 
 void Partie::getEvent() { 
@@ -108,8 +116,8 @@ void Partie::update() {
         if (courant->obus.get_status()) {
             // Calcul du déplacement
             sf::Vector2f deltaMove;
-            deltaMove.x = courant->obus.get_vitesse() * sin(courant->obus.get_Sprite().getRotation() * M_PI / 180);
-            deltaMove.y = -courant->obus.get_vitesse() * cos(courant->obus.get_Sprite().getRotation() * M_PI / 180);
+            deltaMove.x = mon_tank.get_vitesse_obus() * sin(courant->obus.get_Sprite().getRotation() * M_PI / 180);
+            deltaMove.y = -mon_tank.get_vitesse_obus() * cos(courant->obus.get_Sprite().getRotation() * M_PI / 180);
             
             // position = position + déplacement
             courant->obus.get_Sprite().setPosition(courant->obus.get_Sprite().getPosition().x + deltaMove.x, courant->obus.get_Sprite().getPosition().y + deltaMove.y);
@@ -159,13 +167,41 @@ void Partie::renderWindow() {
         window->draw(mon_tank.getTourelleSprite());
 
 
+        // OBUS
+        std::istringstream stream(get_buffer_missile());
+        char type;
+        stream >> type;
+        // vider la liste 
+        for (int i = 0; i < nbJoueur; i++) {
+            // printf("Avant vidage\n");
+            // joueur[i].Tank.getListeObus().afficher();   
+            joueur[i].Tank.getListeObus().vider();
+            // printf("Apres vidage\n");
+            // joueur[i].Tank.getListeObus().afficher();   
+        }
+    
+        int nb_obus;
+        stream >> nb_obus;
+        // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
+
+        while (!stream.eof()) {
+            int joueur_id;
+            float x, y, rotation;
+
+            stream >> joueur_id >> x >> y >> rotation;
+            // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
+            
+            joueur[joueur_id].Tank.getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
+            // joueur[joueur_id].Tank.getListeObus().afficher();
+        }
+
         // Affichage Obus
         Noeud* courant = mon_tank.getListeObus().get_tete();
         while (courant) {
             if (courant->obus.get_status()) {
                 window->draw(courant->obus.get_Sprite());
-                courant = courant->suivant;
             }
+            courant = courant->suivant;
         }
     }
 
@@ -216,21 +252,11 @@ void Partie::recieveData(){
         }
     }
 
-    int nb_obus;
-    if (buffer[0] == 'N') {
-        sscanf(buffer, "N %d",&nb_obus);
-
-        if (n < 0) {
-            perror("Erreur lors de la réception de la confirmation");
-            close(client.recieve_sockfd);
-            return;
-        }
-        printf("nb Obus de la partie : %d\n", nb_obus);
+    // RECEPTION DE LA LSITE D'OBUS
+    std::string message(buffer); 
+    if (buffer[0] == 'O') { 
+        setBufferMissile(std::string(buffer));
     }
-
-
-    // Affichage du buffer reçu
-    //printf("Buffer reçu : %s du port %d\n", buffer, client.num_port);
 }
 
 int Partie::Solo() {
@@ -427,23 +453,28 @@ int Partie::nb_obus() {
 }
 
 
-void Partie::remplir_tableau_obus(char tab[][4], int type) {
-    int j = 1; // index de l'obus qui commmence à 1, 0 c'est 'O'
+void Partie::string_obus(std::string& chaine) {
+    chaine = "O";
+
+    chaine += std::to_string(nb_obus()) + " \n";
 
     for (int i = 0; i < nbJoueur; i++) {
         tank& mon_tank = joueur[i].Tank;
-    
         Noeud* courant = mon_tank.getListeObus().get_tete();
 
         while (courant) {
-            tab[j][0] = type;
-            tab[j][1] = courant->obus.get_Sprite().getPosition().x;
-            tab[j][2] = courant->obus.get_Sprite().getPosition().y;
-            tab[j][3] = courant->obus.get_Sprite().getRotation();
+
+            chaine += std::to_string(i);
+            chaine += " " + std::to_string(courant->obus.get_Sprite().getPosition().x);
+            chaine += " " + std::to_string(courant->obus.get_Sprite().getPosition().y);
+            chaine += " " + std::to_string(courant->obus.get_Sprite().getRotation());
+            chaine += "\n";
             
-            j++;
             courant = courant->suivant;
         }
     }
-}
 
+
+
+    chaine += "1";
+}

@@ -56,7 +56,6 @@ void Client::initconnexion() {
     etatConnexion = -1; //connexion avec le server
     int received_port;
     std::string message = "C";
-    socklen_t len = sizeof(servaddr);
     socklen_t recieve_len = sizeof(recieve_servaddr);
     sendMessageToServer(message);  // Envoi du premier message sur le port 3000
     std::cout << "ICI Message 'C' envoyé au serveur.\n";

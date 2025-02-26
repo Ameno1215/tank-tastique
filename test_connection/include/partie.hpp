@@ -8,12 +8,13 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <mutex>
+#include <sstream>  
 #include <atomic>
 
 
 #include "joueur.hpp" 
 #include "client.hpp"
-#define NB_JOUEUR 2
+#define NB_JOUEUR 4
 
 class Partie {
     public:
@@ -28,6 +29,9 @@ class Partie {
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
+        std::string& get_buffer_missile();
+
+        void setBufferMissile(const std::string& newBuffer);
 
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
         
@@ -47,7 +51,10 @@ class Partie {
 
         // retourne le nombre d'obus actif dans la partie
         int nb_obus();
-        void remplir_tableau_obus(char tab[][4], int type);
+        
+        // rempli chaine (string) avec tous les obus (joueur, x, y, orientation) 
+        void string_obus(std::string& chaine);
+
 
 
         int joueur_courant;
@@ -58,6 +65,7 @@ class Partie {
         sf::Vector2u windowSize;
         sf::Sprite cursorSprite;
         sf::Texture textureCurseur;
+        std::string buffer_missile;
 
         int nbJoueur;
         int port_actuel;

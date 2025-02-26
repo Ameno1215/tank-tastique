@@ -23,6 +23,7 @@ public:
     float get_vit();
     float get_vit_canon();
     float get_cadence_tir();
+    float get_vitesse_obus();
     sf::Sprite& getBaseSprite();
     sf::Sprite& getTourelleSprite();
     ListeObus& getListeObus();
@@ -33,7 +34,8 @@ public:
     void set_ori(float new_ori);
     void set_vit(float new_vit);
     void set_vit_can(float new_vit_canon);
-    void set_cadence_tir(float noew_cadence);
+    void set_cadence_tir(float new_cadence);
+    void set_vitesse_obus(float new_vitesse_obus);
 
 private:
     float x;
@@ -42,6 +44,7 @@ private:
     float vitesse;
     float vitesse_canon;
     float cadence_tir;
+    float vitesse_obus;
     ListeObus liste_obus;
 
     sf::Texture textureBase, textureTourelle;

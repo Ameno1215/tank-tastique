@@ -38,7 +38,7 @@ private:
     void createSocketConnexion();
     void createBindedSocket();
     void connexion();
-    void afficher_buffer(char tab[][4], int nb_lignes);
+    void afficher_buffer(char tab[][5], int nb_lignes);
     
 public:
     Server();

@@ -147,6 +147,11 @@ void Server::recevoirEvent() {
     int i, z, q, s, d, mouseX, mouseY, clicked; 
     int valuesRead = sscanf(buffer, "%d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &mouseX, &mouseY, &clicked);
 
+    if (valuesRead != 8) { 
+        perror("Erreur de lecture avec sscanf, c'est la sauce !");
+        exit(EXIT_FAILURE);
+    }
+
     // Stockage des données dans le tableau de la partie
     partie.joueur[i].Zpressed = (z != 0);
     partie.joueur[i].Qpressed = (q != 0);
@@ -163,7 +168,7 @@ void Server::recevoirEvent() {
 
 void Server::sendToClient(){
     char buffer_processed_data[100];
-    char buffer_nb_obus[10];
+    // char buffer_nb_obus[10];
 
     for(int i = 0; i<NB_JOUEUR; i++){   
 
@@ -186,11 +191,29 @@ void Server::sendToClient(){
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
 
-            // envoie du nombre d'obus
-            sprintf(buffer_nb_obus, "N %d %d", partie.nb_obus(), 1);
+            // ENVOI DU NOMBRE D'OBUS
+            // sprintf(buffer_nb_obus, "N %d %d", partie.nb_obus(), 1);
+
+            // //les envoies à chaque autre client
+            // n = sendto(sockfd[i], buffer_nb_obus, strlen(buffer_nb_obus), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+            
+            // //verifiacation
+            // if (n < 0) {
+            //     perror("❌ Erreur lors de l'envoi des données du nombre d'obus");
+            //     return;
+            // } else {
+            //     //debugage
+            //     //std::cout << "📨 Données processed envoyées au client : " << buffer_nb_obus << std::endl;
+            //     //std::cout << "Sur le port " << sockfd[0] << std::endl;
+            // }
+
+            // ENVOIE DE LA LISTE D'OBUS
+            std::string buffer_liste_obus;
+            partie.string_obus(buffer_liste_obus);
+
 
             //les envoies à chaque autre client
-            n = sendto(sockfd[i], buffer_nb_obus, strlen(buffer_nb_obus), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+            n = sendto(sockfd[i], buffer_liste_obus.c_str(), strlen(buffer_liste_obus.c_str()), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
             
             //verifiacation
             if (n < 0) {
@@ -201,27 +224,15 @@ void Server::sendToClient(){
                 //std::cout << "📨 Données processed envoyées au client : " << buffer_nb_obus << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
-
-            // creation du tableau des obus
-            char buffer[partie.nb_obus() + 1][4]; // ajouter une ligne pour lui passer le type du message 'O'
-            buffer[0][0] = 'O';
-
-            // remplir le buffer
-            partie.remplir_tableau_obus(buffer, 1);
-
-            afficher_buffer(buffer, partie.nb_obus() + 1);
-
-            //ici t'envoie les infos des missiles avec n = sendto et la verif, pense au debug 
-
         }
     }
 }
 
-void Server::afficher_buffer(char tab[][4], int nb_lignes) {
+void Server::afficher_buffer(char tab[][5], int nb_lignes) {
     printf("Tableau buffer obus\n");
     for (int i = 0; i < nb_lignes; i++) {
         std::cout << "Ligne " << i << " : ";
-        for (int j = 0; j < 4; j++) {
+        for (int j = 0; j < 5; j++) {
             std::cout << static_cast<int>(tab[i][j]) << " "; // Convertir en int pour affichage lisible
         }
         std::cout << std::endl;

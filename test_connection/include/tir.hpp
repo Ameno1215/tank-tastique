@@ -80,6 +80,7 @@ class ListeObus {
         void set_time_dernier_tir(double new_time);
         double get_time_dernier_tir();
         Noeud* get_tete();
+        void vider();
 
     private:
         Noeud* tete;

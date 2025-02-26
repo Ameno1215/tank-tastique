@@ -6,7 +6,7 @@ tank::tank() {
 
 
     // liste des obus tiré par le tank
-    liste_obus = ListeObus();
+    // liste_obus = ListeObus();
 
 
     // Chargement des textures
@@ -29,7 +29,8 @@ tank::tank() {
     orientation = 0;
     vitesse = 1.2f;
     vitesse_canon = 1.1f; // Valeur par défaut
-    cadence_tir = 0.5;
+    cadence_tir = 0.8;
+    vitesse_obus = 1;
 
     spriteBase.setPosition(x, y);
     spriteTourelle.setPosition(x, y);
@@ -45,6 +46,7 @@ float tank::get_y() { return y; }
 float tank::get_ori() { return orientation; }
 float tank::get_vit() { return vitesse; }
 float tank::get_vit_canon() { return vitesse_canon; }
+float tank::get_vitesse_obus() { return vitesse_obus; }
 sf::Sprite& tank::getBaseSprite() { return spriteBase; }
 sf::Sprite& tank::getTourelleSprite() { return spriteTourelle; }
 float tank::get_cadence_tir() { return cadence_tir; }
@@ -73,4 +75,6 @@ void tank::set_vit(float new_vit) { vitesse = new_vit; }
 
 void tank::set_vit_can(float new_vit_canon) { vitesse_canon = new_vit_canon; }
 
-void tank::set_cadence_tir(float new_cadence) {cadence_tir = new_cadence; }
+void tank::set_cadence_tir(float new_cadence) { cadence_tir = new_cadence; }
+
+void tank::set_vitesse_obus(float new_vitesse_obus) { vitesse_obus = new_vitesse_obus; }
