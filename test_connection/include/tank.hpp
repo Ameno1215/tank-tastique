@@ -28,6 +28,11 @@ public:
     sf::Sprite& getTourelleSprite();
     ListeObus& getListeObus();
 
+    void updateHitbox(); // Met à jour la hitbox
+    void updateCollision(const sf::Sprite& otherSprite); // Met à jour l'état de collision
+    bool isColliding() const; // Retourne l'état de collision
+    std::vector<sf::Vector2f> getTransformedPoints(const sf::Sprite& sprite);
+
     // Setters
     void set_x(float new_x);
     void set_y(float new_y);
@@ -46,6 +51,11 @@ private:
     float cadence_tir;
     float vitesse_obus;
     ListeObus liste_obus;
+
+    bool collision = false;
+    std::vector<sf::Vector2f> tankHitbox;
+    sf::ConvexShape rectangleHitBox;
+
 
     sf::Texture textureBase, textureTourelle;
     sf::Sprite spriteBase, spriteTourelle;

@@ -37,6 +37,8 @@ class Partie {
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
         void afficheTableauScore();
         void renderExplosion(int x, int y);
+
+        sf::Sprite testSprite;
         
         //méthode que pour solo
         int Solo();

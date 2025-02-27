@@ -4,11 +4,6 @@
 // Constructeur
 tank::tank() {
 
-
-    // liste des obus tiré par le tank
-    // liste_obus = ListeObus();
-
-
     // Chargement des textures
     if (!textureBase.loadFromFile("Image/base1.png") || 
         !textureTourelle.loadFromFile("Image/tourelle2.png")) {
@@ -51,7 +46,35 @@ sf::Sprite& tank::getBaseSprite() { return spriteBase; }
 sf::Sprite& tank::getTourelleSprite() { return spriteTourelle; }
 float tank::get_cadence_tir() { return cadence_tir; }
 ListeObus& tank::getListeObus() { return liste_obus; }
+bool tank::isColliding() const { return collision; }     // Retourne l'état de collision
 
+// Mise à jour de la hitbox du tank
+void tank::updateHitbox() { tankHitbox = getTransformedPoints(getBaseSprite());}
+
+// Mise à jour de la collision avec un autre sprite
+void tank::updateCollision(const sf::Sprite& otherSprite) {
+    collision = false; // Réinitialisation
+
+    for (const auto& point : tankHitbox) {
+        if (otherSprite.getGlobalBounds().contains(point)) {
+            collision = true;
+            break;
+        }
+    }
+}
+
+std::vector<sf::Vector2f> tank::getTransformedPoints(const sf::Sprite& sprite) {
+    std::vector<sf::Vector2f> points;
+    sf::FloatRect bounds = sprite.getLocalBounds();
+    sf::Transform transform = sprite.getTransform();
+
+    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left, bounds.top)));
+    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left + bounds.width, bounds.top)));
+    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left + bounds.width, bounds.top + bounds.height)));
+    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left, bounds.top + bounds.height)));
+
+    return points;
+}
 
 // Setters
 void tank::set_x(float new_x) { 

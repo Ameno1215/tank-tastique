@@ -18,7 +18,7 @@ SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 # Fichiers sources pour le client
 CLIENT_SRC_FILES = $(SRC_DIR)/main.cpp $(SRC_DIR)/lobby.cpp $(SRC_DIR)/partie.cpp \
                    $(SRC_DIR)/joueur.cpp $(SRC_DIR)/bouton.cpp $(SRC_DIR)/deplacement.cpp $(SRC_DIR)/client.cpp \
-                   $(SRC_DIR)/tank.cpp
+                   $(SRC_DIR)/tank.cpp 
 
 # Fichiers sources pour le serveur
 SERVER_SRC_FILES = $(SRC_DIR)/server.cpp $(SRC_DIR)/partie.cpp $(SRC_DIR)/joueur.cpp $(SRC_DIR)/client.cpp $(SRC_DIR)/deplacement.cpp $(SRC_DIR)/tank.cpp

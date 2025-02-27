@@ -286,6 +286,12 @@ void Server::startServer() {
 
     init_send_fd();
 
+    sf::Texture texturetest;
+    texturetest.loadFromFile("Image/base1.png");
+    partie.testSprite.setTexture(texturetest);
+    partie.testSprite.setScale(0.08f, 0.08f);
+    partie.testSprite.setPosition(300, 300);
+
     // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
         while (running) {

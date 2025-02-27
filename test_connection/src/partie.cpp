@@ -103,22 +103,49 @@ void Partie::update() {
     float vit_canon = mon_tank.get_vit_canon();
 
     if (joueur[joueur_courant].Zpressed) {
-        deplacement_verticale(mon_tank, rotation, speed);
-        deplacement_verticale(mon_tank, rotation, speed);
+        
+        deplacement_verticale(mon_tank, rotation, speed); //on avance
+
+        joueur[joueur_courant].Tank.updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank.updateCollision(testSprite); //check si ca touche un truc
+
+        if (joueur[joueur_courant].Tank.isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, -2*speed);
+        }
         //joueur[0].pV--; //test pour le PV 
     }
 
     if (joueur[joueur_courant].Spressed) {
         deplacement_verticale(mon_tank, rotation, -speed);
-        deplacement_verticale(mon_tank, rotation, -speed);
+
+        joueur[joueur_courant].Tank.updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank.updateCollision(testSprite); //check si ca touche un truc
+
+        if (joueur[joueur_courant].Tank.isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, 2*speed);
+        }
     }
 
-    if (joueur[joueur_courant].Qpressed)
+    if (joueur[joueur_courant].Qpressed){
         deplacement_rotation(mon_tank, &rotation, 1.2);
-    
-    if (joueur[joueur_courant].Dpressed)
-        deplacement_rotation(mon_tank, &rotation, -1.2);
+        
+        joueur[joueur_courant].Tank.updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank.updateCollision(testSprite); //check si ca touche un truc
 
+        if (joueur[joueur_courant].Tank.isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, -2.4);
+        }
+    }
+    
+    if (joueur[joueur_courant].Dpressed){
+        deplacement_rotation(mon_tank, &rotation, -1.2);
+        joueur[joueur_courant].Tank.updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank.updateCollision(testSprite); //check si ca touche un truc
+
+        if (joueur[joueur_courant].Tank.isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, -2.4);
+        }
+    }
     
     // Mise à jour de l'angle de la tourelle truc à Joshua
     float angle_actu = mon_tank.getTourelleSprite().getRotation();
@@ -241,6 +268,8 @@ void Partie::renderWindow() {
         std::cout<<"Tab pressed \n"<<std::endl;
     }
 
+    window->draw(testSprite);
+
     window->display();
 }
 
@@ -333,6 +362,15 @@ int Partie::Solo() {
     cursorSprite.setScale(0.12f, 0.12f);
     joueur[joueur_courant].Tank.set_vit(0.2f);
 
+    sf::Texture texturetest;
+    texturetest.loadFromFile("Image/base1.png");
+    sf::Sprite cursorSprite(textureCurseur);
+    testSprite.setTexture(texturetest);
+    cursorSprite.setScale(0.08f, 0.08f);
+    testSprite.setScale(0.08f, 0.08f);
+    testSprite.setPosition(300, 300);
+
+
     // Boucle de jeu
     while (window->isOpen()) {
         getEvent();
@@ -376,6 +414,15 @@ int Partie::multiJoueur() {
 
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
+
+    sf::Texture texturetest;
+    texturetest.loadFromFile("Image/base1.png");
+    sf::Sprite cursorSprite(textureCurseur);
+    testSprite.setTexture(texturetest);
+    cursorSprite.setScale(0.08f, 0.08f);
+    testSprite.setScale(0.08f, 0.08f);
+    testSprite.setPosition(300, 300);
+
     
     int numport = client.num_port;
     client.num_port = 3000;         //creation du port d'envoie sur le port 3000
