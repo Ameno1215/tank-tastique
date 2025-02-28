@@ -156,8 +156,6 @@ void Partie::update() {
     
     mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon); //rotation tourelle
 
-
-
     // CALCUL DEPLACEMENT OBUS
     Noeud* courant = mon_tank.getListeObus().get_tete();
     while (courant) {
@@ -178,7 +176,31 @@ void Partie::update() {
                 mon_tank.getListeObus().supprimer(courant->index);
                 courant = temp;
             }
-            else courant = courant->suivant;
+            else{
+
+                bool obusDestructeur = false; //variable pour savoir si l'obus a touché quelque chose
+
+                for(int i = 0; i<NB_JOUEUR; i++){
+                    tank& testank = joueur[i].Tank;
+                    testank.updateHitbox(); //il faut update car si le tank adverse bouge pas c'est pas bon 
+                    testank.updateTouched(courant->obus.get_Sprite());
+                    if(testank.isTouched()){
+                        std::cout<<"tank touché"<<std::endl;
+                        if(joueur[i].pV > 0){
+                            joueur[i].pV--;
+                        }
+                        obusDestructeur = true;
+                        courant->obus.set_status(0); // destruction obus
+                        Noeud * temp = courant->suivant;
+                        mon_tank.getListeObus().supprimer(courant->index);
+                        courant = temp;
+                        break;
+                    }
+                }
+                if(!obusDestructeur){ //si l'obus n'a rien rencontré on détruit
+                    courant = courant->suivant;
+                }
+            } 
         }
     }
 

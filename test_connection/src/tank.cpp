@@ -32,9 +32,6 @@ tank::tank() {
 
     // Redimensionnement
     spriteBase.setScale(0.1f, 0.1f);
-    sf::FloatRect bounds = spriteBase.getGlobalBounds();
-    std::cout << "Test : Taille du sprite : " << bounds.width << "x" << bounds.height << std::endl;
-
     spriteTourelle.setScale(0.1f, 0.1f);
 }
 
@@ -50,28 +47,26 @@ sf::Sprite& tank::getTourelleSprite() { return spriteTourelle; }
 float tank::get_cadence_tir() { return cadence_tir; }
 ListeObus& tank::getListeObus() { return liste_obus; }
 bool tank::isColliding() const { return collision; }     // Retourne l'état de collision
+bool tank::isTouched(){ return touched;}// Retourne l'état de collision
 
 // Mise à jour de la hitbox du tank
 void tank::updateHitbox() { 
     tankHitbox = getTransformedPoints(getBaseSprite());
     // Trouver les bornes min et max
-    float minX = tankHitbox[0].x, maxX = tankHitbox[0].x;
-    float minY = tankHitbox[0].y, maxY = tankHitbox[0].y;
-
+    int initBornes = 0;       //pour initialiser les bornes
     for (const auto& point : tankHitbox) {
-        if (point.x < minX) minX = point.x;
-        if (point.x > maxX) maxX = point.x;
-        if (point.y < minY) minY = point.y;
-        if (point.y > maxY) maxY = point.y;
+        if(initBornes == 0){
+            bornesHitBox[0] = point.x;
+            bornesHitBox[1] = point.x;
+            bornesHitBox[2] = point.y;
+            bornesHitBox[3] = point.y;
+            initBornes = 1;
+        }
+        if (point.x < bornesHitBox[0]) bornesHitBox[0] = point.x;
+        if (point.x > bornesHitBox[1]) bornesHitBox[1] = point.x;
+        if (point.y < bornesHitBox[2]) bornesHitBox[2] = point.y;
+        if (point.y > bornesHitBox[3]) bornesHitBox[3] = point.y;
     }
-
-    // Calculer largeur et hauteur
-    float largeur = maxX - minX;
-    float hauteur = maxY - minY;
-
-    // Affichage dans le terminal
-    //std::cout << "Hitbox : " << largeur << "x" << hauteur << std::endl;
-
 }
 
 // Mise à jour de la collision avec un autre sprite
@@ -85,6 +80,19 @@ void tank::updateCollision(const sf::Sprite& otherSprite) {
         }
     }
 }
+
+void tank::updateTouched(const sf::Sprite& otherSprite) {      // ca marche bof detecte mal
+    touched = false; 
+
+    for (const auto& point : tankHitbox) {
+        if (otherSprite.getGlobalBounds().contains(point)) {
+            std::cout<<"touché";
+            touched = true;
+            return;
+        }
+    }
+}
+
 
 std::vector<sf::Vector2f> tank::getTransformedPoints(const sf::Sprite& sprite) {
     std::vector<sf::Vector2f> points;

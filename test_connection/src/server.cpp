@@ -282,15 +282,6 @@ void Server::init_send_fd(){
 }
 
 void Server::startServer() {
-
-    for(int i = 0; i<NB_JOUEUR; i++){
-        sf::Sprite& baseTank = partie.joueur[i].Tank.getBaseSprite();
-        baseTank.setScale(0.1f, 0.1f);
-        sf::FloatRect bounds = baseTank.getGlobalBounds();
-        std::cout << "Taille du sprite : " << bounds.width << "x" << bounds.height << std::endl;
-
-    }
-    
     
     connexion();  // Lancement de la gestion des connexions
 
@@ -302,11 +293,6 @@ void Server::startServer() {
     partie.testSprite.setScale(0.08f, 0.08f);
     partie.testSprite.setPosition(300, 300);
 
-    /*sf::Sprite testTaille = partie.joueur[0].Tank.getBaseSprite();
-    sf::FloatRect bounds = testTaille.getGlobalBounds();
-
-    std::cout << "Taille du sprite : " << bounds.width << "x" << bounds.height << std::endl;*/
-    // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
         while (running) {
             recevoirEvent();
