@@ -136,7 +136,7 @@ void Server::recevoirEvent() {
 
     //recupère n'importe quel message sur le port 3000
     int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
-    std::cout << "buffer recu " << buffer << " :\n";
+    //std::cout << "buffer recu " << buffer << " :\n";
 
     if (receivedBytes < 0) {   //verifie
         std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
@@ -161,9 +161,10 @@ void Server::recevoirEvent() {
     partie.joueur[i].Clicked = (clicked != 0);
 
     // Affichage des données reçues pour débogage
-    std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
+    /*std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
     std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
-    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl; 
+    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl;
+    */
 }
 
 void Server::sendToClient(){
@@ -281,6 +282,15 @@ void Server::init_send_fd(){
 }
 
 void Server::startServer() {
+
+    for(int i = 0; i<NB_JOUEUR; i++){
+        sf::Sprite& baseTank = partie.joueur[i].Tank.getBaseSprite();
+        baseTank.setScale(0.1f, 0.1f);
+        sf::FloatRect bounds = baseTank.getGlobalBounds();
+        std::cout << "Taille du sprite : " << bounds.width << "x" << bounds.height << std::endl;
+
+    }
+    
     
     connexion();  // Lancement de la gestion des connexions
 
@@ -292,6 +302,10 @@ void Server::startServer() {
     partie.testSprite.setScale(0.08f, 0.08f);
     partie.testSprite.setPosition(300, 300);
 
+    /*sf::Sprite testTaille = partie.joueur[0].Tank.getBaseSprite();
+    sf::FloatRect bounds = testTaille.getGlobalBounds();
+
+    std::cout << "Taille du sprite : " << bounds.width << "x" << bounds.height << std::endl;*/
     // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
         while (running) {

@@ -32,6 +32,9 @@ tank::tank() {
 
     // Redimensionnement
     spriteBase.setScale(0.1f, 0.1f);
+    sf::FloatRect bounds = spriteBase.getGlobalBounds();
+    std::cout << "Test : Taille du sprite : " << bounds.width << "x" << bounds.height << std::endl;
+
     spriteTourelle.setScale(0.1f, 0.1f);
 }
 
@@ -49,7 +52,27 @@ ListeObus& tank::getListeObus() { return liste_obus; }
 bool tank::isColliding() const { return collision; }     // Retourne l'état de collision
 
 // Mise à jour de la hitbox du tank
-void tank::updateHitbox() { tankHitbox = getTransformedPoints(getBaseSprite());}
+void tank::updateHitbox() { 
+    tankHitbox = getTransformedPoints(getBaseSprite());
+    // Trouver les bornes min et max
+    float minX = tankHitbox[0].x, maxX = tankHitbox[0].x;
+    float minY = tankHitbox[0].y, maxY = tankHitbox[0].y;
+
+    for (const auto& point : tankHitbox) {
+        if (point.x < minX) minX = point.x;
+        if (point.x > maxX) maxX = point.x;
+        if (point.y < minY) minY = point.y;
+        if (point.y > maxY) maxY = point.y;
+    }
+
+    // Calculer largeur et hauteur
+    float largeur = maxX - minX;
+    float hauteur = maxY - minY;
+
+    // Affichage dans le terminal
+    //std::cout << "Hitbox : " << largeur << "x" << hauteur << std::endl;
+
+}
 
 // Mise à jour de la collision avec un autre sprite
 void tank::updateCollision(const sf::Sprite& otherSprite) {
