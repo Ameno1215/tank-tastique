@@ -136,7 +136,7 @@ void Server::recevoirEvent() {
 
     //recupère n'importe quel message sur le port 3000
     int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
-    std::cout << "buffer recu " << buffer << " :\n";
+    // std::cout << "buffer recu " << buffer << " :\n";
 
     if (receivedBytes < 0) {   //verifie
         std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
@@ -144,26 +144,50 @@ void Server::recevoirEvent() {
     }
 
     //recupère les données 
-    int i, z, q, s, d, mouseX, mouseY, clicked; 
-    int valuesRead = sscanf(buffer, "%d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &mouseX, &mouseY, &clicked);
+    if (buffer[0] == 'A') {
+        int i, z, q, s, d, mouseX, mouseY, clicked; 
+        int valuesRead = sscanf(buffer, "A %d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &mouseX, &mouseY, &clicked);
 
-    if (valuesRead != 8) { 
-        perror("Erreur de lecture avec sscanf, c'est la sauce !");
-        exit(EXIT_FAILURE);
+        if (valuesRead != 8) { 
+            perror("Erreur de lecture avec sscanf, c'est la sauce !");
+            exit(EXIT_FAILURE);
+        }
+
+        // Stockage des données dans le tableau de la partie
+        partie.joueur[i].Zpressed = (z != 0);
+        partie.joueur[i].Qpressed = (q != 0);
+        partie.joueur[i].Spressed = (s != 0);
+        partie.joueur[i].Dpressed = (d != 0);
+        partie.joueur[i].worldMousePos = sf::Vector2f(mouseX, mouseY);
+        partie.joueur[i].Clicked = (clicked != 0);
+
+        // Affichage des données reçues pour débogage
+        // std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
+        // std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
+        // std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl; 
     }
 
-    // Stockage des données dans le tableau de la partie
-    partie.joueur[i].Zpressed = (z != 0);
-    partie.joueur[i].Qpressed = (q != 0);
-    partie.joueur[i].Spressed = (s != 0);
-    partie.joueur[i].Dpressed = (d != 0);
-    partie.joueur[i].worldMousePos = sf::Vector2f(mouseX, mouseY);
-    partie.joueur[i].Clicked = (clicked != 0);
+    if (buffer[0] == 'T' && buffer[0] == 'T') {
+        int type_tank = -1;
+        int id;
+        int valuesRead = sscanf(buffer, "TT %d %d", &id, &type_tank);
 
-    // Affichage des données reçues pour débogage
-    std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
-    std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
-    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl; 
+        if (valuesRead != 2) { 
+            perror("Erreur de lecture avec sscanf, c'est la sauce !");
+            exit(EXIT_FAILURE);
+        }
+
+        // Stockage des données dans la partie
+        printf("joueur %d à selectionner le tank : %d \n", id, type_tank);
+        if (type_tank == 1) {
+            partie.joueur[id].setTank(std::make_unique<Tank_vert>());
+        }
+        else if (type_tank == 2) {
+            partie.joueur[id].setTank(std::make_unique<Tank_bleu>());
+        }
+
+        partie.affiche_type_tank();
+    } 
 }
 
 void Server::sendToClient(){
@@ -176,7 +200,7 @@ void Server::sendToClient(){
         for(int j = 0; j<NB_JOUEUR; j++){
 
             //recupère les tank/data processed de chaque joueur
-            tank& tankjoueur = partie.joueur[j].Tank;
+            tank& tankjoueur = *(partie.joueur[j].Tank);
             sprintf(buffer_processed_data, "T %d %f %f %f %f %d", partie.joueur[j].id, tankjoueur.get_x(), tankjoueur.get_y(), tankjoueur.get_ori(), tankjoueur.getTourelleSprite().getRotation(), 1);
 
             //les envoies à chaque autre client
@@ -191,22 +215,6 @@ void Server::sendToClient(){
                 //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
-
-            // ENVOI DU NOMBRE D'OBUS
-            // sprintf(buffer_nb_obus, "N %d %d", partie.nb_obus(), 1);
-
-            // //les envoies à chaque autre client
-            // n = sendto(sockfd[i], buffer_nb_obus, strlen(buffer_nb_obus), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
-            
-            // //verifiacation
-            // if (n < 0) {
-            //     perror("❌ Erreur lors de l'envoi des données du nombre d'obus");
-            //     return;
-            // } else {
-            //     //debugage
-            //     //std::cout << "📨 Données processed envoyées au client : " << buffer_nb_obus << std::endl;
-            //     //std::cout << "Sur le port " << sockfd[0] << std::endl;
-            // }
 
             // ENVOIE DE LA LISTE D'OBUS
             std::string buffer_liste_obus;
@@ -238,6 +246,42 @@ void Server::sendToClient(){
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
     }
+}
+
+void Server::sendTankToClient(){
+    std::string buffer;
+    string_tank(buffer);
+
+
+    //les envoies à chaque autre client
+    for (int i = 0; i < partie.get_nbJoueur(); i++) {
+         int n = sendto(sockfd[i], buffer.c_str(), strlen(buffer.c_str()), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+        
+        //verifiacation
+        if (n < 0) {
+            perror("❌ Erreur lors de l'envoi des données du tank");
+            return;
+        } else {
+            //debugage
+            //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
+            //std::cout << "Sur le port " << sockfd[0] << std::endl;
+        }
+    }     
+}
+
+void Server::string_tank(std::string& chaine) {
+    chaine = "B";
+
+    chaine += " \n";
+
+    for (int i = 0; i < partie.get_nbJoueur(); i++) {  
+        chaine += std::to_string(i);
+        chaine += " " + std::to_string(partie.joueur[i].Tank->get_type());
+        chaine += "\n";
+    }
+    
+    chaine += " 1";
+    // std::cout << chaine << "\n\n";
 }
 
 void Server::afficher_buffer(char tab[][5], int nb_lignes) {
@@ -286,6 +330,13 @@ void Server::startServer() {
 
     init_send_fd();
 
+    // TYPE DE TANK BLANC POUR TOUS LES JOUEURS AU DEBUT
+    for (int i = 0; i < NB_JOUEUR; i ++) {
+        partie.joueur[i].setTank(std::make_unique<Tank_blanc>());
+    }
+    std::cout << "tank en début de partie sur le server\n";
+    partie.affiche_type_tank();
+
     // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
         while (running) {
@@ -293,11 +344,22 @@ void Server::startServer() {
         }
     });
 
+    std::thread tankThread([this]() {
+
+        while (running) {
+            sendTankToClient();
+        }
+    });
+
+    
+    
+
     // Boucle principale du serveur
     while (running) {
         //recevoirEvent();
         processEvent();  
         sendToClient();
+        // partie.affiche_type_tank();
         std::this_thread::sleep_for(std::chrono::milliseconds(5));  // Ajout d'un délai pour éviter une boucle trop rapide
     }
 

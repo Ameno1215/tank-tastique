@@ -121,7 +121,7 @@ void Client::initconnexion() {
 void Client::sendData(){
     char buffer[1024];
 
-    snprintf(buffer, sizeof(buffer), "T %.2f %.2f %.2f", joueur.Tank.get_x(), joueur.Tank.get_y(), joueur.Tank.get_ori());
+    snprintf(buffer, sizeof(buffer), "T %.2f %.2f %.2f", joueur.Tank->get_x(), joueur.Tank->get_y(), joueur.Tank->get_ori());
 
     sendMessageToServer(buffer);
 }
@@ -171,9 +171,9 @@ void Client::udpdateData(Joueur& joueur){
     if (buffer[0] == 'T') {
         float x, y, ori;
         if (sscanf(buffer, "T %f %f %f", &x, &y, &ori) == 3) {
-            joueur.Tank.set_x(x);
-            joueur.Tank.set_y(y);
-            joueur.Tank.set_ori(ori);
+            joueur.Tank->set_x(x);
+            joueur.Tank->set_y(y);
+            joueur.Tank->set_ori(ori);
         } else {
             std::cerr << "Format de message invalide !" << std::endl;
         }

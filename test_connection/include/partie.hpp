@@ -13,7 +13,11 @@
 
 
 #include "joueur.hpp" 
+#include "bouton.hpp"
 #include "client.hpp"
+#include "tankBleu.hpp"
+#include "tankVert.hpp"
+#include "tankBlanc.hpp"
 #define NB_JOUEUR 2
 
 class Partie {
@@ -44,19 +48,24 @@ class Partie {
         //methode pour Solo/Multi
         void getEvent(); 
         void update();
-        void renderWindow();
+        void renderWindow(int multi);
         
         //methodes que pour multi
         int multiJoueur();
         void affichageConnexion();
         void sendData();
+        void sendTank(int type);
         void recieveData();
+        void recieveTank();
 
         // retourne le nombre d'obus actif dans la partie
         int nb_obus();
         
         // rempli chaine (string) avec tous les obus (joueur, x, y, orientation) 
         void string_obus(std::string& chaine);
+
+        int selectionTank();
+        void affiche_type_tank();
 
 
 

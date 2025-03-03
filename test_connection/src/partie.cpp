@@ -94,7 +94,7 @@ void Partie::getEvent() {
 
 void Partie::update() {
 
-    tank& mon_tank = joueur[joueur_courant].Tank; //pour pas que ca rallonge le code
+    tank& mon_tank = *(joueur[joueur_courant].Tank); //pour pas que ca rallonge le code
 
     sf::Vector2f dir = joueur[joueur_courant].worldMousePos - mon_tank.getTourelleSprite().getPosition();  
     
@@ -173,7 +173,7 @@ void Partie::update() {
     //std::cout<<"Joueur "<<joueur_courant<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
 }
 
-void Partie::renderWindow() {
+void Partie::renderWindow(int multi) {
 
     window->clear();
     //affichage souris
@@ -185,39 +185,42 @@ void Partie::renderWindow() {
 
     //affichage de chaque tank
     for(int i = 0; i<nbJoueur; i++){
-        tank& mon_tank = joueur[i].Tank;
+        tank& mon_tank = *(joueur[i].Tank);
 
         window->draw(mon_tank.getBaseSprite());
         window->draw(mon_tank.getTourelleSprite());
 
 
         // OBUS
-        std::istringstream stream(get_buffer_missile());
-        char type;
-        stream >> type;
-        // vider la liste 
-        for (int i = 0; i < nbJoueur; i++) {
-            // printf("Avant vidage\n");
-            // joueur[i].Tank.getListeObus().afficher();   
-            joueur[i].Tank.getListeObus().vider();
-            // printf("Apres vidage\n");
-            // joueur[i].Tank.getListeObus().afficher();   
-        }
-    
-        int nb_obus;
-        stream >> nb_obus;
-        // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
+        if (multi) {
+            std::istringstream stream(get_buffer_missile());
+            char type;
+            stream >> type;
+            // vider la liste 
+            for (int i = 0; i < nbJoueur; i++) {
+                // printf("Avant vidage\n");
+                // joueur[i].Tank.getListeObus().afficher();   
+                joueur[i].Tank->getListeObus().vider();
+                // printf("Apres vidage\n");
+                // joueur[i].Tank.getListeObus().afficher();   
+            }
+        
+            int nb_obus;
+            stream >> nb_obus;
+            // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
 
-        while (!stream.eof()) {
-            int joueur_id;
-            float x, y, rotation;
+            while (!stream.eof()) {
+                int joueur_id;
+                float x, y, rotation;
 
-            stream >> joueur_id >> x >> y >> rotation;
-            // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
-            
-            joueur[joueur_id].Tank.getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
-            // joueur[joueur_id].Tank.getListeObus().afficher();
+                stream >> joueur_id >> x >> y >> rotation;
+                // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
+                
+                joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
+                // joueur[joueur_id].Tank.getListeObus().afficher();
+            }
         }
+        
 
         // Affichage Obus
         Noeud* courant = mon_tank.getListeObus().get_tete();
@@ -249,10 +252,25 @@ void Partie::sendData(){
     char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
     int test = 1;      // valeur à mettre par précaution à la fin du buffer
 
-    sprintf(buffer, "%d %d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), joueur[joueur_courant].Clicked ? 1 : 0, test);
+    sprintf(buffer, "A %d %d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), joueur[joueur_courant].Clicked ? 1 : 0, test);
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
         perror("❌ Erreur lors de l'envoi des données");
+        return;
+    } else {
+        //std::cout << "📨 Données envoyées : " << buffer << std::endl;
+    }
+}
+
+void Partie::sendTank(int type){
+
+    char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
+    int test = 1;      // valeur à mettre par précaution à la fin du buffer
+
+    sprintf(buffer, "TT %d %d %d", joueur_courant, type, test);
+    int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
+    if (n < 0) {
+        perror("❌ Erreur lors de l'envoi du type de tank");
         return;
     } else {
         //std::cout << "📨 Données envoyées : " << buffer << std::endl;
@@ -272,7 +290,7 @@ void Partie::recieveData(){
         float x,y,ori, oritourelle;
         sscanf(buffer, "T %d %f %f %f %f",&indice_joueur, &x, &y, &ori, &oritourelle);
 
-        tank& tankjoueur = joueur[indice_joueur].Tank;  // Utilisation d'une référence
+        tank& tankjoueur = *(joueur[indice_joueur].Tank);  // Utilisation d'une référence
         tankjoueur.set_x(x);
         tankjoueur.set_y(y);
         tankjoueur.set_ori(ori);
@@ -311,6 +329,43 @@ void Partie::recieveData(){
     
 }
 
+void Partie::recieveTank(){
+
+    char buffer[1024];
+    socklen_t addr_len = sizeof(client.recieve_servaddr);
+
+    ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    // Vérification des erreurs
+    if (n <= 0) {
+        std::cerr << "Erreur de réception ou message vide." << std::endl;
+        return;
+    }
+
+    buffer[n] = '\0';  // Ajout du caractère de fin de chaîne
+    std::string message(buffer);
+    
+    std::istringstream stream(message);
+    char type;
+    stream >> type;
+    if (buffer[0] == 'B') { 
+        while (!stream.eof()) {
+            int joueur_id;
+            int type;
+
+            stream >> joueur_id >> type;
+            
+            // modfif du type du tank du joueur
+            if (type == 1) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_vert>());
+            }
+            else if (type == 2) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_bleu>());
+            }
+            // std::cout << "J " << joueur_id << " T " << type << "\n";
+        }
+    }    
+}
+
 int Partie::Solo() {
     // Libérer la mémoire si une fenêtre existait déjà
     if (window) {
@@ -319,7 +374,7 @@ int Partie::Solo() {
     
     window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "SOLO");
     windowSize = window->getSize();
-    window->setMouseCursorVisible(false);
+    window->setMouseCursorVisible(true);
     
     joueur_courant = 0;
     nbJoueur =  1;
@@ -329,15 +384,20 @@ int Partie::Solo() {
         return -1;
     }
 
+    selectionTank();
+
+    window->clear();
+
+    window->setMouseCursorVisible(false);
+
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
-    joueur[joueur_courant].Tank.set_vit(0.2f);
 
     // Boucle de jeu
     while (window->isOpen()) {
         getEvent();
         update();
-        renderWindow();
+        renderWindow(0);
     }
 
     return 0;
@@ -367,7 +427,6 @@ int Partie::multiJoueur() {
 
     window = new sf::RenderWindow(sf::VideoMode(1900, 1000), title);
     windowSize = window->getSize();
-    window->setMouseCursorVisible(false);
     
     if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
         std::cerr << "Erreur lors du chargement du curseur !\n";
@@ -376,12 +435,100 @@ int Partie::multiJoueur() {
 
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
-    
+
     int numport = client.num_port;
     client.num_port = 3000;         //creation du port d'envoie sur le port 3000
     client.createSocket();
     client.num_port = numport;
     client.createBindedSocket();    //creation du port d'écoute sur le port dédié au client
+    
+    
+    // CHOIX DU TANK
+    int choix_tank = -1;
+    for (int i = 0; i < nbJoueur; i++) {
+        joueur[i].setTank(std::make_unique<Tank_blanc>());
+    }
+    
+
+    // sélection par le joueur;
+    choix_tank = selectionTank();
+    sendTank(choix_tank);
+
+
+    std::thread tankThread([this]() {
+        int count = 0;
+        while (window->isOpen()) {
+
+            recieveTank();
+            count = 0;
+            for (int i = 0; i < nbJoueur; i++) {
+                if (joueur[i].Tank->get_type() != 0) count++;
+            }
+
+            if (count == nbJoueur) break; // si tous les tanks sont mis à jours on stop la reception
+        }
+   
+    });
+
+
+
+    // // 🛑 Attente de la réception des tanks avec une barre de progression
+    // sf::Font font;
+    // if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+    //     std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
+    // }
+
+    // sf::Text text("En attente des autres joueurs...", font, 30);
+    // text.setFillColor(sf::Color::White);
+    // text.setPosition(100, 50);
+
+    // // Barre de progression
+    // sf::RectangleShape barOutline(sf::Vector2f(400, 30));  // Contour
+    // barOutline.setFillColor(sf::Color::Transparent);
+    // barOutline.setOutlineThickness(3);
+    // barOutline.setOutlineColor(sf::Color::White);
+    // barOutline.setPosition(100, 150);
+
+    // sf::RectangleShape barFill(sf::Vector2f(0, 30));  // Barre remplie
+    // barFill.setFillColor(sf::Color::Green);
+    // barFill.setPosition(100, 150);
+
+    // int count = 0;
+
+    // while (window->isOpen()) {
+    //     // Gestion des événements SFML pour éviter que la fenêtre ne freeze
+    //     sf::Event event;
+    //     while (window->pollEvent(event)) {
+    //         if (event.type == sf::Event::Closed) return -1;
+    //     }
+
+    //     // Réception des tanks
+    //     // recieveTank();
+    //     count = 0;
+    //     for (int i = 0; i < nbJoueur; i++) {
+    //         if (joueur[i].Tank->get_type() != 0) count++;
+    //     }
+
+    //     // 🏁 Si tous les tanks sont reçus, on passe au jeu
+    //     if (count == nbJoueur) break;
+
+    //     // 🟢 Mise à jour de la barre de progression
+    //     float progress = static_cast<float>(count) / nbJoueur;
+    //     barFill.setSize(sf::Vector2f(400 * progress, 30));
+
+    //     // Affichage SFML
+    //     window->clear(sf::Color::Black);
+    //     window->draw(text);
+    //     window->draw(barOutline);
+    //     window->draw(barFill);
+    //     window->display();
+
+    //     // std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Limite le CPU
+    // }
+    
+    
+    //JEU 
+    window->setMouseCursorVisible(false);
     
     std::thread recievethread([this]() { //thread qui recoit les données processed par le server
         while (window->isOpen()) {
@@ -389,11 +536,12 @@ int Partie::multiJoueur() {
         }
     });
 
+
     // Boucle de jeu en multi
     while (window->isOpen()) {
         getEvent();
         sendData();
-        renderWindow();
+        renderWindow(1);
         std::this_thread::sleep_for(std::chrono::milliseconds(8));  // Ajout d'un délai pour éviter une boucle trop rapide
     }
 
@@ -403,6 +551,8 @@ int Partie::multiJoueur() {
 
     return 0;
 }
+
+
 
 void Partie::affichageConnexion() {
     if (window) {  
@@ -527,7 +677,7 @@ int Partie::nb_obus() {
     int compteur_obus = 0;
 
     for (int i = 0; i < nbJoueur; i++) {
-        tank& mon_tank = joueur[i].Tank;
+        tank& mon_tank = *(joueur[i].Tank);
     
         Noeud* courant = mon_tank.getListeObus().get_tete();
 
@@ -547,7 +697,7 @@ void Partie::string_obus(std::string& chaine) {
     chaine += std::to_string(nb_obus()) + " \n";
 
     for (int i = 0; i < nbJoueur; i++) {
-        tank& mon_tank = joueur[i].Tank;
+        tank& mon_tank = *(joueur[i].Tank);
         Noeud* courant = mon_tank.getListeObus().get_tete();
 
         while (courant) {
@@ -630,5 +780,61 @@ void Partie::afficheTableauScore() {
         playerText.setPosition(scoreBox.getPosition().x + 20, scoreBox.getPosition().y + 50 + i * 30);
 
         window->draw(playerText);
+    }
+}
+
+
+int Partie::selectionTank() {
+    sf::Font font;
+    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+        std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
+    }
+
+    // Création des boutons
+    Bouton boutonTankVert(700, 400, 200, 50, "Tank Vert", font);
+    Bouton boutonTankBleu(1000, 400, 200, 50, "Tank Bleu", font);
+
+    sf::Text title("Selection du Tank", font, 40);
+    title.setPosition(750, 250);
+
+    while (window->isOpen()) {
+        sf::Event event;
+        while (window->pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                window->close();
+                return -1;
+            }
+            if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                // sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
+                sf::Vector2f mousePos = window->mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
+                if (boutonTankVert.isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_vert>());
+                    return 1;
+                } else if (boutonTankBleu.isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_bleu>());
+                    return 2;
+                }
+            }
+        }
+
+        sf::Vector2f mousePos = window->mapPixelToCoords(sf::Mouse::getPosition(*window));
+        boutonTankVert.update(mousePos);
+        boutonTankBleu.update(mousePos);
+
+        window->clear(sf::Color::Black);
+        window->draw(title);
+        boutonTankVert.draw(*window);
+        boutonTankBleu.draw(*window);
+        window->display();
+    }
+    return 0;
+}
+
+
+void Partie::affiche_type_tank() {
+    std::cout << "Les types de tanks de la parties sont : \n";
+    for (int i = 0; i < nbJoueur; i++) {
+        std::cout << "joueur " << i << " ";
+        joueur[i].afficherTypeTank();
     }
 }

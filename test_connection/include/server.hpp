@@ -39,6 +39,8 @@ private:
     void createBindedSocket();
     void connexion();
     void afficher_buffer(char tab[][5], int nb_lignes);
+    void sendTankToClient();
+    void string_tank(std::string& chaine);
     
 public:
     Server();

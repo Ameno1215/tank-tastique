@@ -15,7 +15,9 @@ class tank {
 public:
     // Constructeur
     tank();
-
+    tank(int x_init, int y_init, float orientation_init, float vitesse_tank, float vitesse_canon, float cadence_tir, float vitesse_obus, std::string chemin_img_tank, std::string chemin_img_tourelle);
+    virtual ~tank() = default;
+    
     // Accesseurs
     float get_x();
     float get_y();
@@ -27,6 +29,8 @@ public:
     sf::Sprite& getBaseSprite();
     sf::Sprite& getTourelleSprite();
     ListeObus& getListeObus();
+    virtual std::string getType() const = 0;
+    virtual int get_type() const = 0;
 
     // Setters
     void set_x(float new_x);
@@ -36,8 +40,9 @@ public:
     void set_vit_can(float new_vit_canon);
     void set_cadence_tir(float new_cadence);
     void set_vitesse_obus(float new_vitesse_obus);
+    virtual void setTexture() = 0;
 
-private:
+protected:
     float x;
     float y;
     float orientation;
@@ -46,9 +51,12 @@ private:
     float cadence_tir;
     float vitesse_obus;
     ListeObus liste_obus;
+    int type;
 
     sf::Texture textureBase, textureTourelle;
     sf::Sprite spriteBase, spriteTourelle;
 };
+
+
 
 #endif

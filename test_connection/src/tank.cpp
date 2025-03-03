@@ -3,12 +3,6 @@
 
 // Constructeur
 tank::tank() {
-
-
-    // liste des obus tiré par le tank
-    // liste_obus = ListeObus();
-
-
     // Chargement des textures
     if (!textureBase.loadFromFile("Image/base1.png") || 
         !textureTourelle.loadFromFile("Image/tourelle2.png")) {
@@ -39,6 +33,37 @@ tank::tank() {
     spriteBase.setScale(0.1f, 0.1f);
     spriteTourelle.setScale(0.1f, 0.1f);
 }
+
+tank::tank(int x_init, int y_init, float orientation_init, float vitesse_tank, float vitesse_canon, float cadence_tir, float vitesse_obus, std::string chemin_img_tank, std::string chemin_img_tourelle) {
+    // Chargement des textures
+    if (!textureBase.loadFromFile(chemin_img_tank) || 
+        !textureTourelle.loadFromFile(chemin_img_tourelle)) {
+        std::cerr << "Erreur de chargement des textures !" << std::endl;
+    }
+
+    // Assignation des textures aux sprites
+    spriteBase.setTexture(textureBase);
+    spriteTourelle.setTexture(textureTourelle);
+
+    // Définir l'origine des sprites au centre
+    spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
+    spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
+
+    orientation = orientation_init;
+    vitesse = vitesse_tank;
+    vitesse_canon = vitesse_canon;
+    cadence_tir = cadence_tir;
+    vitesse_obus = vitesse_obus;
+
+    spriteBase.setPosition(x_init, y_init);
+    spriteTourelle.setPosition(x_init, y_init);
+
+    // Redimensionnement
+    spriteBase.setScale(0.1f, 0.1f);
+    spriteTourelle.setScale(0.1f, 0.1f);
+}
+
+
 
 // Accesseurs
 float tank::get_x() { return x; }
@@ -78,3 +103,6 @@ void tank::set_vit_can(float new_vit_canon) { vitesse_canon = new_vit_canon; }
 void tank::set_cadence_tir(float new_cadence) { cadence_tir = new_cadence; }
 
 void tank::set_vitesse_obus(float new_vitesse_obus) { vitesse_obus = new_vitesse_obus; }
+
+
+
