@@ -1,8 +1,5 @@
-
 #include "tir.hpp"
-
-
-
+#define CADENCE_EXPLO 3
 Obus::Obus(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture) 
     : orientation(orientation), vitesse(vitesse), porte(porte) 
 {
@@ -46,8 +43,6 @@ int Obus::get_status() const {
 double Obus::get_time_tir() const {
     return time_tir;
 }
-
-
 
 // Setters
 void Obus::set_position_tir(int new_x, int new_y) {
@@ -208,4 +203,130 @@ void ListeObus::vider() {
     }
     queue = nullptr;
     compteur = 0;
+}
+
+int ListeExplosion::ajouterFin(int x, int y, int frameActu) {
+    NoeudExplosion* nouveau = new NoeudExplosion(x, y, frameActu);
+    if (!queue) {
+        tete = queue = nouveau;
+    } else {
+        queue->suivant = nouveau;
+        queue = nouveau;
+    }
+    return ++compteur;
+}
+
+void ListeExplosion::supprimer(int index) {
+    if (!tete || index < 0 || index >= compteur) return;
+    
+    NoeudExplosion* courant = tete;
+    NoeudExplosion* precedent = nullptr;
+    
+    for (int i = 0; i < index; ++i) {
+        precedent = courant;
+        courant = courant->suivant;
+    }
+    
+    if (precedent) {
+        precedent->suivant = courant->suivant;
+    } else {
+        tete = courant->suivant;
+    }
+    
+    if (courant == queue) {
+        queue = precedent;
+    }
+    
+    delete courant;
+    --compteur;
+}
+
+NoeudExplosion* ListeExplosion::trouverNoeud(int index) {
+    if (index < 0 || index >= compteur) return nullptr;
+    NoeudExplosion* courant = tete;
+    for (int i = 0; i < index; ++i) {
+        courant = courant->suivant;
+    }
+    return courant;
+}
+
+void ListeExplosion::afficher() const {
+    NoeudExplosion* courant = tete;
+    while (courant) {
+        std::cout << "Explosion: (" << courant->x << ", " << courant->y << ") Frame: " << courant->frameActu << std::endl;
+        courant = courant->suivant;
+    }
+}
+
+NoeudExplosion* ListeExplosion::get_tete() { return tete; }
+
+void ListeExplosion::vider() {
+    while (tete) {
+        NoeudExplosion* temp = tete;
+        tete = tete->suivant;
+        delete temp;
+    }
+    queue = nullptr;
+    compteur = 0;
+}
+
+void ListeExplosion::maj() {
+    NoeudExplosion* courant = tete;
+    NoeudExplosion* precedent = nullptr;
+    while (courant) {
+        courant->frameActu++;
+        if (courant->frameActu > 10) {
+            NoeudExplosion* temp = courant;
+            if (precedent) {
+                precedent->suivant = courant->suivant;
+            } else {
+                tete = courant->suivant;
+            }
+            if (courant == queue) {
+                queue = precedent;
+            }
+            courant = courant->suivant;
+            delete temp;
+            --compteur;
+        } else {
+            precedent = courant;
+            courant = courant->suivant;
+        }
+    }
+}
+
+void ListeExplosion::toCharArray(char buffer[100]) {
+    buffer[0] = 'E';  // Première lettre du message
+    buffer[1] = '\0'; // Initialise la fin de chaîne
+
+    NoeudExplosion* courant = tete;
+    nouveau = false;
+    
+    while (courant) {
+        if (courant->frameActu == 0) {
+            std::cout << "y'a du nouveau" << std::endl;
+            nouveau = true;
+
+            // Ajout des coordonnées à buffer
+            char temp[20];  // Buffer temporaire pour chaque explosion
+            snprintf(temp, sizeof(temp), " %d %d", courant->x, courant->y);
+
+            // Vérifier que la taille totale ne dépasse pas 100 caractères
+            if (strlen(buffer) + strlen(temp) < 100) {
+                strcat(buffer, temp);
+            } else {
+                std::cerr << "⚠ Explosion tronquée : message trop long !" << std::endl;
+                break;
+            }
+        }
+        courant = courant->suivant;
+    }
+}
+
+void ListeExplosion::majEnSautantFrame(){
+    if(sauterFrame == CADENCE_EXPLO){
+        maj();
+        sauterFrame = 0;
+    }
+    else sauterFrame ++;
 }

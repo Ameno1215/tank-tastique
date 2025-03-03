@@ -170,6 +170,9 @@ void Server::recevoirEvent() {
 void Server::sendToClient(){
     char buffer_processed_data[100];
     char buffer_pV[100];
+    char buffer_explo[100];
+    partie.listexplosion.toCharArray(buffer_explo);
+
     sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
 
     for(int i = 0; i<NB_JOUEUR; i++){   
@@ -192,27 +195,9 @@ void Server::sendToClient(){
                 //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
-
-            // ENVOI DU NOMBRE D'OBUS
-            // sprintf(buffer_nb_obus, "N %d %d", partie.nb_obus(), 1);
-
-            // //les envoies à chaque autre client
-            // n = sendto(sockfd[i], buffer_nb_obus, strlen(buffer_nb_obus), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
-            
-            // //verifiacation
-            // if (n < 0) {
-            //     perror("❌ Erreur lors de l'envoi des données du nombre d'obus");
-            //     return;
-            // } else {
-            //     //debugage
-            //     //std::cout << "📨 Données processed envoyées au client : " << buffer_nb_obus << std::endl;
-            //     //std::cout << "Sur le port " << sockfd[0] << std::endl;
-            // }
-
             // ENVOIE DE LA LISTE D'OBUS
             std::string buffer_liste_obus;
             partie.string_obus(buffer_liste_obus);
-
 
             //les envoies à chaque autre client
             n = sendto(sockfd[i], buffer_liste_obus.c_str(), strlen(buffer_liste_obus.c_str()), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
@@ -228,7 +213,7 @@ void Server::sendToClient(){
             }
         }
         int n = sendto(sockfd[i], buffer_pV, strlen(buffer_pV), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
-            
+        
         //verifiacation
         if (n < 0) {
             perror("❌ Erreur lors de l'envoi des données des pV");
@@ -238,7 +223,18 @@ void Server::sendToClient(){
             //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
+        if(partie.listexplosion.nouveau){
+            std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
+            n = sendto(sockfd[i], buffer_explo, strlen(buffer_explo), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+            if (n < 0) {
+                perror("❌ Erreur lors de l'envoi des données des explosions");
+            } else {
+                std::cout << "📨 Explosion envoyée avec succès (" << n << " octets)\n";
+            }
+
+        }
     }
+    partie.listexplosion.maj();
 }
 
 void Server::afficher_buffer(char tab[][5], int nb_lignes) {

@@ -6,8 +6,9 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include <cstring>
 
-
+#define CADENCE_EXPLO 3
 
 class Obus {
     public :
@@ -89,13 +90,47 @@ class ListeObus {
         double time_dernier_tir;
 };
 
+struct NoeudExplosion {
+    int x, y, frameActu;
+    NoeudExplosion* suivant;
+    sf::Sprite explosionSprite;
+    sf::Texture explosionTexture;
+    NoeudExplosion(int x, int y, int frame) : x(x), y(y), frameActu(frame), suivant(nullptr) {}
+};
 
+class ListeExplosion {
+public:
+    // Constructeur
+    ListeExplosion() : tete(nullptr), queue(nullptr), compteur(0) {}
+    
+    // Destructeur
+    ~ListeExplosion() { vider(); }
+    
+    int ajouterFin(int x, int y, int frameActu);
+    
+    void supprimer(int index);
+    
+    NoeudExplosion* trouverNoeud(int index);
+    
+    void afficher() const;
+    
+    NoeudExplosion* get_tete();
 
+    void maj();
+    void majEnSautantFrame();
 
+    void toCharArray(char buffer[100]);
 
+    void vider();
 
+    bool nouveau;
+    int sauterFrame = CADENCE_EXPLO;
 
-
+private:
+    NoeudExplosion* tete;
+    NoeudExplosion* queue;
+    int compteur;
+};
 
 double get_time_seconds();
 

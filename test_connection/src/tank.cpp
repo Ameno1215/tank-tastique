@@ -52,6 +52,14 @@ bool tank::isTouched(){ return touched;}// Retourne l'état de collision
 // Mise à jour de la hitbox du tank
 void tank::updateHitbox() { 
     tankHitbox = getTransformedPoints(getBaseSprite());
+
+    /* pour afficher les points
+    std::cout<<"debut hitbox\n";
+    for (const auto& p : tankHitbox) {
+        std::cout << "(" << p.x << ", " << p.y << ")\n";
+    }
+    std::cout<<"fin hitbox\n";
+    */
     // Trouver les bornes min et max
     int initBornes = 0;       //pour initialiser les bornes
     for (const auto& point : tankHitbox) {
@@ -81,6 +89,7 @@ void tank::updateCollision(const sf::Sprite& otherSprite) {
     }
 }
 
+
 void tank::updateTouched(const sf::Sprite& otherSprite) {      // ca marche bof detecte mal
     touched = false; 
 
@@ -93,16 +102,28 @@ void tank::updateTouched(const sf::Sprite& otherSprite) {      // ca marche bof 
     }
 }
 
-
 std::vector<sf::Vector2f> tank::getTransformedPoints(const sf::Sprite& sprite) {
     std::vector<sf::Vector2f> points;
-    sf::FloatRect bounds = sprite.getLocalBounds();
-    sf::Transform transform = sprite.getTransform();
 
-    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left, bounds.top)));
-    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left + bounds.width, bounds.top)));
-    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left + bounds.width, bounds.top + bounds.height)));
-    points.push_back(transform.transformPoint(sf::Vector2f(bounds.left, bounds.top + bounds.height)));
+    // Récupérer les dimensions locales du sprite
+    sf::FloatRect localBounds = sprite.getLocalBounds();
+    
+    // Nombre de points d’échantillonnage
+    int samplesX = 10;  // Plus = plus précis
+    int samplesY = 10;
+
+    // Calcul du pas entre les points
+    float stepX = localBounds.width / (samplesX - 1);
+    float stepY = localBounds.height / (samplesY - 1);
+
+    // Générer une grille de points transformés
+    for (int i = 0; i < samplesX; i++) {
+        for (int j = 0; j < samplesY; j++) {
+            sf::Vector2f localPoint(localBounds.left + i * stepX, localBounds.top + j * stepY);
+            sf::Vector2f globalPoint = sprite.getTransform().transformPoint(localPoint);
+            points.push_back(globalPoint);
+        }
+    }
 
     return points;
 }

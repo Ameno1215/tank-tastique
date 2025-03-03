@@ -1,7 +1,4 @@
 #include "partie.hpp"
-#include "client.hpp"
-#include "deplacement.hpp"
-#include "tir.cpp"
 
 Partie::Partie() {
     nbJoueur = 0;
@@ -14,7 +11,7 @@ Partie::Partie() {
     pvSprite.setTexture(pvTexture);
     pvSprite.setScale(0.2f, 0.2f);
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 11; i++) {
         std::string filename = "Image/explosion/explosion_frame" + std::to_string(i + 1) + ".png";
         if (!explosionTextureFrames[i].loadFromFile(filename)) {
             std::cerr << "Erreur : Impossible de charger l'image d'explosion (" << filename << ").\n";
@@ -184,10 +181,16 @@ void Partie::update() {
                     tank& testank = joueur[i].Tank;
                     testank.updateHitbox(); //il faut update car si le tank adverse bouge pas c'est pas bon 
                     testank.updateTouched(courant->obus.get_Sprite());
+                    
                     if(testank.isTouched()){
-                        std::cout<<"tank touché"<<std::endl;
+                        listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0); //on rajoute une explosion à afficher
+                        std::cout<<"x y ajouté en fin"<<std::endl;
                         if(joueur[i].pV > 0){
                             joueur[i].pV--;
+                        }
+                        if(joueur[i].pV == 0){
+                            std::cout<<"joueur X a perdu";
+                            listexplosion.ajouterFin(joueur[i].Tank.getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank.getBaseSprite().getPosition().x, joueur[i].Tank.getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank.getBaseSprite().getPosition().y, 0);
                         }
                         obusDestructeur = true;
                         courant->obus.set_status(0); // destruction obus
@@ -239,7 +242,6 @@ void Partie::renderWindow() {
         window->draw(mon_tank.getBaseSprite());
         window->draw(mon_tank.getTourelleSprite());
 
-
         // OBUS
         std::istringstream stream(get_buffer_missile());
         char type;
@@ -276,6 +278,18 @@ void Partie::renderWindow() {
             }
             courant = courant->suivant;
         }
+    }
+
+    //affichage des explosions
+    NoeudExplosion* courant = listexplosion.get_tete();
+    while (courant) {
+        if (courant->frameActu < 20 && courant->frameActu > 0) {
+            courant->explosionSprite.setTexture(explosionTextureFrames[courant->frameActu]);
+            courant->explosionSprite.setPosition(courant->x - courant->explosionSprite.getGlobalBounds().width / 2, courant->y - courant->explosionSprite.getGlobalBounds().height / 2);
+            window->draw(courant->explosionSprite);
+        }
+        courant = courant->suivant;
+        listexplosion.majEnSautantFrame();
     }
 
     //affchage des pV
@@ -316,6 +330,10 @@ void Partie::recieveData(){
     socklen_t addr_len = sizeof(client.recieve_servaddr);
 
     ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    if (n < 0) {
+        perror("Erreur lors de la réception");
+        return;
+    }
     buffer[n] = '\0';
 
     if (buffer[0] == 'T') {
@@ -337,11 +355,19 @@ void Partie::recieveData(){
     }
 
     // RECEPTION DE LA LSITE D'OBUS
-    std::string message(buffer); 
     if (buffer[0] == 'O') { 
         setBufferMissile(std::string(buffer));
     }
-    
+        
+    if (buffer[0] == 'E') {
+        std::istringstream stream(std::string(buffer).substr(2));  // Supprime 'E ' et crée un flux
+        int x, y;
+
+        while (stream >> x >> y) {  // Extrait les couples de coordonnées car il peut y avoir plusieurs explosions à la fois
+            listexplosion.ajouterFin(x, y, 0);
+        }
+    }
+
     if(buffer[0] == 'V'){
         int pV[6];
         sscanf(buffer, "V %d %d %d %d %d %d", &pV[0], &pV[1], &pV[2], &pV[3], &pV[4], &pV[5]);
@@ -359,7 +385,6 @@ void Partie::recieveData(){
         // Affichage du buffer reçu
         //printf("Buffer pV reçu : %s tesssstttt \n", buffer);
     }
-    
 }
 
 int Partie::Solo() {
@@ -590,7 +615,6 @@ void Partie::affichageConnexion() {
         window->display();
     }
 }
-
 
 int Partie::nb_obus() {
     int compteur_obus = 0;

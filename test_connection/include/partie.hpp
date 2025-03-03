@@ -11,10 +11,10 @@
 #include <sstream>  
 #include <atomic>
 
-
 #include "joueur.hpp" 
 #include "client.hpp"
-#define NB_JOUEUR 2
+#include "deplacement.hpp"
+#define NB_JOUEUR 3
 
 class Partie {
     public:
@@ -24,8 +24,7 @@ class Partie {
         Joueur joueur[6];
         Client client;
 
-        Joueur& joueur0 = client.joueur; //lien entre les deux
-        
+        int stat[6][4]; //1ere colonne nb de dégats infligés, nb d'obus recu, nb d'obus tirés, nb de char détruit.
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
@@ -60,9 +59,10 @@ class Partie {
         // rempli chaine (string) avec tous les obus (joueur, x, y, orientation) 
         void string_obus(std::string& chaine);
 
-
-
         int joueur_courant;
+
+        ListeExplosion listexplosion;
+
         
         
     private:
@@ -85,9 +85,5 @@ class Partie {
         sf::Texture explosionTextureFrames[20];
         sf::Sprite explosionSprite;
 };
-
-
-
-
 
 #endif
