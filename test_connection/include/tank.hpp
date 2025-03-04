@@ -15,7 +15,7 @@ class tank {
 public:
     // Constructeur
     tank();
-
+        
     // Accesseurs
     float get_x();
     float get_y();

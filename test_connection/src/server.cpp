@@ -212,8 +212,9 @@ void Server::sendToClient(){
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
         }
+
+        //envoie des pV
         int n = sendto(sockfd[i], buffer_pV, strlen(buffer_pV), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
-        
         //verifiacation
         if (n < 0) {
             perror("❌ Erreur lors de l'envoi des données des pV");
@@ -249,11 +250,25 @@ void Server::afficher_buffer(char tab[][5], int nb_lignes) {
 }
 
 void Server::processEvent(){
+    int compt = 0;
     for(int i = 0; i<NB_JOUEUR; i++){
-        partie.joueur_courant = i;
-        partie.update();
+        if(partie.joueur[i].pV>0){
+            compt++;
+            partie.joueur_courant = i;
+            partie.update();
+        }
+    }
+    std::cout<<compt;
+}
+
+void Server::majDead(char* buffer) {
+    int offset = snprintf(buffer, 100, "D "); // Commence par "D "
+
+    for (int i = 0; i < NB_JOUEUR && offset < 100; i++) {
+        offset += snprintf(buffer + offset, 100 - offset, "%d ", partie.joueur[i].vivant ? 1 : 0);
     }
 }
+
 
 void Server::init_send_fd(){
 

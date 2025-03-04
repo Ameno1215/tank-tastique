@@ -35,6 +35,7 @@ tank::tank() {
     spriteTourelle.setScale(0.1f, 0.1f);
 }
 
+
 // Accesseurs
 float tank::get_x() { return x; }
 float tank::get_y() { return y; }

@@ -63,8 +63,6 @@ class Partie {
 
         ListeExplosion listexplosion;
 
-        
-        
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
         sf::Vector2u windowSize;

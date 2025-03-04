@@ -29,11 +29,12 @@ private:
     int sockfd[6];
     struct sockaddr_in recieve_clientaddr, send_clientaddr; //connexion
     struct sockaddr_in client[6];
-    std::mutex joueurMutex; // Mutex pour synchroniser les accès
     void processEvent();
     void recevoirEvent();
     void sendToClient();
     void init_send_fd();
+
+    void majDead(char* buffer);
 
     void createSocketConnexion();
     void createBindedSocket();
@@ -43,7 +44,7 @@ private:
 public:
     Server();
     ~Server();
-
+    
     void startServer();
 };
 
