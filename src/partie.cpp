@@ -1,7 +1,4 @@
 #include "partie.hpp"
-#include "client.hpp"
-#include "deplacement.hpp"
-#include "tir.cpp"
 
 Partie::Partie() {
     nbJoueur = 0;
@@ -14,7 +11,7 @@ Partie::Partie() {
     pvSprite.setTexture(pvTexture);
     pvSprite.setScale(0.2f, 0.2f);
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 11; i++) {
         std::string filename = "Image/explosion/explosion_frame" + std::to_string(i + 1) + ".png";
         if (!explosionTextureFrames[i].loadFromFile(filename)) {
             std::cerr << "Erreur : Impossible de charger l'image d'explosion (" << filename << ").\n";
@@ -73,6 +70,7 @@ void Partie::getEvent() {
 
     sf::Event event;
     while (window->pollEvent(event)) {
+
         if (event.type == sf::Event::Closed)
             window->close();
     }
@@ -103,22 +101,49 @@ void Partie::update() {
     float vit_canon = mon_tank.get_vit_canon();
 
     if (joueur[joueur_courant].Zpressed) {
-        deplacement_verticale(mon_tank, rotation, speed);
-        deplacement_verticale(mon_tank, rotation, speed);
+        
+        deplacement_verticale(mon_tank, rotation, speed); //on avance
+
+        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank->updateCollision(testSprite); //check si ca touche un truc
+
+        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, -2*speed);
+        }
         //joueur[0].pV--; //test pour le PV 
     }
 
     if (joueur[joueur_courant].Spressed) {
         deplacement_verticale(mon_tank, rotation, -speed);
-        deplacement_verticale(mon_tank, rotation, -speed);
+
+        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank->updateCollision(testSprite); //check si ca touche un truc
+
+        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, 2*speed);
+        }
     }
 
-    if (joueur[joueur_courant].Qpressed)
+    if (joueur[joueur_courant].Qpressed){
         deplacement_rotation(mon_tank, &rotation, 1.2);
-    
-    if (joueur[joueur_courant].Dpressed)
-        deplacement_rotation(mon_tank, &rotation, -1.2);
+        
+        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank->updateCollision(testSprite); //check si ca touche un truc
 
+        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, -2.4);
+        }
+    }
+    
+    if (joueur[joueur_courant].Dpressed){
+        deplacement_rotation(mon_tank, &rotation, -1.2);
+        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
+        joueur[joueur_courant].Tank->updateCollision(testSprite); //check si ca touche un truc
+
+        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+            deplacement_verticale(mon_tank, rotation, -2.4);
+        }
+    }
     
     // Mise à jour de l'angle de la tourelle truc à Joshua
     float angle_actu = mon_tank.getTourelleSprite().getRotation();
@@ -128,8 +153,6 @@ void Partie::update() {
     if (diff < -180) diff += 360;
     
     mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon); //rotation tourelle
-
-
 
     // CALCUL DEPLACEMENT OBUS
     Noeud* courant = mon_tank.getListeObus().get_tete();
@@ -151,7 +174,41 @@ void Partie::update() {
                 mon_tank.getListeObus().supprimer(courant->index);
                 courant = temp;
             }
-            else courant = courant->suivant;
+            else{
+
+                bool obusDestructeur = false; //variable pour savoir si l'obus a touché quelque chose
+
+                for(int i = 0; i<NB_JOUEUR; i++){
+                    if(joueur[i].pV>0){
+                        tank& testank = *(joueur[i].Tank);
+                        testank.updateHitbox(); //il faut update car si le tank adverse bouge pas c'est pas bon 
+                        testank.updateTouched(courant->obus.get_Sprite());
+                        
+                        if(testank.isTouched()){
+                            listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, false); //on rajoute une explosion à afficher
+                            std::cout<<"x y ajouté en fin"<<std::endl;
+                            if(joueur[i].pV > 0){
+                                joueur[i].pV--;
+                            }
+                            if(joueur[i].pV == 0){
+                                std::cout<<"joueur X a perdu";
+                                joueur[i].pV = -1;
+                                listexplosion.ajouterFin(joueur[i].Tank->getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank->getBaseSprite().getPosition().x, joueur[i].Tank->getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank->getBaseSprite().getPosition().y, 0, true);
+                                joueur[i].vivant = false;
+                            }
+                            obusDestructeur = true;
+                            courant->obus.set_status(0); // destruction obus
+                            Noeud * temp = courant->suivant;
+                            mon_tank.getListeObus().supprimer(courant->index);
+                            courant = temp;
+                            break;
+                        }
+                    }
+                }
+                if(!obusDestructeur){ //si l'obus n'a rien rencontré on détruit
+                    courant = courant->suivant;
+                }
+            } 
         }
     }
 
@@ -183,66 +240,106 @@ void Partie::renderWindow(int multi) {
     );
     window->draw(cursorSprite);
 
-    //affichage de chaque tank
-    for(int i = 0; i<nbJoueur; i++){
-        tank& mon_tank = *(joueur[i].Tank);
+    if(joueur[joueur_courant].pV > 0){  //Pas game over
+        //affichage de chaque tank
+        for(int i = 0; i<nbJoueur; i++){
+            if(joueur[i].pV > 0){  //vivant
+                tank& mon_tank = *(joueur[i].Tank);
 
-        window->draw(mon_tank.getBaseSprite());
-        window->draw(mon_tank.getTourelleSprite());
+                window->draw(mon_tank.getBaseSprite());
+                window->draw(mon_tank.getTourelleSprite());
 
-
-        // OBUS
-        if (multi) {
-            std::istringstream stream(get_buffer_missile());
-            char type;
-            stream >> type;
-            // vider la liste 
-            for (int i = 0; i < nbJoueur; i++) {
-                // printf("Avant vidage\n");
-                // joueur[i].Tank.getListeObus().afficher();   
-                joueur[i].Tank->getListeObus().vider();
-                // printf("Apres vidage\n");
-                // joueur[i].Tank.getListeObus().afficher();   
-            }
-        
-            int nb_obus;
-            stream >> nb_obus;
-            // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
-
-            while (!stream.eof()) {
-                int joueur_id;
-                float x, y, rotation;
-
-                stream >> joueur_id >> x >> y >> rotation;
-                // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
+                // OBUS
+                if (multi) {
+                    std::istringstream stream(get_buffer_missile());
+                    char type;
+                    stream >> type;
+                    // vider la liste 
+                    for (int i = 0; i < nbJoueur; i++) {
+                        // printf("Avant vidage\n");
+                        // joueur[i].Tank.getListeObus().afficher();   
+                        joueur[i].Tank->getListeObus().vider();
+                        // printf("Apres vidage\n");
+                        // joueur[i].Tank.getListeObus().afficher();   
+                    }
                 
-                joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
-                // joueur[joueur_id].Tank.getListeObus().afficher();
+                    int nb_obus;
+                    stream >> nb_obus;
+                    // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
+
+                    while (!stream.eof()) {
+                        int joueur_id;
+                        float x, y, rotation;
+
+                        stream >> joueur_id >> x >> y >> rotation;
+                        // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
+                        
+                        joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
+                        // joueur[joueur_id].Tank.getListeObus().afficher();
+                    }
+                }
+            
+                // Affichage Obus
+                Noeud* courant = mon_tank.getListeObus().get_tete();
+                while (courant) {
+                    if (courant->obus.get_status()) {
+                        window->draw(courant->obus.get_Sprite());
+                    }
+                    courant = courant->suivant;
+                }
             }
         }
-        
 
-        // Affichage Obus
-        Noeud* courant = mon_tank.getListeObus().get_tete();
+        //affichage des explosions
+        NoeudExplosion* courant = listexplosion.get_tete();
         while (courant) {
-            if (courant->obus.get_status()) {
-                window->draw(courant->obus.get_Sprite());
+            if (courant->frameActu < 20 && courant->frameActu > 0) {
+                courant->explosionSprite.setTexture(explosionTextureFrames[courant->frameActu]);
+                courant->explosionSprite.setPosition(courant->x - courant->explosionSprite.getGlobalBounds().width / 2, courant->y - courant->explosionSprite.getGlobalBounds().height / 2);
+                if(courant->big){
+                    std::cout<<"affichage en Grand";
+                    courant->explosionSprite.setScale(3.0f, 3.0f);
+                }
+                window->draw(courant->explosionSprite);
             }
             courant = courant->suivant;
+            listexplosion.majEnSautantFrame();
         }
-    }
 
-    //affchage des pV
-    for (int i = 0; i < joueur[joueur_courant].pV; i++) {
-        getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
-        window->draw(getpvSprite());
-    }
+        //affchage des pV
+        for (int i = 0; i < joueur[joueur_courant].pV; i++) {
+            getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
+            window->draw(getpvSprite());
+        }
 
-    //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
-    if(joueur[joueur_courant].Tabpressed){
-        afficheTableauScore();
-        std::cout<<"Tab pressed \n"<<std::endl;
+        //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
+        if(joueur[joueur_courant].Tabpressed){
+            afficheTableauScore();
+            std::cout<<"Tab pressed \n"<<std::endl;
+        }
+        
+        window->draw(testSprite);
     }
+    else{
+
+        sf::Font font;
+        if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+            std::cerr << "Erreur de chargement de la police" << std::endl;
+        }
+
+        sf::Text gameOverText;
+        gameOverText.setFont(font);
+        gameOverText.setString("GAME OVER");
+        gameOverText.setCharacterSize(50);
+        gameOverText.setFillColor(sf::Color::Red);
+        gameOverText.setStyle(sf::Text::Bold);
+        
+        // Positionner le texte au centre de l'écran
+        gameOverText.setPosition(window->getSize().x / 2 - gameOverText.getGlobalBounds().width / 2, 
+                                window->getSize().y / 2 - gameOverText.getGlobalBounds().height / 2);
+
+        window->draw(gameOverText);
+        }
 
     window->display();
 }
@@ -297,6 +394,10 @@ void Partie::recieveData(){
     socklen_t addr_len = sizeof(client.recieve_servaddr);
 
     ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    if (n < 0) {
+        perror("Erreur lors de la réception");
+        return;
+    }
     buffer[n] = '\0';
 
     if (buffer[0] == 'T') {
@@ -318,11 +419,20 @@ void Partie::recieveData(){
     }
 
     // RECEPTION DE LA LSITE D'OBUS
-    std::string message(buffer); 
     if (buffer[0] == 'O') { 
         setBufferMissile(std::string(buffer));
     }
-    
+        
+    if (buffer[0] == 'E') {
+        std::istringstream stream(std::string(buffer).substr(2));  // Supprime 'E ' et crée un flux
+        int x, y, big;
+
+        while (stream >> x >> y >> big) {  // Extrait les couples de coordonnées car il peut y avoir plusieurs explosions à la fois
+            bool isBig = (big != 0);  // Convertit en booléen
+            listexplosion.ajouterFin(x, y, 0, isBig);
+        }
+    }
+
     if(buffer[0] == 'V'){
         int pV[6];
         sscanf(buffer, "V %d %d %d %d %d %d", &pV[0], &pV[1], &pV[2], &pV[3], &pV[4], &pV[5]);
@@ -331,7 +441,7 @@ void Partie::recieveData(){
             Joueur& joueuri = joueur[i];  
             joueuri.pV = pV[i];
         }
-        
+
         if (n < 0) {
             perror("Erreur lors de la réception de la confirmation");
             close(client.recieve_sockfd);
@@ -419,6 +529,14 @@ int Partie::Solo() {
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
 
+    sf::Texture texturetest;
+    texturetest.loadFromFile("Image/base1.png");
+    sf::Sprite cursorSprite(textureCurseur);
+    testSprite.setTexture(texturetest);
+    cursorSprite.setScale(0.08f, 0.08f);
+    testSprite.setScale(0.08f, 0.08f);
+    testSprite.setPosition(300, 300);
+
     // Boucle de jeu
     while (window->isOpen()) {
         getEvent();
@@ -462,6 +580,15 @@ int Partie::multiJoueur() {
     cursorSprite.setTexture(textureCurseur);
     cursorSprite.setScale(0.12f, 0.12f);
 
+    sf::Texture texturetest;
+    texturetest.loadFromFile("Image/base1.png");
+    sf::Sprite cursorSprite(textureCurseur);
+    testSprite.setTexture(texturetest);
+    cursorSprite.setScale(0.08f, 0.08f);
+    testSprite.setScale(0.08f, 0.08f);
+    testSprite.setPosition(300, 300);
+
+    
     int numport = client.num_port;
     client.num_port = 3000;         //creation du port d'envoie sur le port 3000
     client.createSocket();

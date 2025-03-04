@@ -140,7 +140,6 @@ void Server::recevoirEvent() {
 
     //recupère n'importe quel message sur le port 3000
     int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
-    // std::cout << "buffer recu " << buffer << " :\n";
 
     if (receivedBytes < 0) {   //verifie
         std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
@@ -210,6 +209,11 @@ void Server::recevoirEvent() {
         }
         
     } 
+    // Affichage des données reçues pour débogage
+    /*std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
+    std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
+    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl;
+    */
 }
 
 void Server::setTankRecu(int index, int value) {
@@ -237,6 +241,9 @@ int Server::getNbTanksRecus() {
 void Server::sendToClient(){
     char buffer_processed_data[100];
     char buffer_pV[100];
+    char buffer_explo[100];
+    partie.listexplosion.toCharArray(buffer_explo);
+
     sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
 
     for(int i = 0; i<NB_JOUEUR; i++){   
@@ -264,7 +271,6 @@ void Server::sendToClient(){
             std::string buffer_liste_obus;
             partie.string_obus(buffer_liste_obus);
 
-
             //les envoies à chaque autre client
             n = sendto(sockfd[i], buffer_liste_obus.c_str(), strlen(buffer_liste_obus.c_str()), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
             
@@ -278,8 +284,9 @@ void Server::sendToClient(){
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
         }
+
+        //envoie des pV
         int n = sendto(sockfd[i], buffer_pV, strlen(buffer_pV), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
-            
         //verifiacation
         if (n < 0) {
             perror("❌ Erreur lors de l'envoi des données des pV");
@@ -289,7 +296,18 @@ void Server::sendToClient(){
             //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
+        if(partie.listexplosion.nouveau){
+            std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
+            n = sendto(sockfd[i], buffer_explo, strlen(buffer_explo), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+            if (n < 0) {
+                perror("❌ Erreur lors de l'envoi des données des explosions");
+            } else {
+                std::cout << "📨 Explosion envoyée avec succès (" << n << " octets)\n";
+            }
+
+        }
     }
+    partie.listexplosion.maj();
 }
 
 void Server::sendTankToClient(){
@@ -360,11 +378,24 @@ void Server::afficher_buffer(char tab[][5], int nb_lignes) {
 }
 
 void Server::processEvent(){
+    int compt = 0;
     for(int i = 0; i<NB_JOUEUR; i++){
-        partie.joueur_courant = i;
-        partie.update();
+        if(partie.joueur[i].pV>0){
+            compt++;
+            partie.joueur_courant = i;
+            partie.update();
+        }
     }
 }
+
+void Server::majDead(char* buffer) {
+    int offset = snprintf(buffer, 100, "D "); // Commence par "D "
+
+    for (int i = 0; i < NB_JOUEUR && offset < 100; i++) {
+        offset += snprintf(buffer + offset, 100 - offset, "%d ", partie.joueur[i].vivant ? 1 : 0);
+    }
+}
+
 
 void Server::init_send_fd(){
 

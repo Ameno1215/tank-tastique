@@ -19,6 +19,9 @@ void Tank_bleu::setTexture() {
         std::cerr << "Erreur chargement texture Tank Bleu\n";
     }
     spriteBase.setTexture(textureBase);
+    spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
+    spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
+
 }
 
 std::string Tank_bleu::getType() const {

@@ -32,6 +32,13 @@ public:
     virtual std::string getType() const = 0;
     virtual int get_type() const = 0;
 
+    void updateHitbox(); // Met à jour la hitbox
+    void updateCollision(const sf::Sprite& otherSprite); // Met à jour l'état de collision
+    bool isColliding() const; // Retourne l'état de collision
+    bool isTouched(); // Retourne l'état de collision
+    std::vector<sf::Vector2f> getTransformedPoints(const sf::Sprite& sprite);
+    void updateTouched(const sf::Sprite& otherSprite);
+
     // Setters
     void set_x(float new_x);
     void set_y(float new_y);
@@ -52,6 +59,13 @@ protected:
     float vitesse_obus;
     ListeObus liste_obus;
     int type;
+
+    bool collision = false;
+    bool touched;
+    std::vector<sf::Vector2f> tankHitbox;
+    int bornesHitBox[4];
+    sf::ConvexShape rectangleHitBox;
+
 
     sf::Texture textureBase, textureTourelle;
     sf::Sprite spriteBase, spriteTourelle;

@@ -42,6 +42,7 @@ public :
     bool Tabpressed = false;
     sf::Vector2i mousePos;
     sf::Vector2f worldMousePos;
+    bool vivant = true;
 };
 
 #endif

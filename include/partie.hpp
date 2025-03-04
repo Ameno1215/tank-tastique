@@ -11,13 +11,13 @@
 #include <sstream>  
 #include <atomic>
 
-
 #include "joueur.hpp" 
 #include "bouton.hpp"
 #include "client.hpp"
 #include "tankBleu.hpp"
 #include "tankVert.hpp"
 #include "tankBlanc.hpp"
+#include "deplacement.hpp"
 #define NB_JOUEUR 2
 
 class Partie {
@@ -29,8 +29,7 @@ class Partie {
         Joueur joueur[6];
         Client client;
 
-        Joueur& joueur0 = client.joueur; //lien entre les deux
-        
+        int stat[6][4]; //1ere colonne nb de dégats infligés, nb d'obus recu, nb d'obus tirés, nb de char détruit.
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
@@ -42,6 +41,8 @@ class Partie {
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
         void afficheTableauScore();
         void renderExplosion(int x, int y);
+
+        sf::Sprite testSprite;
         
         //méthode que pour solo
         int Solo();
@@ -70,11 +71,10 @@ class Partie {
         int selectionTank();
         void affiche_type_tank();
 
-
-
         int joueur_courant;
-        
-        
+
+        ListeExplosion listexplosion;
+
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
         sf::Vector2u windowSize;
@@ -95,9 +95,5 @@ class Partie {
         sf::Texture explosionTextureFrames[20];
         sf::Sprite explosionSprite;
 };
-
-
-
-
 
 #endif
