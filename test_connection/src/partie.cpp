@@ -71,9 +71,6 @@ void Partie::getEvent() {
     sf::Event event;
     while (window->pollEvent(event)) {
 
-        if(event.type == sf::Event::Resized){
-            window->setView(sf::View(sf::FloatRect(0,0,event.size.width, event.size.width)));
-        }
         if (event.type == sf::Event::Closed)
             window->close();
     }
@@ -188,7 +185,7 @@ void Partie::update() {
                         testank.updateTouched(courant->obus.get_Sprite());
                         
                         if(testank.isTouched()){
-                            listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0); //on rajoute une explosion à afficher
+                            listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, false); //on rajoute une explosion à afficher
                             std::cout<<"x y ajouté en fin"<<std::endl;
                             if(joueur[i].pV > 0){
                                 joueur[i].pV--;
@@ -196,7 +193,7 @@ void Partie::update() {
                             if(joueur[i].pV == 0){
                                 std::cout<<"joueur X a perdu";
                                 joueur[i].pV = -1;
-                                listexplosion.ajouterFin(joueur[i].Tank.getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank.getBaseSprite().getPosition().x, joueur[i].Tank.getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank.getBaseSprite().getPosition().y, 0);
+                                listexplosion.ajouterFin(joueur[i].Tank.getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank.getBaseSprite().getPosition().x, joueur[i].Tank.getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank.getBaseSprite().getPosition().y, 0, true);
                                 joueur[i].vivant = false;
                             }
                             obusDestructeur = true;
@@ -244,7 +241,7 @@ void Partie::renderWindow() {
     window->draw(cursorSprite);
 
     if(joueur[joueur_courant].pV > 0){  //Pas game over
-         //affichage de chaque tank
+        //affichage de chaque tank
         for(int i = 0; i<nbJoueur; i++){
             if(joueur[i].pV > 0){  //vivant
                 tank& mon_tank = joueur[i].Tank;
@@ -297,6 +294,10 @@ void Partie::renderWindow() {
             if (courant->frameActu < 20 && courant->frameActu > 0) {
                 courant->explosionSprite.setTexture(explosionTextureFrames[courant->frameActu]);
                 courant->explosionSprite.setPosition(courant->x - courant->explosionSprite.getGlobalBounds().width / 2, courant->y - courant->explosionSprite.getGlobalBounds().height / 2);
+                if(courant->big){
+                    std::cout<<"affichage en Grand";
+                    courant->explosionSprite.setScale(3.0f, 3.0f);
+                }
                 window->draw(courant->explosionSprite);
             }
             courant = courant->suivant;
@@ -317,6 +318,26 @@ void Partie::renderWindow() {
         
         window->draw(testSprite);
     }
+    else{
+
+        sf::Font font;
+        if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+            std::cerr << "Erreur de chargement de la police" << std::endl;
+        }
+
+        sf::Text gameOverText;
+        gameOverText.setFont(font);
+        gameOverText.setString("GAME OVER");
+        gameOverText.setCharacterSize(50);
+        gameOverText.setFillColor(sf::Color::Red);
+        gameOverText.setStyle(sf::Text::Bold);
+        
+        // Positionner le texte au centre de l'écran
+        gameOverText.setPosition(window->getSize().x / 2 - gameOverText.getGlobalBounds().width / 2, 
+                                window->getSize().y / 2 - gameOverText.getGlobalBounds().height / 2);
+
+        window->draw(gameOverText);
+        }
 
     window->display();
 }
@@ -373,10 +394,11 @@ void Partie::recieveData(){
         
     if (buffer[0] == 'E') {
         std::istringstream stream(std::string(buffer).substr(2));  // Supprime 'E ' et crée un flux
-        int x, y;
+        int x, y, big;
 
-        while (stream >> x >> y) {  // Extrait les couples de coordonnées car il peut y avoir plusieurs explosions à la fois
-            listexplosion.ajouterFin(x, y, 0);
+        while (stream >> x >> y >> big) {  // Extrait les couples de coordonnées car il peut y avoir plusieurs explosions à la fois
+            bool isBig = (big != 0);  // Convertit en booléen
+            listexplosion.ajouterFin(x, y, 0, isBig);
         }
     }
 
@@ -428,7 +450,6 @@ int Partie::Solo() {
     cursorSprite.setScale(0.08f, 0.08f);
     testSprite.setScale(0.08f, 0.08f);
     testSprite.setPosition(300, 300);
-
 
     // Boucle de jeu
     while (window->isOpen()) {

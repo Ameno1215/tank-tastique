@@ -1,5 +1,5 @@
 #include "tir.hpp"
-#define CADENCE_EXPLO 3
+
 Obus::Obus(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture) 
     : orientation(orientation), vitesse(vitesse), porte(porte) 
 {
@@ -205,8 +205,8 @@ void ListeObus::vider() {
     compteur = 0;
 }
 
-int ListeExplosion::ajouterFin(int x, int y, int frameActu) {
-    NoeudExplosion* nouveau = new NoeudExplosion(x, y, frameActu);
+int ListeExplosion::ajouterFin(int x, int y, int frameActu, bool big) {
+    NoeudExplosion* nouveau = new NoeudExplosion(x, y, frameActu, big);
     if (!queue) {
         tete = queue = nouveau;
     } else {
@@ -309,7 +309,7 @@ void ListeExplosion::toCharArray(char buffer[100]) {
 
             // Ajout des coordonnées à buffer
             char temp[20];  // Buffer temporaire pour chaque explosion
-            snprintf(temp, sizeof(temp), " %d %d", courant->x, courant->y);
+            snprintf(temp, sizeof(temp), " %d %d %d", courant->x, courant->y, static_cast<int>(courant->big));
 
             // Vérifier que la taille totale ne dépasse pas 100 caractères
             if (strlen(buffer) + strlen(temp) < 100) {

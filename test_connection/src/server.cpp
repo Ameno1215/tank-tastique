@@ -258,7 +258,6 @@ void Server::processEvent(){
             partie.update();
         }
     }
-    std::cout<<compt;
 }
 
 void Server::majDead(char* buffer) {

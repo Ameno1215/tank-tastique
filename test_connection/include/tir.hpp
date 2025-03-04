@@ -95,7 +95,8 @@ struct NoeudExplosion {
     NoeudExplosion* suivant;
     sf::Sprite explosionSprite;
     sf::Texture explosionTexture;
-    NoeudExplosion(int x, int y, int frame) : x(x), y(y), frameActu(frame), suivant(nullptr) {}
+    bool big;
+    NoeudExplosion(int x, int y, int frame, bool big) : x(x), y(y), frameActu(frame), suivant(nullptr), big(big){}
 };
 
 class ListeExplosion {
@@ -106,7 +107,7 @@ public:
     // Destructeur
     ~ListeExplosion() { vider(); }
     
-    int ajouterFin(int x, int y, int frameActu);
+    int ajouterFin(int x, int y, int frameActu, bool big);
     
     void supprimer(int index);
     
