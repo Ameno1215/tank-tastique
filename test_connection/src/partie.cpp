@@ -262,15 +262,29 @@ void Partie::sendData(){
     }
 }
 
-void Partie::sendTank(int type){
+void Partie::sendTank(int type) {
 
-    char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
+    char buffer[100]; 
     int test = 1;      // valeur à mettre par précaution à la fin du buffer
 
-    sprintf(buffer, "TT %d %d %d", joueur_courant, type, test);
+    sprintf(buffer, "K %d %d %d", joueur_courant, type, test);
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
         perror("❌ Erreur lors de l'envoi du type de tank");
+        return;
+    } else {
+        //std::cout << "📨 Données envoyées : " << buffer << std::endl;
+    }
+}
+
+void Partie::sendReceptionTank() {
+
+    char buffer[20]; 
+
+    sprintf(buffer, "M %d 1", joueur_courant);
+    int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
+    if (n < 0) {
+        perror("❌ Erreur lors de l'envoi réception de tous les tanks");
         return;
     } else {
         //std::cout << "📨 Données envoyées : " << buffer << std::endl;
@@ -326,6 +340,17 @@ void Partie::recieveData(){
         // Affichage du buffer reçu
         //printf("Buffer pV reçu : %s tesssstttt \n", buffer);
     }
+
+    // message pour dire de lancer la partie
+    if(buffer[0] == 'W'){
+        if (n < 0) {
+            perror("Erreur lors de la réception de la confirmation");
+            close(client.recieve_sockfd);
+            return;
+        }
+
+        go = 1;
+    }
     
 }
 
@@ -365,6 +390,7 @@ void Partie::recieveTank(){
         }
     }    
 }
+
 
 int Partie::Solo() {
     // Libérer la mémoire si une fenêtre existait déjà
@@ -465,77 +491,31 @@ int Partie::multiJoueur() {
                 if (joueur[i].Tank->get_type() != 0) count++;
             }
 
-            if (count == nbJoueur) break; // si tous les tanks sont mis à jours on stop la reception
+            if (count == nbJoueur) {
+                sendReceptionTank();
+                break; // si tous les tanks sont mis à jours on stop la reception
+            }
         }
    
     });
 
-
-
-    // // 🛑 Attente de la réception des tanks avec une barre de progression
-    // sf::Font font;
-    // if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
-    //     std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
-    // }
-
-    // sf::Text text("En attente des autres joueurs...", font, 30);
-    // text.setFillColor(sf::Color::White);
-    // text.setPosition(100, 50);
-
-    // // Barre de progression
-    // sf::RectangleShape barOutline(sf::Vector2f(400, 30));  // Contour
-    // barOutline.setFillColor(sf::Color::Transparent);
-    // barOutline.setOutlineThickness(3);
-    // barOutline.setOutlineColor(sf::Color::White);
-    // barOutline.setPosition(100, 150);
-
-    // sf::RectangleShape barFill(sf::Vector2f(0, 30));  // Barre remplie
-    // barFill.setFillColor(sf::Color::Green);
-    // barFill.setPosition(100, 150);
-
-    // int count = 0;
-
-    // while (window->isOpen()) {
-    //     // Gestion des événements SFML pour éviter que la fenêtre ne freeze
-    //     sf::Event event;
-    //     while (window->pollEvent(event)) {
-    //         if (event.type == sf::Event::Closed) return -1;
-    //     }
-
-    //     // Réception des tanks
-    //     // recieveTank();
-    //     count = 0;
-    //     for (int i = 0; i < nbJoueur; i++) {
-    //         if (joueur[i].Tank->get_type() != 0) count++;
-    //     }
-
-    //     // 🏁 Si tous les tanks sont reçus, on passe au jeu
-    //     if (count == nbJoueur) break;
-
-    //     // 🟢 Mise à jour de la barre de progression
-    //     float progress = static_cast<float>(count) / nbJoueur;
-    //     barFill.setSize(sf::Vector2f(400 * progress, 30));
-
-    //     // Affichage SFML
-    //     window->clear(sf::Color::Black);
-    //     window->draw(text);
-    //     window->draw(barOutline);
-    //     window->draw(barFill);
-    //     window->display();
-
-    //     // std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Limite le CPU
-    // }
-    
-    
-    //JEU 
-    window->setMouseCursorVisible(false);
-    
     std::thread recievethread([this]() { //thread qui recoit les données processed par le server
         while (window->isOpen()) {
             recieveData();
         }
     });
+    
 
+
+    // Tant que pas recu du serveur que tous les joueurs ont tous les tanks
+    while (!go) {
+        affichageAttenteTank();
+    }
+    
+    
+    //JEU 
+    window->setMouseCursorVisible(false);
+    
 
     // Boucle de jeu en multi
     while (window->isOpen()) {
@@ -669,6 +649,138 @@ void Partie::affichageConnexion() {
 
 
         window->display();
+    }
+}
+
+
+void Partie::affichageAttenteTank() {
+    
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("Image/imagechargement.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+    }
+
+    
+    sf::Sprite backgroundSprite(backgroundTexture);
+    // backgroundSprite.setScale(
+    //     static_cast<float>(window->getSize().x) / backgroundSprite.getGlobalBounds().width,
+    //     static_cast<float>(window->getSize().y) / backgroundSprite.getGlobalBounds().height
+    // );
+
+        // Fonction pour ajuster la taille du fond
+    auto updateBackgroundSize = [&]() {
+        backgroundSprite.setScale(
+            static_cast<float>(window->getSize().x) / backgroundSprite.getLocalBounds().width,
+            static_cast<float>(window->getSize().y) / backgroundSprite.getLocalBounds().height
+        );
+    };
+
+    updateBackgroundSize(); // Appliquer le scale une fois
+
+    // Initialiser la vue pour qu'elle corresponde toujours à la fenêtre
+    sf::View view(sf::FloatRect(0, 0, window->getSize().x, window->getSize().y));
+    window->setView(view);
+
+    sf::Texture tankChargementTexture;
+    if (!tankChargementTexture.loadFromFile("Image/tank_chargement.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image du tank de chargement.\n";
+    }
+    sf::Sprite tankChargementSprite(tankChargementTexture);
+    tankChargementSprite.setPosition(100, window->getSize().y - tankChargementSprite.getGlobalBounds().height - 230);
+
+    sf::Texture obusTexture;
+    if (!obusTexture.loadFromFile("Image/obus.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de l'obus.\n";
+    }
+    sf::Sprite obusSprite(obusTexture);
+    obusSprite.setScale(0.5f, 0.5f);
+    float obusStartX = tankChargementSprite.getPosition().x + (tankChargementSprite.getGlobalBounds().width) * 1.12;
+    float obusStartY = tankChargementSprite.getPosition().y * 1.6;
+    obusSprite.setPosition(obusStartX, obusStartY);
+    obusSprite.setRotation(90);
+
+    sf::Font font;
+    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+        std::cerr << "Impossible de charger la police.\n";
+    }
+
+    sf::Text statusText("Les adversaires selectionnent leur tank...", font, 50);
+    statusText.setFillColor(sf::Color::White);
+    statusText.setStyle(sf::Text::Bold);
+    sf::FloatRect textBounds = statusText.getLocalBounds();
+    statusText.setPosition((window->getSize().x - textBounds.width) / 2.0f, 200);
+
+    sf::RectangleShape barOutline(sf::Vector2f(window->getSize().x * 0.7, 30));
+    barOutline.setFillColor(sf::Color::Transparent);
+    barOutline.setOutlineThickness(3);
+    barOutline.setOutlineColor(sf::Color::White);
+    barOutline.setPosition(window->getSize().x / 2 - barOutline.getSize().x / 2, window->getSize().y * 0.8);
+
+    sf::RectangleShape barFill(sf::Vector2f(0, 30));
+    barFill.setFillColor(sf::Color::White);
+    barFill.setPosition(barOutline.getPosition().x, window->getSize().y * 0.8);
+
+    float obusSpeed = 5.0f;
+    sf::Clock clock;
+    sf::Clock timerClock;
+    bool oneSecondPassed = false;
+    int xexplosion, yexplosion;
+
+    while (!go) {
+        sf::Event event;
+        while (window->pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                return;
+            }
+        }
+
+        if (!oneSecondPassed && timerClock.getElapsedTime().asSeconds() >= 1.0f) {
+            oneSecondPassed = true;
+        }
+
+        sf::Time elapsed = clock.restart();
+        float deltaTime = elapsed.asSeconds();
+
+
+        textBounds = statusText.getLocalBounds();
+        statusText.setPosition((window->getSize().x - textBounds.width) / 2.0f, 200);
+
+        obusSprite.move(obusSpeed * deltaTime * 100, 0);
+
+        if (obusSprite.getPosition().x > window->getSize().x - 200) {
+            if (!explosionActive) {
+                explosionActive = true;
+                explosionClock.restart();
+                xexplosion = obusSprite.getPosition().x + 50;
+                yexplosion = obusSprite.getPosition().y + 80;
+            }
+            obusSprite.setPosition(obusStartX, obusStartY);
+        }
+
+        int count = 0;
+        for (int i = 0; i < nbJoueur; i++) {
+            if (joueur[i].Tank->get_type() != 0) count++;
+        }
+
+        float progress = static_cast<float>(count) / nbJoueur;
+        barFill.setSize(sf::Vector2f(barOutline.getSize().x * progress, 30));
+
+        window->clear();
+        window->draw(backgroundSprite);
+        window->draw(statusText);
+        window->draw(tankChargementSprite);
+        window->draw(obusSprite);
+        window->draw(barOutline);
+        window->draw(barFill);
+
+        if (explosionActive) {
+            renderExplosion(xexplosion, yexplosion);
+            window->draw(explosionSprite);
+        }
+
+        window->display();
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    
     }
 }
 

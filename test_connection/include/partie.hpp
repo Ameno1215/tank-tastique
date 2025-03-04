@@ -22,6 +22,7 @@
 
 class Partie {
     public:
+        int go = 0;
         Partie(); // Constructeur pour initialiser les variables
         ~Partie(); // Destructeur pour libérer la mémoire
 
@@ -57,6 +58,8 @@ class Partie {
         void sendTank(int type);
         void recieveData();
         void recieveTank();
+        void sendReceptionTank();
+        void affichageAttenteTank();
 
         // retourne le nombre d'obus actif dans la partie
         int nb_obus();

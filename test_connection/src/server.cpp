@@ -3,6 +3,10 @@
 Server::Server() {
     std::memset(sockfd, 0, sizeof(sockfd));
     std::cout << "Serveur initialisé." << std::endl;
+
+    for (int i = 0; i < 6; i++) {
+        tank_recu[i] = 0;
+    }
 }
 
 Server::~Server() {
@@ -167,10 +171,10 @@ void Server::recevoirEvent() {
         // std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl; 
     }
 
-    if (buffer[0] == 'T' && buffer[0] == 'T') {
+    if (buffer[0] == 'K') {
         int type_tank = -1;
         int id;
-        int valuesRead = sscanf(buffer, "TT %d %d", &id, &type_tank);
+        int valuesRead = sscanf(buffer, "K %d %d", &id, &type_tank);
 
         if (valuesRead != 2) { 
             perror("Erreur de lecture avec sscanf, c'est la sauce !");
@@ -186,9 +190,49 @@ void Server::recevoirEvent() {
             partie.joueur[id].setTank(std::make_unique<Tank_bleu>());
         }
 
-        partie.affiche_type_tank();
+        // partie.affiche_type_tank();
+    } 
+
+    if (buffer[0] == 'M') {
+        int id;
+        int valuesRead = sscanf(buffer, "M %d", &id);
+
+        if (valuesRead != 1) { 
+            perror("Erreur de lecture avec sscanf, c'est la sauce !");
+            exit(EXIT_FAILURE);
+        }
+
+        setTankRecu(id, 1);
+        std::cout << "Joueur " << id << " a recu tous les tank\n";
+
+        if (getNbTanksRecus() == partie.get_nbJoueur()) {
+            sendTankRecu();
+        }
+        
     } 
 }
+
+void Server::setTankRecu(int index, int value) {
+    if (index >= 0 && index < 6) {
+        tank_recu[index] = value;
+    }
+}
+
+int Server::getTankRecu(int index) {
+    if (index >= 0 && index < 6) {
+        return tank_recu[index];
+    }
+    return -1;
+}
+
+int Server::getNbTanksRecus() {
+    int count = 0;
+    for (int i = 0; i < 6; i++) {
+        if (tank_recu[i] == 1) count++;
+    }
+    return count;
+}
+
 
 void Server::sendToClient(){
     char buffer_processed_data[100];
@@ -265,6 +309,26 @@ void Server::sendTankToClient(){
             //debugage
             //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
+        }
+    }     
+}
+
+void Server::sendTankRecu() {
+    char buffer[10];
+    sprintf(buffer, "W 1 1");
+    printf("%c\n", buffer[0]);
+
+    //les envoies à chaque autre client
+    for (int i = 0; i < partie.get_nbJoueur(); i++) {
+         int n = sendto(sockfd[i], buffer, strlen(buffer), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+        
+        //verifiacation
+        if (n < 0) {
+            perror("❌ Erreur lors de l'envoi des données du tank");
+            return;
+        } else {
+            //debugage
+            std::cout << i << " envoie\n";
         }
     }     
 }

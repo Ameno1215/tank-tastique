@@ -29,6 +29,7 @@ private:
     int sockfd[6];
     struct sockaddr_in recieve_clientaddr, send_clientaddr; //connexion
     struct sockaddr_in client[6];
+    int tank_recu[6];
     std::mutex joueurMutex; // Mutex pour synchroniser les accès
     void processEvent();
     void recevoirEvent();
@@ -41,12 +42,18 @@ private:
     void afficher_buffer(char tab[][5], int nb_lignes);
     void sendTankToClient();
     void string_tank(std::string& chaine);
+    void sendTankRecu();
+    
     
 public:
     Server();
     ~Server();
 
     void startServer();
+    void setTankRecu(int index, int value);
+    int getTankRecu(int index);
+    int getNbTanksRecus();
+
 };
 
 #endif
