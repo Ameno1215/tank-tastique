@@ -233,6 +233,8 @@ void Partie::update() {
 void Partie::renderWindow(int multi) {
 
     window->clear();
+
+    window->draw(fondSprite);
     //affichage souris
     cursorSprite.setPosition(
         static_cast<float>(joueur[joueur_courant].mousePos.x) - cursorSprite.getGlobalBounds().width / 2,
@@ -595,7 +597,12 @@ int Partie::multiJoueur() {
     client.num_port = numport;
     client.createBindedSocket();    //creation du port d'écoute sur le port dédié au client
     
-    
+    fondTexture.loadFromFile("Image/Keep_Off_The_Grass.png");
+    fondSprite.setTexture(fondTexture);
+    fondSprite.setScale(
+        static_cast<float>(window->getSize().x) / fondSprite.getGlobalBounds().width,
+        static_cast<float>(window->getSize().y) / fondSprite.getGlobalBounds().height
+    );
     // CHOIX DU TANK
     int choix_tank = -1;
     for (int i = 0; i < nbJoueur; i++) {
@@ -606,7 +613,6 @@ int Partie::multiJoueur() {
     // sélection par le joueur;
     choix_tank = selectionTank();
     sendTank(choix_tank);
-
 
     std::thread tankThread([this]() {
         int count = 0;

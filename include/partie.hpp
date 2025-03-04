@@ -83,6 +83,8 @@ class Partie {
         std::string buffer_missile;
         sf::Sprite pvSprite;
         sf::Texture pvTexture;
+        sf::Sprite fondSprite;
+        sf::Texture fondTexture;
 
         int nbJoueur;
         int port_actuel;
