@@ -425,6 +425,12 @@ void Server::startServer() {
 
     init_send_fd();
 
+    sf::Texture texturetest;
+    texturetest.loadFromFile("Image/base1.png");
+    partie.testSprite.setTexture(texturetest);
+    partie.testSprite.setScale(0.08f, 0.08f);
+    partie.testSprite.setPosition(300, 300);
+
     // TYPE DE TANK BLANC POUR TOUS LES JOUEURS AU DEBUT
     for (int i = 0; i < NB_JOUEUR; i ++) {
         partie.joueur[i].setTank(std::make_unique<Tank_blanc>());
@@ -440,14 +446,10 @@ void Server::startServer() {
     });
 
     std::thread tankThread([this]() {
-
         while (running) {
             sendTankToClient();
         }
     });
-
-    
-    
 
     // Boucle principale du serveur
     while (running) {
