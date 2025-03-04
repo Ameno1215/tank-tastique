@@ -18,8 +18,13 @@ Bouton::Bouton(float x, float y, float width, float height, const std::string& l
 }
 
 bool Bouton::isClicked(sf::Vector2f mousePos) {
-    return shape.getGlobalBounds().contains(mousePos);
+    if (shape.getGlobalBounds().contains(mousePos)) {
+        clicked = true;  // Affecte true SEULEMENT si le bouton est bien cliqué
+        return true;
+    }
+    return false;
 }
+
 
 void Bouton::update(sf::Vector2f mousePos) {
     if (shape.getGlobalBounds().contains(mousePos)) {

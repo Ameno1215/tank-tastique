@@ -81,12 +81,28 @@ void Partie::getEvent() {
     if (window->hasFocus()) { //uniquement si on est sur la fenetre 
         joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
         joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);   //la mettre dans le repère de la fenetre (je crois)
-        joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);                      //recuperation des touches pressées
-        joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
-        joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
-        joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
-        joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
-        joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
+        if(joueur[joueur_courant].pV > 0){
+            joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);                      //recuperation des touches pressées
+            joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
+            joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
+            joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+            joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+            joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
+        }
+        else{
+            boutonReplay.update(joueur[joueur_courant].worldMousePos);
+            boutonScore.update(joueur[joueur_courant].worldMousePos);
+            joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+
+            if(joueur[joueur_courant].Clicked){
+                if(boutonReplay.isClicked(joueur[joueur_courant].worldMousePos)){
+                    boutonScore.clicked = false;
+                }
+                if(boutonScore.isClicked(joueur[joueur_courant].worldMousePos)){
+                    boutonReplay.clicked = false;
+                }
+            }
+        }
     }
 }
 
@@ -226,8 +242,31 @@ void Partie::update() {
         }
     }
 
+    testGagnant();
+
     //message de debugage
     //std::cout<<"Joueur "<<joueur_courant<<"position : "<<mon_tank.get_x()<<" "<<mon_tank.get_y()<<" orientiation : "<<mon_tank.get_ori()<<" orientation tourelle : "<< mon_tank.getTourelleSprite().getRotation()<<std::endl;
+}
+
+int Partie::testGagnant(){
+    int compt = 0;
+    int joueurVivant;
+
+    for(int i = 0; i<NB_JOUEUR; i++){
+        
+        if(joueur[i].pV > 0){
+            compt ++;
+            joueurVivant = i;
+        }
+    }
+
+    if(compt == 1){
+        std::cout<<"Joueur "<<joueurVivant<<" a GAGNÉÉÉÉÉ"<<std::endl;
+        partieFinie = true;
+        return joueurVivant;
+    }
+
+    return -1;
 }
 
 void Partie::renderWindow(int multi) {
@@ -235,113 +274,142 @@ void Partie::renderWindow(int multi) {
     window->clear();
 
     window->draw(fondSprite);
+    int gagnant = testGagnant();
+    if(gagnant < 0){
+        if(joueur[joueur_courant].pV > 0 || visionnage){  //Pas game over
+            //affichage de chaque tank
+            for(int i = 0; i<nbJoueur; i++){
+                if(joueur[i].pV > 0){  //vivant
+                    tank& mon_tank = *(joueur[i].Tank);
+    
+                    window->draw(mon_tank.getBaseSprite());
+                    window->draw(mon_tank.getTourelleSprite());
+    
+                    // OBUS
+                    if (multi) {
+                        std::istringstream stream(get_buffer_missile());
+                        char type;
+                        stream >> type;
+                        // vider la liste 
+                        for (int i = 0; i < nbJoueur; i++) {
+                            // printf("Avant vidage\n");
+                            // joueur[i].Tank.getListeObus().afficher();   
+                            joueur[i].Tank->getListeObus().vider();
+                            // printf("Apres vidage\n");
+                            // joueur[i].Tank.getListeObus().afficher();   
+                        }
+                    
+                        int nb_obus;
+                        stream >> nb_obus;
+                        // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
+    
+                        while (!stream.eof()) {
+                            int joueur_id;
+                            float x, y, rotation;
+    
+                            stream >> joueur_id >> x >> y >> rotation;
+                            // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
+                            
+                            joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
+                            // joueur[joueur_id].Tank.getListeObus().afficher();
+                        }
+                    }
+                
+                    // Affichage Obus
+                    Noeud* courant = mon_tank.getListeObus().get_tete();
+                    while (courant) {
+                        if (courant->obus.get_status()) {
+                            window->draw(courant->obus.get_Sprite());
+                        }
+                        courant = courant->suivant;
+                    }
+                }
+            }
+    
+            //affichage des explosions
+            NoeudExplosion* courant = listexplosion.get_tete();
+            while (courant) {
+                if (courant->frameActu < 20 && courant->frameActu > 0) {
+                    courant->explosionSprite.setTexture(explosionTextureFrames[courant->frameActu]);
+                    courant->explosionSprite.setPosition(courant->x - courant->explosionSprite.getGlobalBounds().width / 2, courant->y - courant->explosionSprite.getGlobalBounds().height / 2);
+                    if(courant->big){
+                        std::cout<<"affichage en Grand";
+                        courant->explosionSprite.setScale(3.0f, 3.0f);
+                    }
+                    window->draw(courant->explosionSprite);
+                }
+                courant = courant->suivant;
+                listexplosion.majEnSautantFrame();
+            }
+    
+            //affchage des pV
+            for (int i = 0; i < joueur[joueur_courant].pV; i++) {
+                getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
+                window->draw(getpvSprite());
+            }
+    
+            //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
+            if(joueur[joueur_courant].Tabpressed){
+                afficheTableauScore();
+            }
+            
+            window->draw(testSprite);
+        }
+    
+        if(boutonScore.clicked){
+            boutonReplay.draw(*window);
+            afficheTableauScore();
+            visionnage = false;
+        }
+        else if(boutonReplay.clicked){
+            boutonScore.draw(*window);
+            visionnage = true;
+        }
+        else if(joueur[joueur_courant].pV < 1 && !visionnage){
+            window->draw(gameOverText);
+            boutonScore.draw(*window);
+            boutonReplay.draw(*window);
+        }
+    }
+    else if(gagnant == joueur_courant){
+        // Création du texte
+        sf::Text victoryText;
+        victoryText.setFont(font);
+        victoryText.setString("VICTOIRE !!!");
+        victoryText.setCharacterSize(100); // Taille du texte
+        victoryText.setFillColor(sf::Color::Green); // Couleur rouge
+        victoryText.setStyle(sf::Text::Bold); // Style en gras
+        
+        // Centrer le texte sur la fenêtre
+        sf::FloatRect textRect = victoryText.getLocalBounds();
+        victoryText.setOrigin(textRect.width / 2, textRect.height / 2);
+        victoryText.setPosition(400, 300); // Centré sur la fenêtre (800x600)
+        window->draw(victoryText);
+    }
+    else{
+        if(boutonScore.clicked){
+            boutonReplay.draw(*window);
+            afficheTableauScore();
+            visionnage = false;
+        }
+        else if(boutonReplay.clicked){
+            boutonScore.draw(*window);
+            visionnage = true;
+        }
+        else if(joueur[joueur_courant].pV < 1 && !visionnage){
+            window->draw(gameOverText);
+            boutonScore.draw(*window);
+            boutonReplay.draw(*window);
+        }
+    }
+    
+
     //affichage souris
     cursorSprite.setPosition(
         static_cast<float>(joueur[joueur_courant].mousePos.x) - cursorSprite.getGlobalBounds().width / 2,
         static_cast<float>(joueur[joueur_courant].mousePos.y) - cursorSprite.getGlobalBounds().height / 2
     );
     window->draw(cursorSprite);
-
-    if(joueur[joueur_courant].pV > 0){  //Pas game over
-        //affichage de chaque tank
-        for(int i = 0; i<nbJoueur; i++){
-            if(joueur[i].pV > 0){  //vivant
-                tank& mon_tank = *(joueur[i].Tank);
-
-                window->draw(mon_tank.getBaseSprite());
-                window->draw(mon_tank.getTourelleSprite());
-
-                // OBUS
-                if (multi) {
-                    std::istringstream stream(get_buffer_missile());
-                    char type;
-                    stream >> type;
-                    // vider la liste 
-                    for (int i = 0; i < nbJoueur; i++) {
-                        // printf("Avant vidage\n");
-                        // joueur[i].Tank.getListeObus().afficher();   
-                        joueur[i].Tank->getListeObus().vider();
-                        // printf("Apres vidage\n");
-                        // joueur[i].Tank.getListeObus().afficher();   
-                    }
-                
-                    int nb_obus;
-                    stream >> nb_obus;
-                    // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
-
-                    while (!stream.eof()) {
-                        int joueur_id;
-                        float x, y, rotation;
-
-                        stream >> joueur_id >> x >> y >> rotation;
-                        // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
-                        
-                        joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
-                        // joueur[joueur_id].Tank.getListeObus().afficher();
-                    }
-                }
-            
-                // Affichage Obus
-                Noeud* courant = mon_tank.getListeObus().get_tete();
-                while (courant) {
-                    if (courant->obus.get_status()) {
-                        window->draw(courant->obus.get_Sprite());
-                    }
-                    courant = courant->suivant;
-                }
-            }
-        }
-
-        //affichage des explosions
-        NoeudExplosion* courant = listexplosion.get_tete();
-        while (courant) {
-            if (courant->frameActu < 20 && courant->frameActu > 0) {
-                courant->explosionSprite.setTexture(explosionTextureFrames[courant->frameActu]);
-                courant->explosionSprite.setPosition(courant->x - courant->explosionSprite.getGlobalBounds().width / 2, courant->y - courant->explosionSprite.getGlobalBounds().height / 2);
-                if(courant->big){
-                    std::cout<<"affichage en Grand";
-                    courant->explosionSprite.setScale(3.0f, 3.0f);
-                }
-                window->draw(courant->explosionSprite);
-            }
-            courant = courant->suivant;
-            listexplosion.majEnSautantFrame();
-        }
-
-        //affchage des pV
-        for (int i = 0; i < joueur[joueur_courant].pV; i++) {
-            getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
-            window->draw(getpvSprite());
-        }
-
-        //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
-        if(joueur[joueur_courant].Tabpressed){
-            afficheTableauScore();
-            std::cout<<"Tab pressed \n"<<std::endl;
-        }
-        
-        window->draw(testSprite);
-    }
-    else{
-
-        sf::Font font;
-        if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
-            std::cerr << "Erreur de chargement de la police" << std::endl;
-        }
-
-        sf::Text gameOverText;
-        gameOverText.setFont(font);
-        gameOverText.setString("GAME OVER");
-        gameOverText.setCharacterSize(50);
-        gameOverText.setFillColor(sf::Color::Red);
-        gameOverText.setStyle(sf::Text::Bold);
-        
-        // Positionner le texte au centre de l'écran
-        gameOverText.setPosition(window->getSize().x / 2 - gameOverText.getGlobalBounds().width / 2, 
-                                window->getSize().y / 2 - gameOverText.getGlobalBounds().height / 2);
-
-        window->draw(gameOverText);
-        }
 
     window->display();
 }
@@ -555,7 +623,7 @@ int Partie::multiJoueur() {
     std::thread connexionThread(&Client::initconnexion, &this->client);
 
     affichageConnexion();
-
+    initialiserGameOverUI();
     // Arrêter le thread proprement
     if (connexionThread.joinable()) {
         connexionThread.join();
@@ -609,7 +677,6 @@ int Partie::multiJoueur() {
         joueur[i].setTank(std::make_unique<Tank_blanc>());
     }
     
-
     // sélection par le joueur;
     choix_tank = selectionTank();
     sendTank(choix_tank);
@@ -633,35 +700,62 @@ int Partie::multiJoueur() {
     });
 
     std::thread recievethread([this]() { //thread qui recoit les données processed par le server
-        while (window->isOpen()) {
+        while (window->isOpen() && !partieFinie.load()) {
             recieveData();
         }
     });
     
-
-
     // Tant que pas recu du serveur que tous les joueurs ont tous les tanks
     while (!go) {
         affichageAttenteTank();
     }
-    
+
+    if (tankThread.joinable()) {
+        std::cout << "Fermeture du thread de sélection des tanks..." << std::endl;
+        tankThread.join();
+        std::cout << "Thread de sélection des tanks terminé proprement." << std::endl;
+    }    
     
     //JEU 
     window->setMouseCursorVisible(false);
     
+    // **Boucle de jeu avec timer de fin**
+    std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
 
-    // Boucle de jeu en multi
     while (window->isOpen()) {
         getEvent();
         sendData();
         renderWindow(1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(8));  // Ajout d'un délai pour éviter une boucle trop rapide
+        std::this_thread::sleep_for(std::chrono::milliseconds(8)); // Délai pour éviter une boucle trop rapide
+
+        if (partieFinie.load()) {
+            // ✅ Démarrer le timer dès que la partie est terminée
+            if (finPartieTime.time_since_epoch().count() == 0) {
+                finPartieTime = std::chrono::steady_clock::now();
+                std::cout << "Fin de la partie signalée, arrêt dans 3 secondes..." << std::endl;
+            }
+
+            // ✅ Vérifier si 3 secondes se sont écoulées
+            auto elapsed = std::chrono::steady_clock::now() - finPartieTime;
+            if (std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() >= 3) {
+                break; // Sortir de la boucle de jeu après 3 secondes
+            }
+        }
     }
 
-    if (recievethread.joinable()) {     // Fermeture du thread
+    if (recievethread.joinable()) {
+        std::cout << "Fermeture du thread de réception..." << std::endl;
         recievethread.join();
+        std::cout << "Thread terminé proprement." << std::endl;
     }
 
+    if (window) {
+        delete window;
+        window = nullptr;
+    }
+    
+    std::cout << "Fenêtre supprimée proprement." << std::endl;
+    
     return 0;
 }
 
@@ -1083,3 +1177,27 @@ void Partie::affiche_type_tank() {
         joueur[i].afficherTypeTank();
     }
 }
+
+void Partie::initialiserGameOverUI() {
+    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+        std::cerr << "Erreur de chargement de la police" << std::endl;
+    }
+
+    // Initialisation du texte "GAME OVER"
+    gameOverText.setFont(font);
+    gameOverText.setString("GAME OVER");
+    gameOverText.setCharacterSize(50);
+    gameOverText.setFillColor(sf::Color::Red);
+    gameOverText.setStyle(sf::Text::Bold);
+
+    // Centrage du texte
+    gameOverText.setPosition(
+        window->getSize().x / 2 - gameOverText.getGlobalBounds().width / 2,
+        window->getSize().y / 3 - gameOverText.getGlobalBounds().height / 2
+    );
+
+    // Initialisation des boutons (créés dynamiquement)
+    boutonScore = Bouton(window->getSize().x / 2 - 100, window->getSize().y / 2, 200, 50, "Tableau Score", font);
+    boutonReplay = Bouton(window->getSize().x / 2 - 100, window->getSize().y / 2 + 70, 200, 50, "Voir Partie", font);
+}
+

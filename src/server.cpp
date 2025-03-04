@@ -243,7 +243,7 @@ void Server::sendToClient(){
     char buffer_pV[100];
     char buffer_explo[100];
     partie.listexplosion.toCharArray(buffer_explo);
-
+    
     sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
 
     for(int i = 0; i<NB_JOUEUR; i++){   
@@ -440,16 +440,18 @@ void Server::startServer() {
 
     // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
-        while (running) {
+        while (running && !partie.partieFinie.load()) {
             recevoirEvent();
         }
     });
-
-    std::thread tankThread([this]() {
-        while (running) {
+ 
+    std::thread tankThread([this]() {       // dire à chauvet de mettre une condition pour arreter ce thread ca reduit la perf
+        while (running && !partie.partieFinie.load()) {
             sendTankToClient();
         }
     });
+
+    std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
 
     // Boucle principale du serveur
     while (running) {
@@ -458,11 +460,28 @@ void Server::startServer() {
         sendToClient();
         // partie.affiche_type_tank();
         std::this_thread::sleep_for(std::chrono::milliseconds(5));  // Ajout d'un délai pour éviter une boucle trop rapide
+
+        if (partie.partieFinie.load()) {
+            // Démarrer le timer dès que la partie est terminée
+            if (finPartieTime.time_since_epoch().count() == 0) {
+                finPartieTime = std::chrono::steady_clock::now();
+                std::cout << "Fin de la partie signalée, arrêt dans 3 secondes..." << std::endl;
+            }
+
+            // Vérifier si 3 secondes se sont écoulées
+            auto elapsed = std::chrono::steady_clock::now() - finPartieTime;
+            if (std::chrono::duration_cast<std::chrono::seconds>(elapsed).count() >= 5) {
+                break; // Sortir de la boucle de jeu après 3 secondes
+            }
+        }
     }
 
-    // Fermeture propre du serveur
     if (receptionThread.joinable()) {
         receptionThread.join();
+    }
+
+    if (tankThread.joinable()) {
+        tankThread.join();
     }
 
     close(recieve_sockfd);  //pas toucher

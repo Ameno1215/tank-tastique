@@ -18,7 +18,7 @@
 #include "tankVert.hpp"
 #include "tankBlanc.hpp"
 #include "deplacement.hpp"
-#define NB_JOUEUR 2
+#define NB_JOUEUR 3
 
 class Partie {
     public:
@@ -75,6 +75,11 @@ class Partie {
 
         ListeExplosion listexplosion;
 
+        void initialiserGameOverUI();
+
+        int testGagnant();
+        std::atomic<bool> partieFinie {false};  // ✅ Initialisation correcte dans la classe
+        
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
         sf::Vector2u windowSize;
@@ -96,6 +101,12 @@ class Partie {
         sf::Texture explosionTexture;
         sf::Texture explosionTextureFrames[20];
         sf::Sprite explosionSprite;
+
+        sf::Font font;
+        sf::Text gameOverText;
+        Bouton boutonScore;
+        Bouton boutonReplay;
+        bool visionnage = false;
 };
 
 #endif
