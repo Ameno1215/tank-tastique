@@ -79,8 +79,10 @@ void Partie::getEvent() {
     joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = joueur[joueur_courant].Clicked = joueur[joueur_courant].Tabpressed = false;
 
     if (window->hasFocus()) { //uniquement si on est sur la fenetre 
+
         joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
         joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);   //la mettre dans le repère de la fenetre (je crois)
+        
         if(joueur[joueur_courant].pV > 0){
             joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);                      //recuperation des touches pressées
             joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
@@ -343,10 +345,14 @@ void Partie::renderWindow(int multi) {
             }
     
             //affchage des pV
+            sf::Vector2f pvBasePosition(20, window->getSize().y*0.95); // Position en bas à gauche (20px du bas)
+            sf::Vector2f worldPvPosition = window->mapPixelToCoords(sf::Vector2i(pvBasePosition)); // Conversion en coord monde
+
             for (int i = 0; i < joueur[joueur_courant].pV; i++) {
-                getpvSprite().setPosition(20 + i * 40, window->getSize().y - 50); // Alignement en bas à gauche
+                getpvSprite().setPosition(worldPvPosition.x + i * 40, worldPvPosition.y);
                 window->draw(getpvSprite());
             }
+ 
     
             //toute les choses relatives uniquement joueur, c'est à dire aucun lien avec le server
             if(joueur[joueur_courant].Tabpressed){
@@ -406,8 +412,8 @@ void Partie::renderWindow(int multi) {
 
     //affichage souris
     cursorSprite.setPosition(
-        static_cast<float>(joueur[joueur_courant].mousePos.x) - cursorSprite.getGlobalBounds().width / 2,
-        static_cast<float>(joueur[joueur_courant].mousePos.y) - cursorSprite.getGlobalBounds().height / 2
+        static_cast<float>(joueur[joueur_courant].worldMousePos.x) - cursorSprite.getGlobalBounds().width / 2,
+        static_cast<float>(joueur[joueur_courant].worldMousePos.y) - cursorSprite.getGlobalBounds().height / 2
     );
     window->draw(cursorSprite);
 

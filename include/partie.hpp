@@ -18,7 +18,7 @@
 #include "tankVert.hpp"
 #include "tankBlanc.hpp"
 #include "deplacement.hpp"
-#define NB_JOUEUR 3
+#define NB_JOUEUR 2
 
 class Partie {
     public:

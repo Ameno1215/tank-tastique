@@ -20,7 +20,7 @@ int Lobby::choix(){
 
     // Charger la police
     sf::Font font;
-    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+    if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
         std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
     }
 
