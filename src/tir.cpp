@@ -1,7 +1,7 @@
 #include "tir.hpp"
 
-Obus::Obus(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture) 
-    : orientation(orientation), vitesse(vitesse), porte(porte) 
+Obus::Obus(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture, int degat) 
+    : orientation(orientation), vitesse(vitesse), porte(porte), degat(degat)
 {
     set_texture(nomTexture);  // Charge la texture
     spriteObus.setTexture(texture);  // Applique la texture au sprite
@@ -44,6 +44,11 @@ double Obus::get_time_tir() const {
     return time_tir;
 }
 
+int Obus::get_degat() const {
+    return degat;
+}
+
+
 // Setters
 void Obus::set_position_tir(int new_x, int new_y) {
     position_tir.x = new_x ;
@@ -74,6 +79,10 @@ void Obus::set_status(int new_status) {
 
 void Obus::set_time_tir(double new_time) {
     time_tir = new_time;
+}
+
+void Obus::set_degat(int new_degat) {
+    degat = new_degat;
 }
 
 
@@ -121,8 +130,8 @@ ListeObus::~ListeObus() {
 double ListeObus::get_time_dernier_tir() { return time_dernier_tir; }
 
 
-int ListeObus::ajouterFin(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture) {
-    Noeud* nouveauNoeud = new Noeud(compteur++, x, y, orientation, vitesse, porte, nomTexture); 
+int ListeObus::ajouterFin(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture, int degat) {
+    Noeud* nouveauNoeud = new Noeud(compteur++, x, y, orientation, vitesse, porte, nomTexture, degat); 
     if (!tete) { // Si la liste est vide
         tete = nouveauNoeud;
         queue = nouveauNoeud;

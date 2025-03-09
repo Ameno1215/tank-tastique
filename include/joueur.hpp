@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include "tank.hpp"
 #include "tank.hpp"
-#include "tankVert.hpp" 
+#include "tankClassique.hpp" 
 
 #define SERVER_PORT 3000  // Port du serveur
 #define BUFFER_SIZE 1024  // Taille du buffer de réception

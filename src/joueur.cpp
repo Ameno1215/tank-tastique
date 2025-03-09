@@ -6,7 +6,7 @@ Joueur::Joueur() { // Initialisation des membres
     this->id = 0;        // Identifiant du joueur
     this->pseudo = "Anto";   // Pseudo vide
     this->port = SERVER_PORT;      // Port à 0 par défaut
-    setTank(std::make_unique<Tank_vert>());
+    setTank(std::make_unique<Tank_classique>());
 }
 
 // Définition de la méthode recup_TankPos

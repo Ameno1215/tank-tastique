@@ -171,6 +171,7 @@ void Server::recevoirEvent() {
     }
 
     if (buffer[0] == 'K') {
+        printf("ENCORE \n");
         int type_tank = -1;
         int id;
         int valuesRead = sscanf(buffer, "K %d %d", &id, &type_tank);
@@ -183,12 +184,14 @@ void Server::recevoirEvent() {
         // Stockage des données dans la partie
         printf("joueur %d à selectionner le tank : %d \n", id, type_tank);
         if (type_tank == 1) {
-            partie.joueur[id].setTank(std::make_unique<Tank_vert>());
+            partie.joueur[id].setTank(std::make_unique<Tank_classique>());
         }
         else if (type_tank == 2) {
             partie.joueur[id].setTank(std::make_unique<Tank_bleu>());
         }
 
+
+        partie.joueur[id].pV = partie.joueur[id].Tank->get_vie();
         // partie.affiche_type_tank();
     } 
 
@@ -426,7 +429,7 @@ void Server::startServer() {
     init_send_fd();
 
     sf::Texture texturetest;
-    texturetest.loadFromFile("Image/base1.png");
+    texturetest.loadFromFile("Image/base_classique.png");
     partie.testSprite.setTexture(texturetest);
     partie.testSprite.setScale(0.08f, 0.08f);
     partie.testSprite.setPosition(300, 300);
