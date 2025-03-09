@@ -2,12 +2,14 @@
 #define CLIENT_H
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Network.hpp>
 #include <iostream>
 #include <cstring>
 #include <thread> 
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sstream>
 
 #define SERVER_IP "192.168.1.48"
 #define SERVER_PORT_CONNEXION 3000
@@ -34,6 +36,10 @@ class Client{
         void createSocket();
         void createBindedSocket();
         int get_etatConnexion();
+        std::string getLocalIPAddress();
+        bool ipValide = false;
+
+        std::string server_ip;
 
     private :
         int etatConnexion;

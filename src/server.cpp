@@ -18,7 +18,7 @@ Server::~Server() {
     std::cout << "Serveur arrêté." << std::endl;
 }
 
-void Server::createSocketConnexion(){
+void Server::createSocketConnexion(const std::string& ip){
     send_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (send_sockfd < 0) {
         perror("Échec de la création du socket");
@@ -27,9 +27,14 @@ void Server::createSocketConnexion(){
     memset(&send_clientaddr, 0, sizeof(send_clientaddr));
     send_clientaddr.sin_family = AF_INET;
     send_clientaddr.sin_port = htons(port_connexion);
-    send_clientaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    if (inet_pton(AF_INET, ip.c_str(), &send_clientaddr.sin_addr) <= 0) {
+        perror("Échec de la conversion de l'IP");
+        close(send_sockfd);
+        return;
+    }
     std::cout << "Socket créée pret à l'envoi sur le port " << port_connexion << std::endl;
 }
+
 
 void Server::createBindedSocket(){
     recieve_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -74,14 +79,17 @@ void Server::connexion() {
 
         if (buffer[0] == 'C') {
 
-            std::cout << "Message 'C' reçu. Attribution d'un port...\n";
+            std::string ipJoueur = extractIP(buffer);
+            
+            std::cout << "Message 'C' reçu. Recuperation de l'IP et attribution d'un port...\n";
 
             if (!partie.ajouteJoueur()) { // ajoute les joueurs
                 continue;
             }
 
             int port_to_send = htons(3000 + partie.get_nbJoueur()); //ports 3001 à 3007 si 6 joueurs
-            createSocketConnexion();
+            createSocketConnexion(ipJoueur); //creation de la socket sur la bonne adresse
+            ip[partie.get_nbJoueur() - 1] = ipJoueur; //ajoute l'adresse IP au tableau des IP
             sendto(send_sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&send_clientaddr, send_len);
             close(send_sockfd);
             std::cout << "Port " << port_connexion << " envoyé au client\n";
@@ -102,7 +110,7 @@ void Server::connexion() {
             if (buffer[0] == 'T') {
                 std::cout << "Client validé sur le port " << port_connexion << ".\n";
                 std::string confirmation = "Connexion réussie !";
-                createSocketConnexion();
+                createSocketConnexion(ipJoueur);
                 sendto(send_sockfd, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&send_clientaddr, send_len);
             } else {
                 std::cout << "Échec d'initialisation avec le client\n";
@@ -121,7 +129,7 @@ void Server::connexion() {
 
     for (int i = 0; i < NB_JOUEUR; i++) {
         port_connexion = partie.joueur[i].port;
-        createSocketConnexion();
+        createSocketConnexion(ip[i]);
         int sent = sendto(send_sockfd, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&send_clientaddr, sizeof(send_clientaddr));
         if (sent < 0) {
             perror("Erreur lors de l'envoi du message au joueur");
@@ -129,6 +137,21 @@ void Server::connexion() {
             std::cout << "Message 'P' envoyé au joueur " << partie.joueur[i].id  << " sur le port " << port_connexion << ".\n";
         }
         close(send_sockfd);
+    }
+}
+
+std::string Server::extractIP(const std::string& message) {
+    std::istringstream iss(message);
+    std::string type, ip;
+
+    iss >> type >> ip; // Sépare "C" et l'adresse IP
+
+    if (!ip.empty()) {
+        std::cout << "IP extraite du message : " << ip << std::endl;
+        return ip;
+    } else {
+        std::cout << "Erreur : IP non trouvée dans le message !" << std::endl;
+        return ip;
     }
 }
 
@@ -424,7 +447,7 @@ void Server::init_send_fd(){
 
     for(int i=0; i<NB_JOUEUR; i++){
         port_connexion = 3001 + i;
-        createSocketConnexion();
+        createSocketConnexion(ip[i]);
         sockfd[i] = send_sockfd;
         client[i] = send_clientaddr;
     }

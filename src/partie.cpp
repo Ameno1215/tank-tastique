@@ -268,7 +268,6 @@ int Partie::testGagnant(){
     }
 
     if(compt == 1){ //si il reste que un seul joueur
-        std::cout<<"Joueur "<<joueurVivant<<" a GAGNÉÉÉÉÉ"<<std::endl;
         partieFinie = true;
         return joueurVivant;
     }
@@ -917,6 +916,18 @@ void Partie::affichageConnexion() {
     sf::FloatRect textBounds = statusText.getLocalBounds();
     statusText.setPosition((windowSize.x - textBounds.width) / 2.0f, 200);
 
+    // Texte d'invite
+    sf::Text inviteText("Adresse IP du server :", font, 30);
+    inviteText.setPosition(200, 200);
+    inviteText.setFillColor(sf::Color::White);
+
+    std::string ip;
+    sf::Text ipText("", font, 30);
+    ipText.setPosition(200, 250); 
+    ipText.setFillColor(sf::Color::Cyan);
+
+    Bouton valider(700, 400, 200, 50, "Valider", font);
+
     window->clear();
     window->draw(backgroundSprite);
     window->draw(statusText);
@@ -930,9 +941,23 @@ void Partie::affichageConnexion() {
 
     while (window->isOpen()) {
         sf::Event event;
+        joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
+        joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);   //la mettre dans le repère de la fenetre (je crois)
+        valider.update(joueur[joueur_courant].worldMousePos);
+        joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
+
         while (window->pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window->close();
+            }
+            // Détection de la saisie clavier
+            if (event.type == sf::Event::TextEntered) {
+                if (event.text.unicode == '\b' && !ip.empty()) { // Suppression avec Backspace
+                    ip.pop_back();
+                } else if (event.text.unicode >= 32 && event.text.unicode <= 126) { // Saisie classique
+                    ip += static_cast<char>(event.text.unicode);
+                }
+                ipText.setString(ip); // Mise à jour du texte affiché
             }
         }
 
@@ -969,11 +994,21 @@ void Partie::affichageConnexion() {
             obusSprite.setPosition(obusStartX, obusStartY);
         }
 
+        if(joueur[joueur_courant].Clicked){
+            if(valider.isClicked(joueur[joueur_courant].worldMousePos)){
+                client.server_ip = ip;
+                client.ipValide = true;
+            }
+        }
+
         window->clear();
         window->draw(backgroundSprite);
         window->draw(statusText);
         window->draw(tankChargementSprite);
         window->draw(obusSprite);
+        window->draw(inviteText);
+        valider.draw(*window);
+        window->draw(ipText);
 
         // Si l'explosion est active, on la dessine et on met à jour son animation
         if (explosionActive) {

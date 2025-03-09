@@ -35,18 +35,20 @@ private:
     void recevoirEvent();
     void sendToClient();
     void init_send_fd();
+    std::string ip[6]; 
 
     void majDead(char* buffer);
 
-    void createSocketConnexion();
+    void createSocketConnexion(const std::string& ip);
     void createBindedSocket();
     void connexion();
     void afficher_buffer(char tab[][5], int nb_lignes);
     void sendTankToClient();
     void string_tank(std::string& chaine);
     void sendTankRecu();
-    
-    
+
+    std::string extractIP(const std::string& message);
+
 public:
     Server();
     ~Server();

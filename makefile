@@ -13,7 +13,7 @@ CXX = g++
 CXXFLAGS = -g -Wall -Wextra -std=c++17 -I$(INCLUDE_DIR)
 
 # Flags SFML (ajustez si nécessaire)
-SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system
+SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
 
 # Fichiers sources pour le client
 CLIENT_SRC_FILES = $(SRC_DIR)/main.cpp $(SRC_DIR)/lobby.cpp $(SRC_DIR)/partie.cpp \

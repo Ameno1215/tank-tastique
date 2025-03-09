@@ -14,7 +14,11 @@ void Client::createSocket(){
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(num_port);
-    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    if (inet_pton(AF_INET, server_ip.c_str(), &servaddr.sin_addr) <= 0) {
+        perror("Échec de la conversion de l'IP");
+        close(sockfd);
+        return;
+    }
 }
 
 void Client::createBindedSocket(){
@@ -33,8 +37,11 @@ void Client::createBindedSocket(){
     memset(&recieve_servaddr, 0, sizeof(recieve_servaddr));
     recieve_servaddr.sin_family = AF_INET;
     recieve_servaddr.sin_port = htons(num_port);
-    recieve_servaddr.sin_addr.s_addr = inet_addr(SERVER_IP); // Accepter les connexions de n'importe quelle adresse
-
+    if (inet_pton(AF_INET, server_ip.c_str(), &servaddr.sin_addr) <= 0) {
+        perror("Échec de la conversion de l'IP");
+        close(sockfd);
+        return;
+    }
     // Liaison du socket au port spécifié
     if (bind(recieve_sockfd, (struct sockaddr*)&recieve_servaddr, sizeof(recieve_servaddr)) < 0) {
         perror("Échec du bind du socket");
@@ -53,12 +60,20 @@ void Client::sendMessageToServer(const std::string& message) {
 }
 
 void Client::initconnexion() {
+
+    while(!ipValide){
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    printf("la fete commence");
     etatConnexion = -1; //connexion avec le server
     int received_port;
-    std::string message = "C";
+
+    std::string message = "C " + getLocalIPAddress(); //recupération de l'adresse IP
+    printf("%s", message.c_str());
     socklen_t recieve_len = sizeof(recieve_servaddr);
+
     sendMessageToServer(message);  // Envoi du premier message sur le port 3000
-    std::cout << "ICI Message 'C' envoyé au serveur.\n";
+    std::cout << "Requete et IP envoyee au serveur.\n";
 
     num_port = SERVER_PORT; //3000
     createBindedSocket();
@@ -185,4 +200,9 @@ void Client::udpdateData(Joueur& joueur){
 
 int Client::get_etatConnexion(){
     return etatConnexion;
+}
+
+std::string Client::getLocalIPAddress() {
+    sf::IpAddress ip = sf::IpAddress::getLocalAddress();
+    return ip.toString();
 }
