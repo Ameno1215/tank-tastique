@@ -80,7 +80,8 @@ void Server::connexion() {
         if (buffer[0] == 'C') {
 
             std::string ipJoueur = extractIP(buffer);
-            
+            std::string pseudo = extractPseudo(buffer);
+            printf("voici le pseudo %s\n", pseudo.c_str());
             std::cout << "Message 'C' reçu. Recuperation de l'IP et attribution d'un port...\n";
 
             if (!partie.ajouteJoueur()) { // ajoute les joueurs
@@ -528,6 +529,15 @@ void Server::startServer() {
 
     close(recieve_sockfd);  //pas toucher
 }
+
+std::string Server::extractPseudo(const std::string& message) {
+    size_t pos = message.find("N: ");
+    if (pos != std::string::npos) {
+        return message.substr(pos + 3); // 4 pour sauter "N:  "
+    }
+    return "Batar"; // Retourne une chaîne vide si "N:  " n'est pas trouvé
+}
+
 
 int main() {
     Server server;

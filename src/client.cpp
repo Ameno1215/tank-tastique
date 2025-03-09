@@ -68,8 +68,8 @@ void Client::initconnexion() {
     etatConnexion = -1; //connexion avec le server
     int received_port;
 
-    std::string message = "C " + getLocalIPAddress(); //recupération de l'adresse IP
-    printf("%s", message.c_str());
+    std::string message = "C " + getLocalIPAddress() + " N: " + joueur.pseudo; //recupération de l'adresse IP
+    printf("\n%s\n", message.c_str());
     socklen_t recieve_len = sizeof(recieve_servaddr);
 
     sendMessageToServer(message);  // Envoi du premier message sur le port 3000

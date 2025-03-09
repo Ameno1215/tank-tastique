@@ -48,6 +48,7 @@ private:
     void sendTankRecu();
 
     std::string extractIP(const std::string& message);
+    std::string extractPseudo(const std::string& message);
 
 public:
     Server();

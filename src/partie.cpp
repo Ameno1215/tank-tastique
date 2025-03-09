@@ -916,17 +916,36 @@ void Partie::affichageConnexion() {
     sf::FloatRect textBounds = statusText.getLocalBounds();
     statusText.setPosition((windowSize.x - textBounds.width) / 2.0f, 200);
 
+    // Calcul de la position centrée en largeur
+    float centerX = windowSize.x / 2.0f;
+    int hauteurBloc = 600;
     // Texte d'invite
-    sf::Text inviteText("Adresse IP du server :", font, 30);
-    inviteText.setPosition(200, 200);
-    inviteText.setFillColor(sf::Color::White);
+    sf::Text inviteText("Adresse IP du server :", font, 60);
+    inviteText.setOrigin(inviteText.getLocalBounds().width / 2.0f, 0);
+    inviteText.setPosition(centerX, hauteurBloc); // hauteurChoisie est à définir
 
     std::string ip;
-    sf::Text ipText("", font, 30);
-    ipText.setPosition(200, 250); 
+    sf::Text ipText("", font, 60);
+    ipText.setOrigin(ipText.getLocalBounds().width / 2.0f, 0);
+    ipText.setPosition(centerX, hauteurBloc + 100);
     ipText.setFillColor(sf::Color::Cyan);
 
-    Bouton valider(700, 400, 200, 50, "Valider", font);
+    // Texte d'invite
+    sf::Text nomText("Rentre ton blase :", font, 60);
+    nomText.setOrigin(nomText.getLocalBounds().width / 2.0f, 0);
+    nomText.setPosition(centerX, hauteurBloc); // hauteurChoisie est à définir
+
+    // Zone de texte pour le pseudo
+    std::string pseudo;
+    sf::Text pseudoText("", font, 60);
+    pseudoText.setOrigin(pseudoText.getLocalBounds().width / 2.0f, 0);
+    pseudoText.setPosition(centerX, hauteurBloc + 100);
+    pseudoText.setFillColor(sf::Color::Cyan);
+
+    // Bouton de validation
+    Bouton valider(centerX - 100, hauteurBloc + 220, 200, 50, "Valider", font);
+
+    bool validePseudo = false;
 
     window->clear();
     window->draw(backgroundSprite);
@@ -946,18 +965,38 @@ void Partie::affichageConnexion() {
         valider.update(joueur[joueur_courant].worldMousePos);
         joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
 
+        //maj de la position des entrées
+        nomText.setOrigin(nomText.getLocalBounds().width / 2.0f, 0);
+        nomText.setPosition(centerX, hauteurBloc); // hauteurChoisie est à définir
+        pseudoText.setOrigin(pseudoText.getLocalBounds().width / 2.0f, 0);
+        pseudoText.setPosition(centerX, hauteurBloc + 100);
+        inviteText.setOrigin(inviteText.getLocalBounds().width / 2.0f, 0);
+        inviteText.setPosition(centerX, hauteurBloc); // hauteurChoisie est à définir
+        ipText.setOrigin(ipText.getLocalBounds().width / 2.0f, 0);
+        ipText.setPosition(centerX, hauteurBloc + 100);
+
         while (window->pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window->close();
             }
             // Détection de la saisie clavier
-            if (event.type == sf::Event::TextEntered) {
-                if (event.text.unicode == '\b' && !ip.empty()) { // Suppression avec Backspace
-                    ip.pop_back();
-                } else if (event.text.unicode >= 32 && event.text.unicode <= 126) { // Saisie classique
-                    ip += static_cast<char>(event.text.unicode);
+            if (event.type == sf::Event::TextEntered){
+                if(validePseudo){
+                    if (event.text.unicode == '\b' && !ip.empty()) { // Suppression avec Backspace
+                        ip.pop_back();
+                    } else if (event.text.unicode >= 32 && event.text.unicode <= 126) { // Saisie classique
+                        ip += static_cast<char>(event.text.unicode);
+                    }
+                    ipText.setString(ip); // Mise à jour du texte affiché
                 }
-                ipText.setString(ip); // Mise à jour du texte affiché
+                else{
+                    if (event.text.unicode == '\b' && !pseudo.empty()) { // Suppression avec Backspace
+                        pseudo.pop_back();
+                    } else if (event.text.unicode >= 32 && event.text.unicode <= 126) { // Saisie classique
+                        pseudo += static_cast<char>(event.text.unicode);
+                    }
+                    pseudoText.setString(pseudo); // Mise à jour du texte affiché
+                }
             }
         }
 
@@ -996,8 +1035,16 @@ void Partie::affichageConnexion() {
 
         if(joueur[joueur_courant].Clicked){
             if(valider.isClicked(joueur[joueur_courant].worldMousePos)){
-                client.server_ip = ip;
-                client.ipValide = true;
+                if(validePseudo && !ip.empty()){
+                    client.server_ip = ip;
+                    client.ipValide = true;
+                }
+                else{
+                    if(!pseudo.empty()){
+                        client.joueur.pseudo = pseudo;
+                        validePseudo = true;
+                    }       
+                }
             }
         }
 
@@ -1006,16 +1053,22 @@ void Partie::affichageConnexion() {
         window->draw(statusText);
         window->draw(tankChargementSprite);
         window->draw(obusSprite);
-        window->draw(inviteText);
-        valider.draw(*window);
-        window->draw(ipText);
+        if(validePseudo){
+            window->draw(inviteText);
+            valider.draw(*window);
+            window->draw(ipText);
+        }
+        else{
+            window->draw(nomText);
+            valider.draw(*window);
+            window->draw(pseudoText);
+        }
 
         // Si l'explosion est active, on la dessine et on met à jour son animation
         if (explosionActive) {
             renderExplosion(xexplosion , yexplosion);
             window->draw(explosionSprite);
         }
-
 
         window->display();
     }
