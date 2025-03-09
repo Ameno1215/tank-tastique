@@ -223,9 +223,13 @@ void Partie::update() {
                             Noeud * temp = courant->suivant;
                             mon_tank.getListeObus().supprimer(courant->index);
                             courant = temp;
+                            stat[joueur_courant][2]++; //ajoute un obus touché
+                            //ici il faut faire attention en fonction du type de tank pour les degats infligés
+                            stat[joueur_courant][3]++; //ajoute un obus touché
                             break;
                         }
                     }
+
                 }
                 if(!obusDestructeur){ //si l'obus n'a rien rencontré on détruit
                     courant = courant->suivant;
@@ -241,9 +245,11 @@ void Partie::update() {
             int index = mon_tank.getListeObus().ajouterFin(mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getRotation(), 0.2, 500, "Image/obus.png");
             mon_tank.getListeObus().set_time_dernier_tir(get_time_seconds());
             mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y);
+            stat[joueur_courant][1]++; //ajoute obus tiré
         }
     }
 
+    stat[joueur_courant][0] = joueur[joueur_courant].pV;
     testGagnant();
 }
 
@@ -300,6 +306,7 @@ void Partie::renderWindow(int multi) {
     float Yview = std::clamp(tankPos.y, minY, maxY);
 
     view.setCenter(Xview, Yview);
+
 
     window->setView(view); // Appliquer la View
 
@@ -395,12 +402,12 @@ void Partie::renderWindow(int multi) {
                 afficheTableauScore();
             }
             
-            else if(visionnage){
+            if(visionnage){
                 boutonScore.setPosition(upperBottomLeftPosition);
                 boutonScore.draw(*window);
             }
-            if(boutonScore.clicked){
-                printf("tessst");
+            else{
+                afficherMinimap();
             }
             window->draw(testSprite);
         }
@@ -474,6 +481,42 @@ void Partie::renderWindow(int multi) {
     window->draw(cursorSprite);
 
     window->display();
+}
+
+void Partie::afficherMinimap(){
+
+    sf::Vector2f tankPos = joueur[joueur_courant].Tank->getBaseSprite().getPosition();
+    sf::Vector2f viewCenter = view.getCenter();
+    sf::Vector2f viewSize = view.getSize();
+
+    // Définir la taille de la minimap en gardant le ratio du background
+    float minimapScale = 0.08f; // Échelle globale (20% de la taille du background)
+    minimapBackground.setSize(sf::Vector2f(fondSprite.getGlobalBounds().width * minimapScale,
+                                            fondSprite.getGlobalBounds().height * minimapScale));
+    minimapBackground.setFillColor(sf::Color(0, 0, 0, 150)); // Noir semi-transparent
+
+    // Placer la minimap en haut à gauche de la view
+    minimapBackground.setPosition(viewCenter.x - viewSize.x / 2 + 10, 
+                                viewCenter.y - viewSize.y / 2 + 10);
+
+    // 🔹 Normaliser la position du tank entre 0 et 1 (proportionnel au sprite)
+    float tankX_norm = tankPos.x / fondSprite.getGlobalBounds().width;
+    float tankY_norm = tankPos.y / fondSprite.getGlobalBounds().height;
+
+    // 🔹 Convertir cette position normalisée dans l'espace de la minimap
+    sf::Vector2f minimapTankPos(
+        minimapBackground.getPosition().x + tankX_norm * minimapBackground.getSize().x,
+        minimapBackground.getPosition().y + tankY_norm * minimapBackground.getSize().y
+    );
+
+    // Mettre à jour le point rouge du tank
+    tankPoint.setRadius(3.f);
+    tankPoint.setFillColor(sf::Color::Red);
+    tankPoint.setPosition(minimapTankPos);
+
+    // Dessiner la minimap et le tank sur la fenêtre
+    window->draw(minimapBackground);
+    window->draw(tankPoint);
 }
 
 void Partie::sendData(){
@@ -592,6 +635,10 @@ void Partie::recieveData(){
         }
 
         go = 1;
+    }
+
+    if(buffer[0] == 'Z'){
+        std::memcpy(stat, buffer + 1, sizeof(stat)); // Désérialisation des données
     }
     
 }
@@ -1142,7 +1189,7 @@ void Partie::afficheTableauScore() {
     sf::Vector2f viewCenter = view.getCenter();
 
     // Définir la taille de la boîte centrale
-    sf::Vector2f scoreBoxSize(400, 300); // Largeur x Hauteur
+    sf::Vector2f scoreBoxSize(800, 400); // Largeur x Hauteur
     sf::RectangleShape scoreBox(scoreBoxSize);
     scoreBox.setFillColor(sf::Color(0, 0, 0, 150)); // Fond noir semi-transparent
     scoreBox.setOutlineThickness(3);
@@ -1168,23 +1215,64 @@ void Partie::afficheTableauScore() {
                       scoreBox.getPosition().y + 20); // Titre centré horizontalement
     window->draw(title);
 
-    // Afficher les joueurs et leurs stats
+    // Position de base
+    float startX = scoreBox.getPosition().x + 20;
+    float startY = scoreBox.getPosition().y + 60;
+    float columnSpacing = 150; // Espacement entre colonnes
+    float rowSpacing = 40; // Espacement entre lignes
+
+    // Affichage de l'en-tête
+    sf::Text headerText;
+    headerText.setFont(font);
+    headerText.setCharacterSize(22);
+    headerText.setFillColor(sf::Color::White);
+
+    // Colonnes d'en-tête avec positionnement manuel
+    std::vector<std::string> headers = {"Joueur", "Obus Tires", "Obus Touches", "Precision", "Degats"};
+    for (size_t col = 0; col < headers.size(); col++) {
+        headerText.setString(headers[col]);
+        headerText.setPosition(startX + col * columnSpacing, startY);
+        window->draw(headerText);
+    }
+
+    // Affichage des joueurs et statistiques
     for (int i = 0; i < nbJoueur; i++) {
         sf::Text playerText;
         playerText.setFont(font);
         playerText.setCharacterSize(20);
         playerText.setFillColor(sf::Color::White);
 
-        // Construire la ligne du joueur (Nom - Pv - Score)
-        std::string playerInfo = joueur[i].pseudo + " - Pv: " + std::to_string(joueur[i].pV) + " - Score: " + std::to_string(joueur[i].pts);
-        playerText.setString(playerInfo);
+        // Position de départ pour chaque ligne
+        float rowY = startY + (i + 1) * rowSpacing;
 
-        // Centrer le texte horizontalement dans la boîte
-        playerText.setPosition(scoreBox.getPosition().x + (scoreBoxSize.x - playerText.getLocalBounds().width) / 2,
-                               scoreBox.getPosition().y + 60 + i * 30); // Position verticale ajustée
+        // Convertir les valeurs en string
+        std::ostringstream stat1Stream, stat2Stream, stat3Stream;
+        stat1Stream << std::fixed << std::setprecision(0) << stat[i][1];
+        stat2Stream << std::fixed << std::setprecision(0) << stat[i][2];
+        stat3Stream << std::fixed << std::setprecision(0) << stat[i][3];
 
-        window->draw(playerText);
+        std::string stat1Str = stat1Stream.str();
+        std::string stat2Str = stat2Stream.str();
+        std::string stat3Str = stat3Stream.str();
+
+        // Calcul de la précision
+        float precision = (stat[i][1] > 0) ? (stat[i][2] / stat[i][1]) * 100 : 0;
+        std::ostringstream precisionStream;
+        precisionStream << std::fixed << std::setprecision(2) << precision;
+        std::string precisionStr = precisionStream.str() + "%";
+
+        // Stocker les valeurs dans un vecteur pour affichage
+        std::vector<std::string> playerStats = {
+            joueur[i].pseudo, stat1Str, stat2Str, precisionStr, stat3Str};
+
+        // Affichage des statistiques du joueur
+        for (size_t col = 0; col < playerStats.size(); col++) {
+            playerText.setString(playerStats[col]);
+            playerText.setPosition(startX + col * columnSpacing, rowY);
+            window->draw(playerText);
+        }
     }
+
 }
 
 int Partie::selectionTank() {

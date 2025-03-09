@@ -13,9 +13,10 @@
 #include "joueur.hpp"
 #include "partie.hpp"
 
-#define SERVER_PORT 3000  
+#define SERVER_IP "192.168.1.48"
+#define SERVER_PORT 3000
+
 #define BUFFER_SIZE 1024  
-#define NEW_PORT 3001
 
 std::atomic<bool> running(true);  // Permet d'arrêter le serveur proprement
 

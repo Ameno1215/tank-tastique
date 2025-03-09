@@ -14,7 +14,7 @@ void Client::createSocket(){
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(num_port);
-    servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
 }
 
 void Client::createBindedSocket(){

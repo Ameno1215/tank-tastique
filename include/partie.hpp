@@ -10,6 +10,7 @@
 #include <mutex>
 #include <sstream>  
 #include <atomic>
+#include <iomanip> 
 
 #include "joueur.hpp" 
 #include "bouton.hpp"
@@ -29,7 +30,7 @@ class Partie {
         Joueur joueur[6];
         Client client;
 
-        int stat[6][4]; //1ere colonne nb de dégats infligés, nb d'obus recu, nb d'obus tirés, nb de char détruit.
+        float stat[6][4]; //dans l'ordre des colonnes : PV, obus tiré, obus tocuhés, dégats infligés.
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
@@ -82,7 +83,9 @@ class Partie {
 
         sf::Sprite fondSprite;
         sf::Texture fondTexture;
-        sf::FloatRect backgroundBounds; 
+        sf::FloatRect backgroundBounds;
+
+        void afficherMinimap();
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
@@ -110,6 +113,9 @@ class Partie {
         Bouton boutonScore;
         Bouton boutonReplay;
         bool visionnage = false;
+
+        sf::RectangleShape minimapBackground;
+        sf::CircleShape tankPoint;
 };
 
 #endif

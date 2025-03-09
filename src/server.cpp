@@ -27,7 +27,7 @@ void Server::createSocketConnexion(){
     memset(&send_clientaddr, 0, sizeof(send_clientaddr));
     send_clientaddr.sin_family = AF_INET;
     send_clientaddr.sin_port = htons(port_connexion);
-    send_clientaddr.sin_addr.s_addr = INADDR_ANY;
+    send_clientaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
     std::cout << "Socket créée pret à l'envoi sur le port " << port_connexion << std::endl;
 }
 
@@ -44,7 +44,7 @@ void Server::createBindedSocket(){
     memset(&recieve_clientaddr, 0, sizeof(recieve_clientaddr));
     recieve_clientaddr.sin_family = AF_INET;
     recieve_clientaddr.sin_port = htons(port_connexion);
-    recieve_clientaddr.sin_addr.s_addr = INADDR_ANY; // Accepter les connexions de n'importe quelle adresse
+    recieve_clientaddr.sin_addr.s_addr = INADDR_ANY;  // Accepte les connexions de n'importe quelle adresse
 
     // Liaison du socket au port spécifié
     if (bind(recieve_sockfd, (struct sockaddr*)&recieve_clientaddr, sizeof(recieve_clientaddr)) < 0) {
@@ -242,6 +242,12 @@ void Server::sendToClient(){
     char buffer_processed_data[100];
     char buffer_pV[100];
     char buffer_explo[100];
+
+    char buffer_stat[1 + 6 * 4 * sizeof(float)];
+    buffer_stat[0] = 'Z';
+    // Sérialisation du tableau stat après le marqueur
+    std::memcpy(buffer_stat + 1, partie.stat, sizeof(partie.stat));
+
     partie.listexplosion.toCharArray(buffer_explo);
     
     sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
@@ -305,6 +311,15 @@ void Server::sendToClient(){
                 std::cout << "📨 Explosion envoyée avec succès (" << n << " octets)\n";
             }
 
+        }
+
+        // Envoi du tableau stat
+        n = sendto(sockfd[i], buffer_stat, sizeof(buffer_stat), 0, 
+                  (const struct sockaddr*)&client[i], sizeof(client[i]));
+        if (n < 0) {
+            perror("❌ Erreur lors de l'envoi des données du tableau stat");
+        } else {
+            //std::cout << "📨 Tableau stat envoyé avec succès (" << n << " octets)\n";
         }
     }
     partie.listexplosion.maj();
