@@ -1,9 +1,9 @@
-#include "tankClassique.hpp"
+#include "tankMortier.hpp"
 #include "partie.hpp"
 
 
 
-Tank_classique::Tank_classique() : tank() {
+Tank_mortier::Tank_mortier() : tank() {
     setTexture();
 
     set_vit(MULT_VITESSE_TANK * 3);
@@ -14,9 +14,9 @@ Tank_classique::Tank_classique() : tank() {
     set_vie(MULT_VIE * 3);
 }
 
-void Tank_classique::setTexture() {
-    if (!textureBase.loadFromFile("Image/classique/base_classique.png") || !textureTourelle.loadFromFile("Image/classique/tourelle_classique.png")) {
-        std::cerr << "Erreur chargement texture Tank Classique\n";
+void Tank_mortier::setTexture() {
+    if (!textureBase.loadFromFile("Image/mortier/base_mortier.png") || !textureTourelle.loadFromFile("Image/mortier/tourelle_mortier.png")) {
+        std::cerr << "Erreur chargement texture Tank mortier\n";
     }
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);
@@ -26,10 +26,10 @@ void Tank_classique::setTexture() {
 
 }
 
-std::string Tank_classique::getType() const {
-    return "Tank classique";
+std::string Tank_mortier::getType() const {
+    return "Tank mortier";
 }
 
-int Tank_classique::get_type() const {
-    return 1;
+int Tank_mortier::get_type() const {
+    return 4;
 }

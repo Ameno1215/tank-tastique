@@ -499,7 +499,19 @@ void Partie::recieveTank(){
                 joueur[joueur_id].setTank(std::make_unique<Tank_classique>());
             }
             else if (type == 2) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_bleu>());
+                joueur[joueur_id].setTank(std::make_unique<Tank_rapide>());
+            }
+            else if (type == 3) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_healer>());
+            }
+            else if (type == 4) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_mortier>());
+            }
+            else if (type == 5) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_solide>());
+            }
+            else if (type == 6) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_sniper>());
             }
             // std::cout << "J " << joueur_id << " T " << type << "\n";
             
@@ -537,7 +549,7 @@ int Partie::Solo() {
     cursorSprite.setScale(0.12f, 0.12f);
 
     sf::Texture texturetest;
-    texturetest.loadFromFile("Image/base_classique.png");
+    texturetest.loadFromFile("Image/classique/base_classique.png");
     sf::Sprite cursorSprite(textureCurseur);
     testSprite.setTexture(texturetest);
     cursorSprite.setScale(0.08f, 0.08f);
@@ -588,7 +600,7 @@ int Partie::multiJoueur() {
     cursorSprite.setScale(0.12f, 0.12f);
 
     sf::Texture texturetest;
-    texturetest.loadFromFile("Image/base_classique.png");
+    texturetest.loadFromFile("Image/classique/base_classique.png");
     sf::Sprite cursorSprite(textureCurseur);
     testSprite.setTexture(texturetest);
     cursorSprite.setScale(0.08f, 0.08f);
@@ -1052,12 +1064,12 @@ int Partie::selectionTank() {
     };
 
     std::vector<TankInfo> tanks = {
-        {"Tank Classique", "Image/tankClassique.png", 3, 3, 2, 4, 3, 4},
-        {"Tank Rapide", "Image/base_bleu.png", 5, 5, 1, 2, 5, 1},
-        {"Tank Soigneur", "Image/tankClassique.png", 3, 3, 2, 3, 3, 2},
-        {"Tank Mortier", "Image/tankClassique.png", 2, 3, 2, 3, 3, 3},
-        {"Tank Solide", "Image/tankClassique.png", 1, 1, 4, 2, 2, 4},
-        {"Tank Sniper", "Image/tankClassique.png", 2, 1, 3, 5, 4, 3}
+        {"Tank Classique", "Image/classique/tankClassique.png", 3, 3, 2, 4, 3, 4},
+        {"Tank Rapide", "Image/petit/petit_tank.png", 5, 5, 1, 2, 5, 1},
+        {"Tank Soigneur", "Image/healer/tankHealer.png", 3, 3, 2, 3, 3, 2},
+        {"Tank Mortier", "Image/mortier/mortier.png", 2, 3, 2, 3, 3, 3},
+        {"Tank Solide", "Image/solide/tank_solide.png", 1, 1, 4, 2, 2, 4},
+        {"Tank Sniper", "Image/sniper/sniper_tank.png", 2, 1, 3, 5, 4, 3}
     };
 
     std::vector<sf::Texture> textures(tanks.size());
@@ -1113,15 +1125,21 @@ int Partie::selectionTank() {
                     joueur[joueur_courant].setTank(std::make_unique<Tank_classique>());
                     return 1;
                 } else if (boutons[1].isClicked(mousePos)) {
-                    joueur[joueur_courant].setTank(std::make_unique<Tank_bleu>());
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_rapide>());
                     return 2;
-                }
-
-                for (size_t i = 2; i < boutons.size(); ++i) {
-                    if (boutons[i].isClicked(mousePos)) {
-                        joueur[joueur_courant].setTank(std::make_unique<Tank_classique>()); // Adapter le type de tank
-                        return 1;
-                    }
+                
+                } else if (boutons[2].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_healer>());
+                    return 3;
+                } else if (boutons[3].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_mortier>());
+                    return 4;
+                } else if (boutons[4].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_solide>());
+                    return 5;
+                } else if (boutons[5].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_sniper>());
+                    return 6;
                 }
             }
         }

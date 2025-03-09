@@ -17,6 +17,11 @@
 #include "tankBleu.hpp"
 #include "tankClassique.hpp"
 #include "tankBlanc.hpp"
+#include "tankSolide.hpp"
+#include "tankHealer.hpp"
+#include "tankRapide.hpp"
+#include "tankSniper.hpp"
+#include "tankMortier.hpp"
 #include "deplacement.hpp"
 
 

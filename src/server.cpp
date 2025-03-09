@@ -171,7 +171,6 @@ void Server::recevoirEvent() {
     }
 
     if (buffer[0] == 'K') {
-        printf("ENCORE \n");
         int type_tank = -1;
         int id;
         int valuesRead = sscanf(buffer, "K %d %d", &id, &type_tank);
@@ -182,12 +181,24 @@ void Server::recevoirEvent() {
         }
 
         // Stockage des données dans la partie
-        printf("joueur %d à selectionner le tank : %d \n", id, type_tank);
+        // printf("joueur %d à selectionner le tank : %d \n", id, type_tank);
         if (type_tank == 1) {
             partie.joueur[id].setTank(std::make_unique<Tank_classique>());
         }
         else if (type_tank == 2) {
-            partie.joueur[id].setTank(std::make_unique<Tank_bleu>());
+            partie.joueur[id].setTank(std::make_unique<Tank_rapide>());
+        }
+        else if (type_tank == 3) {
+            partie.joueur[id].setTank(std::make_unique<Tank_healer>());
+        }
+        else if (type_tank == 4) {
+            partie.joueur[id].setTank(std::make_unique<Tank_mortier>());
+        }
+        else if (type_tank == 5) {
+            partie.joueur[id].setTank(std::make_unique<Tank_solide>());
+        }
+        else if (type_tank == 6) {
+            partie.joueur[id].setTank(std::make_unique<Tank_sniper>());
         }
 
 
@@ -337,7 +348,6 @@ void Server::sendTankToClient(){
 void Server::sendTankRecu() {
     char buffer[10];
     sprintf(buffer, "W 1 1");
-    printf("%c\n", buffer[0]);
 
     //les envoies à chaque autre client
     for (int i = 0; i < partie.get_nbJoueur(); i++) {
@@ -429,7 +439,7 @@ void Server::startServer() {
     init_send_fd();
 
     sf::Texture texturetest;
-    texturetest.loadFromFile("Image/base_classique.png");
+    texturetest.loadFromFile("Image/classique/base_classique.png");
     partie.testSprite.setTexture(texturetest);
     partie.testSprite.setScale(0.08f, 0.08f);
     partie.testSprite.setPosition(300, 300);
