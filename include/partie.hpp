@@ -18,7 +18,7 @@
 #include "tankVert.hpp"
 #include "tankBlanc.hpp"
 #include "deplacement.hpp"
-#define NB_JOUEUR 2
+#define NB_JOUEUR 3
 
 class Partie {
     public:
@@ -79,6 +79,10 @@ class Partie {
 
         int testGagnant();
         std::atomic<bool> partieFinie {false};  // ✅ Initialisation correcte dans la classe
+
+        sf::Sprite fondSprite;
+        sf::Texture fondTexture;
+        sf::FloatRect backgroundBounds; 
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
@@ -88,8 +92,6 @@ class Partie {
         std::string buffer_missile;
         sf::Sprite pvSprite;
         sf::Texture pvTexture;
-        sf::Sprite fondSprite;
-        sf::Texture fondTexture;
 
         int nbJoueur;
         int port_actuel;
@@ -102,6 +104,7 @@ class Partie {
         sf::Texture explosionTextureFrames[20];
         sf::Sprite explosionSprite;
 
+        sf::View view;
         sf::Font font;
         sf::Text gameOverText;
         Bouton boutonScore;

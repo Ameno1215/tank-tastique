@@ -33,7 +33,7 @@ public:
     virtual int get_type() const = 0;
 
     void updateHitbox(); // Met à jour la hitbox
-    void updateCollision(const sf::Sprite& otherSprite); // Met à jour l'état de collision
+    void updateCollision(const sf::Sprite& otherSprite, sf::FloatRect backgroundBounds); // Met à jour l'état de collision
     bool isColliding() const; // Retourne l'état de collision
     bool isTouched(); // Retourne l'état de collision
     std::vector<sf::Vector2f> getTransformedPoints(const sf::Sprite& sprite);

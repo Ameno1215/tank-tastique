@@ -431,6 +431,10 @@ void Server::startServer() {
     partie.testSprite.setScale(0.08f, 0.08f);
     partie.testSprite.setPosition(300, 300);
 
+    partie.fondTexture.loadFromFile("Image/Keep_Off_The_Grass.png");
+    partie.fondSprite.setTexture(partie.fondTexture);
+    partie.fondSprite.setScale(2, 2);
+
     // TYPE DE TANK BLANC POUR TOUS LES JOUEURS AU DEBUT
     for (int i = 0; i < NB_JOUEUR; i ++) {
         partie.joueur[i].setTank(std::make_unique<Tank_blanc>());

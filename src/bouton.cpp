@@ -46,3 +46,15 @@ void Bouton::draw(sf::RenderWindow& window) {
     window.draw(shape);
     window.draw(text);
 }
+
+// Méthode pour définir la position du bouton
+void Bouton::setPosition(sf::Vector2f newPosition) {
+    shape.setPosition(newPosition);
+    sf::FloatRect textRect = text.getLocalBounds();
+    text.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
+    text.setPosition(newPosition.x + shape.getSize().x / 2.0f, newPosition.y + shape.getSize().y / 2.0f);
+}
+
+sf::FloatRect Bouton::getLocalBounds() const {
+    return shape.getGlobalBounds();
+}
