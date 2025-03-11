@@ -96,13 +96,17 @@ double get_time_seconds() {
 
 
 
-void Obus::initTir(float rotation_tourelle, int x_tourelle, int y_tourelle) {
+void Obus::initTir(float rotation_tourelle, int x_tourelle, int y_tourelle, float demi_longueur_tourelle) {
      get_Sprite().setRotation(rotation_tourelle + 180);
 
     // placement de l'obus au bout du cannon
     get_Sprite().setOrigin(get_Sprite().getLocalBounds().width / 2, get_Sprite().getLocalBounds().height / 2);
-    int x_tir = x_tourelle + 70*sin((180 - get_Sprite().getRotation()) * M_PI / 180);
-    int y_tir = y_tourelle + 70*cos((180 - get_Sprite().getRotation()) * M_PI / 180);;
+
+    
+
+
+    int x_tir = x_tourelle + demi_longueur_tourelle * 1.6 * cos((90 - get_Sprite().getRotation()) * M_PI / 180);
+    int y_tir = y_tourelle - demi_longueur_tourelle * 1.6 * sin((90 - get_Sprite().getRotation()) * M_PI / 180);;
     // printf("%lf\n", mon_tank.getTourelleSprite().getRotation());
     set_position_tir(x_tir, y_tir);
     get_Sprite().setPosition(get_position_tir().x, get_position_tir().y);

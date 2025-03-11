@@ -12,6 +12,8 @@ Tank_rapide::Tank_rapide() : tank() {
     set_porte(MULT_PORTE * 2);
     set_vitesse_obus(MULT_VITESSE_OBUS * 5);
     set_vie(MULT_VIE * 1);
+
+    spriteTourelle.setScale(0.11f, 0.11f);
 }
 
 void Tank_rapide::setTexture() {

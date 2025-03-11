@@ -222,7 +222,7 @@ void Partie::update() {
             // ajout création du nouvel obus et l'ajouter à la liste d'obus du tank
             int index = mon_tank.getListeObus().ajouterFin(mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getRotation(), mon_tank.get_vitesse_obus(), mon_tank.get_porte(), "Image/obus.png", mon_tank.get_degat());
             mon_tank.getListeObus().set_time_dernier_tir(get_time_seconds());
-            mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y);
+            mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getTexture()->getSize().y * mon_tank.getTourelleSprite().getScale().y / 2);
             // window.draw(mon_tank.getListeObus().trouverNoeud(index)->obus.get_Sprite());
 
             // printf("%d\n", nb_obus());
@@ -540,12 +540,6 @@ int Partie::Solo() {
     }
 
     selectionTank();
-
-    // float mult = 0.1;
-    // joueur[joueur_courant].Tank->set_cadence_tir(mult * joueur[joueur_courant].Tank->get_cadence_tir());
-    // joueur[joueur_courant].Tank->set_vit(mult * joueur[joueur_courant].Tank->get_vit());
-    // joueur[joueur_courant].Tank->set_vitesse_obus(mult * joueur[joueur_courant].Tank->get_vitesse_obus());
-
 
     window->clear();
 

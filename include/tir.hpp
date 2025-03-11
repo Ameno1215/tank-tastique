@@ -37,7 +37,7 @@ class Obus {
         void set_time_tir(double new_time);
         void set_degat(int new_degat);
 
-        void initTir(float rotation_tourelle, int x_tourelle, int y_tourelle);
+        void initTir(float rotation_tourelle, int x_tourelle, int y_tourelle, float demi_longueur_tourelle);
 
         
     private :
