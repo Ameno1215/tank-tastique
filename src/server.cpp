@@ -37,6 +37,30 @@ void Server::createSocketConnexion(const std::string& ip){
 
 
 void Server::createBindedSocket(){
+    recieve_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (recieve_sockfd < 0) {
+        perror("Échec de la création du socket");
+        return;
+    }
+    int opt = 1;
+    setsockopt(recieve_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    // Configuration de l'adresse du serveur
+    memset(&recieve_clientaddr, 0, sizeof(recieve_clientaddr));
+    recieve_clientaddr.sin_family = AF_INET;
+    recieve_clientaddr.sin_port = htons(port_connexion);
+    recieve_clientaddr.sin_addr.s_addr = INADDR_ANY;  // Accepte les connexions de n'importe quelle adresse
+
+    // Liaison du socket au port spécifié
+    if (bind(recieve_sockfd, (struct sockaddr*)&recieve_clientaddr, sizeof(recieve_clientaddr)) < 0) {
+        perror("Échec du bind du socket");
+        close(recieve_sockfd);
+        return;
+    }
+    std::cout << "Socket créée et bindée sur le port " << port_connexion << std::endl;
+}
+
+void Server::connexion() {
     socklen_t len = sizeof(recieve_clientaddr);
     socklen_t send_len = sizeof(send_clientaddr);
     char buffer[BUFFER_SIZE];
