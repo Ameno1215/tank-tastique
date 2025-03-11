@@ -7,7 +7,7 @@ Tank_rapide::Tank_rapide() : tank() {
     setTexture();
 
     set_vit(MULT_VITESSE_TANK * 5);
-    set_cadence_tir(MULT_CADENCE_TIR * 5);
+    set_cadence_tir(MULT_CADENCE_TIR / 5);
     set_degat(1);
     set_porte(MULT_PORTE * 2);
     set_vitesse_obus(MULT_VITESSE_OBUS * 5);

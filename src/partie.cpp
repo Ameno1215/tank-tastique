@@ -541,6 +541,12 @@ int Partie::Solo() {
 
     selectionTank();
 
+    // float mult = 0.1;
+    // joueur[joueur_courant].Tank->set_cadence_tir(mult * joueur[joueur_courant].Tank->get_cadence_tir());
+    // joueur[joueur_courant].Tank->set_vit(mult * joueur[joueur_courant].Tank->get_vit());
+    // joueur[joueur_courant].Tank->set_vitesse_obus(mult * joueur[joueur_courant].Tank->get_vitesse_obus());
+
+
     window->clear();
 
     window->setMouseCursorVisible(false);
@@ -561,6 +567,8 @@ int Partie::Solo() {
         getEvent();
         update();
         renderWindow(0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(8));
+
     }
 
     return 0;
@@ -1175,8 +1183,6 @@ int Partie::selectionTank() {
     }
     return 0;
 }
-
-
 
 
 void Partie::affiche_type_tank() {

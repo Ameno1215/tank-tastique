@@ -7,7 +7,7 @@ Tank_mortier::Tank_mortier() : tank() {
     setTexture();
 
     set_vit(MULT_VITESSE_TANK * 3);
-    set_cadence_tir(MULT_CADENCE_TIR * 3);
+    set_cadence_tir(MULT_CADENCE_TIR / 3);
     set_degat(3);
     set_porte(MULT_PORTE * 4);
     set_vitesse_obus(MULT_VITESSE_OBUS * 3);

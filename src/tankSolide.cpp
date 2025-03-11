@@ -7,7 +7,7 @@ Tank_solide::Tank_solide() : tank() {
     setTexture();
 
     set_vit(MULT_VITESSE_TANK * 1);
-    set_cadence_tir(MULT_CADENCE_TIR * 1);
+    set_cadence_tir(MULT_CADENCE_TIR / 1);
     set_degat(4);
     set_porte(MULT_PORTE * 2);
     set_vitesse_obus(MULT_VITESSE_OBUS * 2);

@@ -7,7 +7,7 @@ Tank_sniper::Tank_sniper() : tank() {
     setTexture();
 
     set_vit(MULT_VITESSE_TANK * 2);
-    set_cadence_tir(MULT_CADENCE_TIR * 1);
+    set_cadence_tir(MULT_CADENCE_TIR / 1);
     set_degat(3);
     set_porte(MULT_PORTE * 5);
     set_vitesse_obus(MULT_VITESSE_OBUS * 4);
