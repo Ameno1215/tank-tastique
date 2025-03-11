@@ -515,11 +515,9 @@ void Server::startServer() {
         }
     });
  
-    std::thread tankThread([this]() {       // dire à chauvet de mettre une condition pour arreter ce thread ca reduit la perf
-        while (running && !partie.partieFinie.load()) {
-            sendTankToClient();
-        }
-    });
+    while (running && !partie.partieFinie.load()) {
+        sendTankToClient();
+    }
 
     std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
 
@@ -548,10 +546,6 @@ void Server::startServer() {
 
     if (receptionThread.joinable()) {
         receptionThread.join();
-    }
-
-    if (tankThread.joinable()) {
-        tankThread.join();
     }
 
     close(recieve_sockfd);  //pas toucher
