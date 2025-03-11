@@ -404,7 +404,7 @@ void Server::sendTankRecu() {
 
     //les envoies à chaque autre client
     for (int i = 0; i < partie.get_nbJoueur(); i++) {
-         int n = sendto(sockfd[i], buffer, strlen(buffer), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+        int n = sendto(sockfd[i], buffer, strlen(buffer), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
         
         //verifiacation
         if (n < 0) {
@@ -412,7 +412,7 @@ void Server::sendTankRecu() {
             return;
         } else {
             //debugage
-            std::cout << i << " envoie\n";
+            std::cout <<"le server envoie le feu vert à"<< i<<std::endl;
         }
     }     
 }
@@ -515,11 +515,9 @@ void Server::startServer() {
         }
     });
  
-    std::thread tankThread([this]() {       // dire à chauvet de mettre une condition pour arreter ce thread ca reduit la perf
-        while (running && !partie.partieFinie.load()) {
-            sendTankToClient();
-        }
-    });
+    while (running && !partie.partieFinie.load()) {
+        sendTankToClient();
+    }
 
     std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
 
@@ -548,10 +546,6 @@ void Server::startServer() {
 
     if (receptionThread.joinable()) {
         receptionThread.join();
-    }
-
-    if (tankThread.joinable()) {
-        tankThread.join();
     }
 
     close(recieve_sockfd);  //pas toucher
