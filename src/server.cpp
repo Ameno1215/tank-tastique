@@ -18,7 +18,7 @@ Server::~Server() {
     std::cout << "Serveur arrêté." << std::endl;
 }
 
-void Server::createSocketConnexion(){
+void Server::createSocketConnexion(const std::string& ip){
     send_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (send_sockfd < 0) {
         perror("Échec de la création du socket");
@@ -27,9 +27,14 @@ void Server::createSocketConnexion(){
     memset(&send_clientaddr, 0, sizeof(send_clientaddr));
     send_clientaddr.sin_family = AF_INET;
     send_clientaddr.sin_port = htons(port_connexion);
-    send_clientaddr.sin_addr.s_addr = INADDR_ANY;
+    if (inet_pton(AF_INET, ip.c_str(), &send_clientaddr.sin_addr) <= 0) {
+        perror("Échec de la conversion de l'IP");
+        close(send_sockfd);
+        return;
+    }
     std::cout << "Socket créée pret à l'envoi sur le port " << port_connexion << std::endl;
 }
+
 
 void Server::createBindedSocket(){
     recieve_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -44,7 +49,7 @@ void Server::createBindedSocket(){
     memset(&recieve_clientaddr, 0, sizeof(recieve_clientaddr));
     recieve_clientaddr.sin_family = AF_INET;
     recieve_clientaddr.sin_port = htons(port_connexion);
-    recieve_clientaddr.sin_addr.s_addr = INADDR_ANY; // Accepter les connexions de n'importe quelle adresse
+    recieve_clientaddr.sin_addr.s_addr = INADDR_ANY;  // Accepte les connexions de n'importe quelle adresse
 
     // Liaison du socket au port spécifié
     if (bind(recieve_sockfd, (struct sockaddr*)&recieve_clientaddr, sizeof(recieve_clientaddr)) < 0) {
@@ -74,14 +79,19 @@ void Server::connexion() {
 
         if (buffer[0] == 'C') {
 
-            std::cout << "Message 'C' reçu. Attribution d'un port...\n";
+            std::string ipJoueur = extractIP(buffer);
+            std::string pseudo = extractPseudo(buffer);
+            printf("voici le pseudo %s\n", pseudo.c_str());
+            std::cout << "Message 'C' reçu. Recuperation de l'IP et attribution d'un port...\n";
 
             if (!partie.ajouteJoueur()) { // ajoute les joueurs
                 continue;
             }
 
             int port_to_send = htons(3000 + partie.get_nbJoueur()); //ports 3001 à 3007 si 6 joueurs
-            createSocketConnexion();
+            createSocketConnexion(ipJoueur); //creation de la socket sur la bonne adresse
+            ip[partie.get_nbJoueur() - 1] = ipJoueur; //ajoute l'adresse IP au tableau des IP
+            pseudos[partie.get_nbJoueur() - 1] = pseudo; //ajoute l'adresse IP au tableau des IP
             sendto(send_sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&send_clientaddr, send_len);
             close(send_sockfd);
             std::cout << "Port " << port_connexion << " envoyé au client\n";
@@ -102,7 +112,7 @@ void Server::connexion() {
             if (buffer[0] == 'T') {
                 std::cout << "Client validé sur le port " << port_connexion << ".\n";
                 std::string confirmation = "Connexion réussie !";
-                createSocketConnexion();
+                createSocketConnexion(ipJoueur);
                 sendto(send_sockfd, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&send_clientaddr, send_len);
             } else {
                 std::cout << "Échec d'initialisation avec le client\n";
@@ -115,13 +125,26 @@ void Server::connexion() {
         }
     }
 
-    char msg_pret[32];
+    char msg_pret[256];
     sprintf(msg_pret,"P %d",partie.get_nbJoueur());
     sleep(1);
 
+    // Parcourir le tableau de pseudos et les ajouter à msg_pret
+    for (int i = 0; i < 6; ++i) {
+        // Vérifier si le pseudo n'est pas vide
+        if (!pseudos[i].empty()) {
+            // Concaténer le pseudo à msg_pret
+            strcat(msg_pret, " ");
+            strcat(msg_pret, pseudos[i].c_str());
+        }
+    }
+
+    // Afficher le résultat pour vérification
+    printf("Message final: %s\n", msg_pret);
+
     for (int i = 0; i < NB_JOUEUR; i++) {
         port_connexion = partie.joueur[i].port;
-        createSocketConnexion();
+        createSocketConnexion(ip[i]);
         int sent = sendto(send_sockfd, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&send_clientaddr, sizeof(send_clientaddr));
         if (sent < 0) {
             perror("Erreur lors de l'envoi du message au joueur");
@@ -129,6 +152,21 @@ void Server::connexion() {
             std::cout << "Message 'P' envoyé au joueur " << partie.joueur[i].id  << " sur le port " << port_connexion << ".\n";
         }
         close(send_sockfd);
+    }
+}
+
+std::string Server::extractIP(const std::string& message) {
+    std::istringstream iss(message);
+    std::string type, ip;
+
+    iss >> type >> ip; // Sépare "C" et l'adresse IP
+
+    if (!ip.empty()) {
+        std::cout << "IP extraite du message : " << ip << std::endl;
+        return ip;
+    } else {
+        std::cout << "Erreur : IP non trouvée dans le message !" << std::endl;
+        return ip;
     }
 }
 
@@ -256,6 +294,12 @@ void Server::sendToClient(){
     char buffer_processed_data[100];
     char buffer_pV[100];
     char buffer_explo[100];
+
+    char buffer_stat[1 + 6 * 4 * sizeof(float)];
+    buffer_stat[0] = 'Z';
+    // Sérialisation du tableau stat après le marqueur
+    std::memcpy(buffer_stat + 1, partie.stat, sizeof(partie.stat));
+
     partie.listexplosion.toCharArray(buffer_explo);
     
     sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
@@ -319,6 +363,15 @@ void Server::sendToClient(){
                 std::cout << "📨 Explosion envoyée avec succès (" << n << " octets)\n";
             }
 
+        }
+
+        // Envoi du tableau stat
+        n = sendto(sockfd[i], buffer_stat, sizeof(buffer_stat), 0, 
+                  (const struct sockaddr*)&client[i], sizeof(client[i]));
+        if (n < 0) {
+            perror("❌ Erreur lors de l'envoi des données du tableau stat");
+        } else {
+            //std::cout << "📨 Tableau stat envoyé avec succès (" << n << " octets)\n";
         }
     }
     partie.listexplosion.maj();
@@ -422,7 +475,7 @@ void Server::init_send_fd(){
 
     for(int i=0; i<NB_JOUEUR; i++){
         port_connexion = 3001 + i;
-        createSocketConnexion();
+        createSocketConnexion(ip[i]);
         sockfd[i] = send_sockfd;
         client[i] = send_clientaddr;
     }
@@ -443,6 +496,10 @@ void Server::startServer() {
     partie.testSprite.setTexture(texturetest);
     partie.testSprite.setScale(0.08f, 0.08f);
     partie.testSprite.setPosition(300, 300);
+
+    partie.fondTexture.loadFromFile("Image/Keep_Off_The_Grass.png");
+    partie.fondSprite.setTexture(partie.fondTexture);
+    partie.fondSprite.setScale(2, 2);
 
     // TYPE DE TANK BLANC POUR TOUS LES JOUEURS AU DEBUT
     for (int i = 0; i < NB_JOUEUR; i ++) {
@@ -499,6 +556,15 @@ void Server::startServer() {
 
     close(recieve_sockfd);  //pas toucher
 }
+
+std::string Server::extractPseudo(const std::string& message) {
+    size_t pos = message.find("N: ");
+    if (pos != std::string::npos) {
+        return message.substr(pos + 3); // 4 pour sauter "N:  "
+    }
+    return "Batar"; // Retourne une chaîne vide si "N:  " n'est pas trouvé
+}
+
 
 int main() {
     Server server;

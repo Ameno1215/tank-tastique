@@ -10,6 +10,7 @@
 #include <mutex>
 #include <sstream>  
 #include <atomic>
+#include <iomanip> 
 
 #include "joueur.hpp" 
 #include "bouton.hpp"
@@ -31,6 +32,7 @@
 #define MULT_PORTE 80
 #define MULT_VITESSE_OBUS 0.4
 #define MULT_VIE 2
+#define NB_JOUEUR 3
 
 class Partie {
     public:
@@ -40,7 +42,7 @@ class Partie {
         Joueur joueur[6];
         Client client;
 
-        int stat[6][4]; //1ere colonne nb de dégats infligés, nb d'obus recu, nb d'obus tirés, nb de char détruit.
+        float stat[6][4]; //dans l'ordre des colonnes : PV, obus tiré, obus tocuhés, dégats infligés.
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
@@ -75,6 +77,9 @@ class Partie {
         void recieveTank();
         void sendReceptionTank();
         void affichageAttenteTank();
+        void initialiserpseudo();
+    
+    
 
         // retourne le nombre d'obus actif dans la partie
         int nb_obus();
@@ -93,6 +98,12 @@ class Partie {
 
         int testGagnant();
         std::atomic<bool> partieFinie {false};  // ✅ Initialisation correcte dans la classe
+
+        sf::Sprite fondSprite;
+        sf::Texture fondTexture;
+        sf::FloatRect backgroundBounds;
+
+        void afficherMinimap();
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive
@@ -102,8 +113,6 @@ class Partie {
         std::string buffer_missile;
         sf::Sprite pvSprite;
         sf::Texture pvTexture;
-        sf::Sprite fondSprite;
-        sf::Texture fondTexture;
 
         int nbJoueur;
         int port_actuel;
@@ -119,11 +128,15 @@ class Partie {
         sf::Texture explosionTextureFrames[20];
         sf::Sprite explosionSprite;
 
+        sf::View view;
         sf::Font font;
         sf::Text gameOverText;
         Bouton boutonScore;
         Bouton boutonReplay;
         bool visionnage = false;
+
+        sf::RectangleShape minimapBackground;
+        sf::CircleShape tankPoint;
 };
 
 #endif

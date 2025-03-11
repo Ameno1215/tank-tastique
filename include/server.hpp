@@ -13,9 +13,10 @@
 #include "joueur.hpp"
 #include "partie.hpp"
 
-#define SERVER_PORT 3000  
+#define SERVER_IP "192.168.1.48"
+#define SERVER_PORT 3000
+
 #define BUFFER_SIZE 1024  
-#define NEW_PORT 3001
 
 std::atomic<bool> running(true);  // Permet d'arrêter le serveur proprement
 
@@ -34,18 +35,22 @@ private:
     void recevoirEvent();
     void sendToClient();
     void init_send_fd();
+    std::string ip[6]; 
+    std::string pseudos[6];
 
     void majDead(char* buffer);
 
-    void createSocketConnexion();
+    void createSocketConnexion(const std::string& ip);
     void createBindedSocket();
     void connexion();
     void afficher_buffer(char tab[][5], int nb_lignes);
     void sendTankToClient();
     void string_tank(std::string& chaine);
     void sendTankRecu();
-    
-    
+
+    std::string extractIP(const std::string& message);
+    std::string extractPseudo(const std::string& message);
+
 public:
     Server();
     ~Server();

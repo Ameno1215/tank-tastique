@@ -103,36 +103,27 @@ void tank::set_vie(int new_vie) {
 void tank::updateHitbox() { 
     tankHitbox = getTransformedPoints(getBaseSprite());
 
-    /* pour afficher les points
-    std::cout<<"debut hitbox\n";
+    /*std::cout<<"debut hitbox\n";
     for (const auto& p : tankHitbox) {
         std::cout << "(" << p.x << ", " << p.y << ")\n";
     }
-    std::cout<<"fin hitbox\n";
-    */
-    // Trouver les bornes min et max
-    int initBornes = 0;       //pour initialiser les bornes
-    for (const auto& point : tankHitbox) {
-        if(initBornes == 0){
-            bornesHitBox[0] = point.x;
-            bornesHitBox[1] = point.x;
-            bornesHitBox[2] = point.y;
-            bornesHitBox[3] = point.y;
-            initBornes = 1;
-        }
-        if (point.x < bornesHitBox[0]) bornesHitBox[0] = point.x;
-        if (point.x > bornesHitBox[1]) bornesHitBox[1] = point.x;
-        if (point.y < bornesHitBox[2]) bornesHitBox[2] = point.y;
-        if (point.y > bornesHitBox[3]) bornesHitBox[3] = point.y;
-    }
+    std::cout<<"fin hitbox\n";*/
 }
 
 // Mise à jour de la collision avec un autre sprite
-void tank::updateCollision(const sf::Sprite& otherSprite) {
+void tank::updateCollision(const sf::Sprite& otherSprite, sf::FloatRect backgroundBounds){
     collision = false; // Réinitialisation
 
     for (const auto& point : tankHitbox) {
-        if (otherSprite.getGlobalBounds().contains(point)) {
+        if (point.x < backgroundBounds.left || 
+            point.x > backgroundBounds.left + backgroundBounds.width || 
+            point.y < backgroundBounds.top || 
+            point.y > backgroundBounds.top + backgroundBounds.height) {
+            collision = true; // Le tank est sorti du background
+            printf("sorti du background\n");
+            break;
+        }
+        else if (otherSprite.getGlobalBounds().contains(point)) {
             collision = true;
             break;
         }
