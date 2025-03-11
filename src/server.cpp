@@ -207,88 +207,7 @@ void Server::recevoirEvent() {
         // std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
         // std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl; 
     }
-
-    if (buffer[0] == 'K') {
-        int type_tank = -1;
-        int id;
-        int valuesRead = sscanf(buffer, "K %d %d", &id, &type_tank);
-
-        if (valuesRead != 2) { 
-            perror("Erreur de lecture avec sscanf, c'est la sauce !");
-            exit(EXIT_FAILURE);
-        }
-
-        // Stockage des données dans la partie
-        // printf("joueur %d à selectionner le tank : %d \n", id, type_tank);
-        if (type_tank == 1) {
-            partie.joueur[id].setTank(std::make_unique<Tank_classique>());
-        }
-        else if (type_tank == 2) {
-            partie.joueur[id].setTank(std::make_unique<Tank_rapide>());
-        }
-        else if (type_tank == 3) {
-            partie.joueur[id].setTank(std::make_unique<Tank_healer>());
-        }
-        else if (type_tank == 4) {
-            partie.joueur[id].setTank(std::make_unique<Tank_mortier>());
-        }
-        else if (type_tank == 5) {
-            partie.joueur[id].setTank(std::make_unique<Tank_solide>());
-        }
-        else if (type_tank == 6) {
-            partie.joueur[id].setTank(std::make_unique<Tank_sniper>());
-        }
-
-
-        partie.joueur[id].pV = partie.joueur[id].Tank->get_vie();
-        // partie.affiche_type_tank();
-    } 
-
-    if (buffer[0] == 'M') {
-        int id;
-        int valuesRead = sscanf(buffer, "M %d", &id);
-
-        if (valuesRead != 1) { 
-            perror("Erreur de lecture avec sscanf, c'est la sauce !");
-            exit(EXIT_FAILURE);
-        }
-
-        setTankRecu(id, 1);
-        std::cout << "Joueur " << id << " a recu tous les tank\n";
-
-        if (getNbTanksRecus() == partie.get_nbJoueur()) {
-            sendTankRecu();
-        }
-        
-    } 
-    // Affichage des données reçues pour débogage
-    /*std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
-    std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
-    std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl;
-    */
 }
-
-void Server::setTankRecu(int index, int value) {
-    if (index >= 0 && index < 6) {
-        tank_recu[index] = value;
-    }
-}
-
-int Server::getTankRecu(int index) {
-    if (index >= 0 && index < 6) {
-        return tank_recu[index];
-    }
-    return -1;
-}
-
-int Server::getNbTanksRecus() {
-    int count = 0;
-    for (int i = 0; i < 6; i++) {
-        if (tank_recu[i] == 1) count++;
-    }
-    return count;
-}
-
 
 void Server::sendToClient(){
     char buffer_processed_data[100];
@@ -417,20 +336,172 @@ void Server::sendTankRecu() {
     }     
 }
 
-void Server::string_tank(std::string& chaine) {
-    chaine = "B";
-
-    chaine += " \n";
-
-    for (int i = 0; i < partie.get_nbJoueur(); i++) {  
-        chaine += std::to_string(i);
-        chaine += " " + std::to_string(partie.joueur[i].Tank->get_type());
-        chaine += "\n";
+void Server::setTankRecu(int index, int value) {
+    if (index >= 0 && index < 6) {
+        tank_recu[index] = value;
     }
-    
-    chaine += " 1";
-    // std::cout << chaine << "\n\n";
 }
+
+int Server::getTankRecu(int index) {
+    if (index >= 0 && index < 6) {
+        return tank_recu[index];
+    }
+    return -1;
+}
+
+int Server::getNbTanksRecus() {
+    int count = 0;
+    for (int i = 0; i < 6; i++) {
+        if (tank_recu[i] == 1) count++;
+    }
+    return count;
+}
+
+void Server::string_tank(std::string& chaine) {
+    chaine = "B"; // Préfixe
+
+    for (int i = 0; i < partie.get_nbJoueur(); i++) {
+        chaine += " " + std::to_string(i); // ID du joueur
+        chaine += " " + std::to_string(partie.joueur[i].Tank->get_type()); // Type de tank
+    }
+
+    // Exemple de sortie : "B 0 1 1 2 2 3"
+}
+
+void Server::init_choix_tank(){
+
+    int nb_choix_recu = 0;
+    int tabChoixRecu[partie.get_nbJoueur()]; //tableau qui va contenir les id des joueurs ayant envoyé leur choix
+    while(nb_choix_recu < partie.get_nbJoueur()){ // tant que tous les joueurs n'ont pas envoyé leur choix de tank
+        socklen_t len = sizeof(recieve_clientaddr);
+
+        // Initialiser le buffer pour éviter des problèmes de lecture
+        memset(buffer, 0, sizeof(buffer));
+
+        //recupère n'importe quel message sur le port 3000
+        int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
+
+        if (receivedBytes < 0) {   //verifie
+            std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
+            return;
+        }
+
+        if (buffer[0] == 'K') {
+            int type_tank = -1;
+            int id;
+            int valuesRead = sscanf(buffer, "K %d %d", &id, &type_tank);
+            
+            if (valuesRead != 2) { 
+                perror("Erreur de lecture avec sscanf, c'est la sauce !");
+                exit(EXIT_FAILURE);
+            }
+
+            // Stockage des données dans la partie
+            printf("joueur %d à selectionner le tank : %d \n", id, type_tank);
+            if (type_tank == 1) {
+                partie.joueur[id].setTank(std::make_unique<Tank_classique>());
+            }
+            else if (type_tank == 2) {
+                partie.joueur[id].setTank(std::make_unique<Tank_rapide>());
+            }
+            else if (type_tank == 3) {
+                partie.joueur[id].setTank(std::make_unique<Tank_healer>());
+            }
+            else if (type_tank == 4) {
+                partie.joueur[id].setTank(std::make_unique<Tank_mortier>());
+            }
+            else if (type_tank == 5) {
+                partie.joueur[id].setTank(std::make_unique<Tank_solide>());
+            }
+            else if (type_tank == 6) {
+                partie.joueur[id].setTank(std::make_unique<Tank_sniper>());
+            }
+
+            tabChoixRecu[nb_choix_recu] = id;  //stockage de l'id du joueur qui a envoyé son choix
+
+            partie.joueur[id].pV = partie.joueur[id].Tank->get_vie();
+            nb_choix_recu ++;
+
+            char buffer[256]; 
+            snprintf(buffer, sizeof(buffer), "N %d %d\n", nb_choix_recu, 1);
+            printf("buffer de confirmation %s", buffer);
+
+            //envoie du nb de tank reçu à tous les joueurs ayant choisi (dont le joueur qui a envoyé son choix)
+            for(int i = 0; i < nb_choix_recu; i++){
+                int indice = tabChoixRecu[i];
+                int n = sendto(sockfd[indice], buffer, strlen(buffer), 0, (const struct sockaddr*)&client[indice], sizeof(client[indice]));
+            }
+            // partie.affiche_type_tank();
+        } 
+        else if (buffer[0] == 'M') {
+            int id;
+            int valuesRead = sscanf(buffer, "M %d", &id);
+
+            if (valuesRead != 1) { 
+                perror("Erreur de lecture avec sscanf, c'est la sauce !");
+                exit(EXIT_FAILURE);
+            }
+
+            setTankRecu(id, 1);
+            std::cout << "Joueur " << id << " a recu tous les tank\n";
+
+            if (getNbTanksRecus() == partie.get_nbJoueur()) {
+                sendTankRecu();
+            }
+            
+        }
+        else{
+            std::cout<<"message bizarre recu pour le choix des tank"<<std::endl;
+        }
+        // Affichage des données reçues pour débogage
+        /*std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
+        std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
+        std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl;
+        */
+    }
+
+    std::string listeTank;
+    string_tank(listeTank);
+    std::cout<<listeTank<<std::endl;
+    //envoi de tous les tanks (au complet) aux joueurs
+    for (int i = 0; i < partie.get_nbJoueur(); i++) {
+
+        const char* message = listeTank.c_str();
+        size_t message_size = listeTank.size();
+
+        int n = sendto(sockfd[i], message, message_size, 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
+
+        if (n < 0) {
+            perror("Erreur lors de l'envoi des données du tank");
+            return;
+        }else {
+            std::cout <<"le server envoie le feu vert à joueur "<<i<<std::endl;
+        }
+    }     
+}
+
+void Server::init_send_fd(){
+
+    port_connexion = 3000;
+    createBindedSocket();
+
+    std::cout << "Initialisation des sockfd et clientaddr de chaque client\n";
+
+    int recup = send_sockfd;              //pour ne pas tout casse
+    int port = port_connexion;
+
+    for(int i=0; i<NB_JOUEUR; i++){
+        port_connexion = 3001 + i;
+        createSocketConnexion(ip[i]);
+        sockfd[i] = send_sockfd;
+        client[i] = send_clientaddr;
+    }
+
+    send_sockfd = recup;
+    port_connexion = port; 
+    std::cout << "Fin de l'initialisation\n";
+}
+
 
 void Server::afficher_buffer(char tab[][5], int nb_lignes) {
     printf("Tableau buffer obus\n");
@@ -463,28 +534,6 @@ void Server::majDead(char* buffer) {
 }
 
 
-void Server::init_send_fd(){
-
-    port_connexion = 3000;
-    createBindedSocket();
-
-    std::cout << "Initialisation des sockfd et clientaddr de chaque client\n";
-
-    int recup = send_sockfd;              //pour ne pas tout casse
-    int port = port_connexion;
-
-    for(int i=0; i<NB_JOUEUR; i++){
-        port_connexion = 3001 + i;
-        createSocketConnexion(ip[i]);
-        sockfd[i] = send_sockfd;
-        client[i] = send_clientaddr;
-    }
-
-    send_sockfd = recup;
-    port_connexion = port; 
-    std::cout << "Fin de l'initialisation\n";
-}
-
 void Server::startServer() {
     
     connexion();  // Lancement de la gestion des connexions
@@ -508,16 +557,14 @@ void Server::startServer() {
     std::cout << "tank en début de partie sur le server\n";
     partie.affiche_type_tank();
 
+    init_choix_tank();
+
     // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
         while (running && !partie.partieFinie.load()) {
             recevoirEvent();
         }
     });
- 
-    while (running && !partie.partieFinie.load()) {
-        sendTankToClient();
-    }
 
     std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
 

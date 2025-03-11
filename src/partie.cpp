@@ -646,6 +646,7 @@ void Partie::recieveData(){
     
 }
 
+//met à jour les tank des autre joueurs
 void Partie::recieveTank(){
 
     char buffer[1024];
@@ -691,10 +692,12 @@ void Partie::recieveTank(){
                 joueur[joueur_id].setTank(std::make_unique<Tank_sniper>());
             }
             // std::cout << "J " << joueur_id << " T " << type << "\n";
-            
-            
+        
         }
-    }    
+    }
+    else{
+        std::cout<<"message pour connaitre tank des autres joueurs impossible à lire\n"; 
+    }
 }
 
 
@@ -748,6 +751,30 @@ int Partie::Solo() {
 void Partie::initialiserpseudo(){
     for(int i = 0; i < nbJoueur; i++){
         joueur[i].pseudo = client.pseudos[i];
+    }
+}
+
+//attend que le server nous donne combien de joueurs ont choisi leur tank
+int Partie::waitOthertank(){
+    int nb_choix_recu = 0;
+    char buffer[1024];
+    socklen_t addr_len = sizeof(client.recieve_servaddr);
+
+    ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
+    // Vérification des erreurs
+    if (n <= 0) {
+        std::cerr << "Erreur de réception ou message vide." << std::endl;
+        return -1;
+    }
+
+    buffer[n] = '\0';  // Ajout du caractère de fin de chaîne
+
+    if(buffer[0] == 'N'){
+        sscanf(buffer, "N %d", &nb_choix_recu);
+        return nb_choix_recu;
+    }
+    else{
+        return -1;
     }
 }
 
@@ -807,54 +834,45 @@ int Partie::multiJoueur() {
     fondTexture.loadFromFile("Image/Keep_Off_The_Grass.png");
     fondSprite.setTexture(fondTexture);
     fondSprite.setScale(2, 2);
-    // CHOIX DU TANK
+    
+    // --------------------------CHOIX DU TANK--------------------------------
     int choix_tank = -1;
     for (int i = 0; i < nbJoueur; i++) {
         joueur[i].setTank(std::make_unique<Tank_blanc>());
     }
     
     // sélection par le joueur;
-    choix_tank = selectionTank();
-    sendTank(choix_tank);
-
-    std::thread tankThread([this]() {
-        int count = 0;
-        while (window->isOpen()) {
-
-            recieveTank();
-            count = 0;
-            for (int i = 0; i < nbJoueur; i++) {
-                if (joueur[i].Tank->get_type() != 0) count++;
-            }
-
-            if (count == nbJoueur) {
-                sendReceptionTank();
-                break; // si tous les tanks sont mis à jours on stop la reception
-            }
-        }
-   
-    });
-
-    std::thread recievethread([this]() { //thread qui recoit les données processed par le server
-        while (window->isOpen() && !partieFinie.load()) {
-            recieveData();
-        }
-    });
+    choix_tank = selectionTank(); //recupération choix type de tank via window sfml
+    sendTank(choix_tank); //envoie du choix de tank au server
     
+    std::thread recieveTankChoix([this]() { // thread qui tourne en parallèle de l'affichage d'attente des autre joueurs
+        while(nbchoix != nbJoueur){         // tant que pas tout le monde a fait son choix 
+            nbchoix = waitOthertank();
+        }
+        recieveTank(); // 
+        go = 1;
+    });
+
     // Tant que pas recu du serveur que tous les joueurs ont tous les tanks
     while (!get_go()) {
         affichageAttenteTank();
     }
 
-    if (tankThread.joinable()) {
-        std::cout << "Fermeture du thread de sélection des tanks..." << std::endl;
-        tankThread.join();
-        std::cout << "Thread de sélection des tanks terminé proprement." << std::endl;
-    }    
+    if (recieveTankChoix.joinable()) {
+        std::cout << "Fermeture du thread de réception..." << std::endl;
+        recieveTankChoix.join();
+        std::cout << "Thread terminé proprement." << std::endl;
+    }
     
-    //JEU 
+    //-------------------------------JEU--------------------------------------
     window->setMouseCursorVisible(false);
     
+    std::thread recievethread([this]() { //thread qui recoit les données processed par le server
+        while (window->isOpen() && !partieFinie.load()) {
+            recieveData();
+        }
+    });
+
     // **Boucle de jeu avec timer de fin**
     std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
 
@@ -1211,10 +1229,7 @@ void Partie::affichageAttenteTank() {
             obusSprite.setPosition(obusStartX, obusStartY);
         }
 
-        int count = 0;
-        for (int i = 0; i < nbJoueur; i++) {
-            if (joueur[i].Tank->get_type() != 0) count++;
-        }
+        int count = nbchoix;
 
         float progress = static_cast<float>(count) / nbJoueur;
         barFill.setSize(sf::Vector2f(barOutline.getSize().x * progress, 30));
@@ -1395,6 +1410,7 @@ void Partie::afficheTableauScore() {
 
 }
 
+//renvoie le numéro du tank
 int Partie::selectionTank() {
     
     sf::Font font;

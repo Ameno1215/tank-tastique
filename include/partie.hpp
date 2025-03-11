@@ -77,8 +77,8 @@ class Partie {
         void sendReceptionTank();
         void affichageAttenteTank();
         void initialiserpseudo();
-    
-    
+
+        int waitOthertank();
 
         // retourne le nombre d'obus actif dans la partie
         int nb_obus();
@@ -117,8 +117,8 @@ class Partie {
         int port_actuel;
         bool serverPret;
 
-
         int go = 0;
+        int nbchoix;
 
         bool explosionActive = false;
         int currentFrameExplo = 0;

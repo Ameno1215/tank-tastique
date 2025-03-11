@@ -35,6 +35,7 @@ private:
     void recevoirEvent();
     void sendToClient();
     void init_send_fd();
+    void init_choix_tank();
     std::string ip[6]; 
     std::string pseudos[6];
 
