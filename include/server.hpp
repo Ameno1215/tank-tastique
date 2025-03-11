@@ -36,6 +36,7 @@ private:
     void sendToClient();
     void init_send_fd();
     std::string ip[6]; 
+    std::string pseudos[6];
 
     void majDead(char* buffer);
 

@@ -40,6 +40,7 @@ class Client{
         bool ipValide = false;
 
         std::string server_ip;
+        std::string pseudos[6];
 
     private :
         int etatConnexion;

@@ -114,19 +114,39 @@ void Client::initconnexion() {
         close(recieve_sockfd);
         return;
     }
-
+    buffer[n] = '\0';
     if (buffer[0] == 'P') {
         int parsed = sscanf(buffer, "P %d", &nbJoueur);
-        
+    
         if (parsed == 1) {  // Vérifie que sscanf a bien trouvé un nombre
             std::cout << "CLIENT nb joueurs : " << nbJoueur << std::endl;
             std::cout << "✅ Serveur prêt !\n";
             etatConnexion = 1;
+    
+            // Récupérer les pseudos
+            int pseudoIndex = 0;  // Index pour remplir le tableau pseudos
+            char* token = strtok(buffer, " ");  // Découper le message en tokens
+    
+            // Ignorer les premiers tokens ("P" et le nombre de joueurs)
+            token = strtok(nullptr, " ");  // Passer au token suivant (nombre de joueurs)
+            token = strtok(nullptr, " ");  // Passer au premier pseudo
+    
+            // Remplir le tableau pseudos
+            while (token != nullptr && pseudoIndex < 6) {
+                pseudos[pseudoIndex] = token;  // Stocker le pseudo dans le tableau
+                pseudoIndex++;
+                token = strtok(nullptr, " ");  // Passer au token suivant
+            }
+    
+            // Afficher les pseudos récupérés
+            std::cout << "Pseudos reçus :\n";
+            for (int i = 0; i < pseudoIndex; ++i) {
+                std::cout <<pseudos[i] << std::endl;
+            }
         } else {
             std::cerr << "❌ Erreur : format du message incorrect (" << buffer << ")" << std::endl;
         }
-    }
-    else{
+    } else {
         std::cout << "Mauvais message du serveur !\n";
     }
     

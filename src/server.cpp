@@ -91,6 +91,7 @@ void Server::connexion() {
             int port_to_send = htons(3000 + partie.get_nbJoueur()); //ports 3001 à 3007 si 6 joueurs
             createSocketConnexion(ipJoueur); //creation de la socket sur la bonne adresse
             ip[partie.get_nbJoueur() - 1] = ipJoueur; //ajoute l'adresse IP au tableau des IP
+            pseudos[partie.get_nbJoueur() - 1] = pseudo; //ajoute l'adresse IP au tableau des IP
             sendto(send_sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&send_clientaddr, send_len);
             close(send_sockfd);
             std::cout << "Port " << port_connexion << " envoyé au client\n";
@@ -124,9 +125,22 @@ void Server::connexion() {
         }
     }
 
-    char msg_pret[32];
+    char msg_pret[256];
     sprintf(msg_pret,"P %d",partie.get_nbJoueur());
     sleep(1);
+
+    // Parcourir le tableau de pseudos et les ajouter à msg_pret
+    for (int i = 0; i < 6; ++i) {
+        // Vérifier si le pseudo n'est pas vide
+        if (!pseudos[i].empty()) {
+            // Concaténer le pseudo à msg_pret
+            strcat(msg_pret, " ");
+            strcat(msg_pret, pseudos[i].c_str());
+        }
+    }
+
+    // Afficher le résultat pour vérification
+    printf("Message final: %s\n", msg_pret);
 
     for (int i = 0; i < NB_JOUEUR; i++) {
         port_connexion = partie.joueur[i].port;

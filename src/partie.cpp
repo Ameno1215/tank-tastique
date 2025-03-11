@@ -725,6 +725,12 @@ int Partie::Solo() {
     return 0;
 }
 
+void Partie::initialiserpseudo(){
+    for(int i = 0; i < nbJoueur; i++){
+        joueur[i].pseudo = client.pseudos[i];
+    }
+}
+
 int Partie::multiJoueur() {
     joueur_courant = 0;
     
@@ -739,6 +745,7 @@ int Partie::multiJoueur() {
 
     nbJoueur = client.nbJoueur;
     joueur_courant = client.joueur.id;
+    initialiserpseudo();
 
     if (window) {
         delete window;

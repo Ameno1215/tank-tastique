@@ -62,6 +62,9 @@ class Partie {
         void recieveTank();
         void sendReceptionTank();
         void affichageAttenteTank();
+        void initialiserpseudo();
+    
+    
 
         // retourne le nombre d'obus actif dans la partie
         int nb_obus();
