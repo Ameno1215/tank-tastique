@@ -37,121 +37,110 @@ void Server::createSocketConnexion(const std::string& ip){
 
 
 void Server::createBindedSocket(){
-    recieve_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (recieve_sockfd < 0) {
-        perror("Échec de la création du socket");
-        return;
-    }
-    int opt = 1;
-    setsockopt(recieve_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-    // Configuration de l'adresse du serveur
-    memset(&recieve_clientaddr, 0, sizeof(recieve_clientaddr));
-    recieve_clientaddr.sin_family = AF_INET;
-    recieve_clientaddr.sin_port = htons(port_connexion);
-    recieve_clientaddr.sin_addr.s_addr = INADDR_ANY;  // Accepte les connexions de n'importe quelle adresse
-
-    // Liaison du socket au port spécifié
-    if (bind(recieve_sockfd, (struct sockaddr*)&recieve_clientaddr, sizeof(recieve_clientaddr)) < 0) {
-        perror("Échec du bind du socket");
-        close(recieve_sockfd);
-        return;
-    }
-    std::cout << "Socket créée et bindée sur le port " << port_connexion << std::endl;
-}
-
-void Server::connexion() {
     socklen_t len = sizeof(recieve_clientaddr);
     socklen_t send_len = sizeof(send_clientaddr);
     char buffer[BUFFER_SIZE];
-
-    while (NB_JOUEUR > partie.get_nbJoueur()) {
     
-        port_connexion = SERVER_PORT;
-        createBindedSocket(); // sur le port 3000
-        int n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_clientaddr, &len); // Attente d'un message "C"
-        close(recieve_sockfd);
+    while (NB_JOUEUR > partie.get_nbJoueur()) {
+        port_connexion = SERVER_PORT; // Port par défaut : 3000
+        createBindedSocket(); // Crée un socket lié au port 3000
+    
+        // Attente d'un message "C" du client
+        int n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_clientaddr, &len);
+        close(recieve_sockfd); // Ferme le socket après réception
+    
         if (n < 0) {
             perror("Erreur lors de la réception");
             continue;
         }
-        buffer[n] = '\0';
-
+        buffer[n] = '\0'; // Ajoute un terminateur de chaîne
+    
         if (buffer[0] == 'C') {
-
+            // Extraction de l'IP et du pseudo du message
             std::string ipJoueur = extractIP(buffer);
             std::string pseudo = extractPseudo(buffer);
-            printf("voici le pseudo %s\n", pseudo.c_str());
-            std::cout << "Message 'C' reçu. Recuperation de l'IP et attribution d'un port...\n";
-
-            if (!partie.ajouteJoueur()) { // ajoute les joueurs
-                continue;
+            printf("Voici le pseudo : %s\n", pseudo.c_str());
+            std::cout << "Message 'C' reçu. Récupération de l'IP et attribution d'un port...\n";
+    
+            // Ajoute un nouveau joueur à la partie
+            if (!partie.ajouteJoueur()) {
+                continue; // Si l'ajout échoue, on passe au prochain client
             }
-
-            int port_to_send = htons(3000 + partie.get_nbJoueur()); //ports 3001 à 3007 si 6 joueurs
-            createSocketConnexion(ipJoueur); //creation de la socket sur la bonne adresse
-            ip[partie.get_nbJoueur() - 1] = ipJoueur; //ajoute l'adresse IP au tableau des IP
-            pseudos[partie.get_nbJoueur() - 1] = pseudo; //ajoute l'adresse IP au tableau des IP
+    
+            // Attribution d'un nouveau port au client
+            int port_to_send = htons(3000 + partie.get_nbJoueur()); // Ports 3001 à 3007 pour 6 joueurs
+            createSocketConnexion(ipJoueur); // Crée un socket pour communiquer avec le client
+    
+            // Ajoute l'IP et le pseudo du joueur aux tableaux
+            ip[partie.get_nbJoueur() - 1] = ipJoueur;
+            pseudos[partie.get_nbJoueur() - 1] = pseudo;
+    
+            // Envoi du nouveau port au client
+            std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le client soit pret
             sendto(send_sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&send_clientaddr, send_len);
-            close(send_sockfd);
-            std::cout << "Port " << port_connexion << " envoyé au client\n";
-
-            port_connexion = 3000 + partie.get_nbJoueur(); //ports 3001 à 3007 si 6 joueurs
-            createBindedSocket();
-
-            // Attente du message "T"
+            close(send_sockfd); // Ferme le socket après envoi
+            std::cout << "Port " << port_to_send << " envoyé au client\n";
+    
+            // Passage au nouveau port pour la suite de la communication
+            port_connexion = 3000 + partie.get_nbJoueur();
+            createBindedSocket(); // Crée un socket lié au nouveau port
+    
+            // Attente du message "T" du client
             n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_clientaddr, &len);
             if (n < 0) {
-                perror("Erreur réception de 'T'");
+                perror("Erreur lors de la réception de 'T'");
                 close(recieve_sockfd);
                 continue;
             }
-            close(close(recieve_sockfd));
             buffer[n] = '\0';
-
+    
             if (buffer[0] == 'T') {
                 std::cout << "Client validé sur le port " << port_connexion << ".\n";
+                // Envoi d'une confirmation au client
                 std::string confirmation = "Connexion réussie !";
                 createSocketConnexion(ipJoueur);
+                std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le client soit pret
                 sendto(send_sockfd, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&send_clientaddr, send_len);
+                close(send_sockfd); // Ferme le socket après envoi
             } else {
                 std::cout << "Échec d'initialisation avec le client\n";
             }
-
-            close(send_sockfd);
-            std::cout<<"Nombre de joueur : "<<partie.get_nbJoueur()<<std::endl;
+    
+            close(recieve_sockfd); // Ferme le socket de réception
+            std::cout << "Nombre de joueurs : " << partie.get_nbJoueur() << std::endl;
         } else {
             std::cout << "En attente du bon nombre de joueurs...\n";
         }
     }
-
+    
+    // Préparation du message "P" contenant le nombre de joueurs et leurs pseudos
     char msg_pret[256];
-    sprintf(msg_pret,"P %d",partie.get_nbJoueur());
-    sleep(1);
-
-    // Parcourir le tableau de pseudos et les ajouter à msg_pret
-    for (int i = 0; i < 6; ++i) {
-        // Vérifier si le pseudo n'est pas vide
+    sprintf(msg_pret, "P %d", partie.get_nbJoueur());
+    
+    // Ajout des pseudos au message
+    for (int i = 0; i < NB_JOUEUR; ++i) {
         if (!pseudos[i].empty()) {
-            // Concaténer le pseudo à msg_pret
             strcat(msg_pret, " ");
             strcat(msg_pret, pseudos[i].c_str());
         }
     }
-
-    // Afficher le résultat pour vérification
-    printf("Message final: %s\n", msg_pret);
-
+    
+    // Affichage du message final pour vérification
+    printf("Message final : %s\n", msg_pret);
+    
+    // Envoi du message "P" à tous les joueurs
     for (int i = 0; i < NB_JOUEUR; i++) {
         port_connexion = partie.joueur[i].port;
-        createSocketConnexion(ip[i]);
+        createSocketConnexion(ip[i]); // Crée un socket pour communiquer avec le joueur
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le client soit pret
         int sent = sendto(send_sockfd, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&send_clientaddr, sizeof(send_clientaddr));
         if (sent < 0) {
             perror("Erreur lors de l'envoi du message au joueur");
         } else {
-            std::cout << "Message 'P' envoyé au joueur " << partie.joueur[i].id  << " sur le port " << port_connexion << ".\n";
+            std::cout << "Message 'P' envoyé au joueur " << partie.joueur[i].id << " sur le port " << port_connexion << ".\n";
         }
-        close(send_sockfd);
+        close(send_sockfd); // Ferme le socket après envoi
     }
 }
 

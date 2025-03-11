@@ -61,43 +61,53 @@ void Client::sendMessageToServer(const std::string& message) {
 
 void Client::initconnexion() {
 
-    while(!ipValide){
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    while (!ipValide) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Attente active jusqu'à ce que l'IP soit valide
     }
-    printf("la fete commence");
-    etatConnexion = -1; //connexion avec le server
+    printf("La fête commence !\n");
+    
+    etatConnexion = -1; // État : connexion avec le serveur en cours
     int received_port;
-
-    std::string message = "C " + getLocalIPAddress() + " N: " + joueur.pseudo; //recupération de l'adresse IP
+    
+    // Construction du message contenant l'IP locale et le pseudo
+    std::string message = "C " + getLocalIPAddress() + " N: " + joueur.pseudo;
     printf("\n%s\n", message.c_str());
+    
     socklen_t recieve_len = sizeof(recieve_servaddr);
-
-    sendMessageToServer(message);  // Envoi du premier message sur le port 3000
-    std::cout << "Requete et IP envoyee au serveur.\n";
-
-    num_port = SERVER_PORT; //3000
+    
+    // Envoi du premier message au serveur sur le port 3000
+    std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le server soit pret
+    sendMessageToServer(message);
+    std::cout << "Requête et IP envoyées au serveur.\n";
+    
+    num_port = SERVER_PORT; // Port par défaut : 3000
     createBindedSocket();
-
-    int n = recvfrom(recieve_sockfd, &received_port, sizeof(received_port), 0, (struct sockaddr*)&recieve_servaddr, &recieve_len); // Réception du nouveau port du serveur
+    
+    // Réception du nouveau port attribué par le serveur
+    int n = recvfrom(recieve_sockfd, &received_port, sizeof(received_port), 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);
     if (n < 0) {
         perror("Erreur lors de la réception du port");
         close(recieve_sockfd);
         return;
     }
     close(recieve_sockfd);
-
+    
+    // Conversion du port reçu en format hôte
     num_port = ntohs(received_port);
     std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
+    
+    // Attribution de l'ID du joueur en fonction du port
     joueur.id = num_port - 3001;
-    sleep(0.001);
-    sendMessageToServer("T");  // Envoi du message test sur le nouveau port
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(200)); //on attend que le server soit pret
+    sendMessageToServer("T");                                    // Envoi du message de test "T" sur le nouveau port
     std::cout << "Message 'T' envoyé au serveur sur le port " << num_port << ".\n";
-
+    
+    // Création d'un nouveau socket lié au nouveau port
     createBindedSocket();
-    char buffer[1024];
 
-    // Attente de la confirmation du serveur
-    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);
+    char buffer[1024];
+    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len); // Attente de la confirmation du serveur
     if (n < 0) {
         perror("Erreur lors de la réception de la confirmation");
         close(recieve_sockfd);
@@ -105,25 +115,27 @@ void Client::initconnexion() {
     }
     buffer[n] = '\0';
     std::cout << "Confirmation du serveur : " << buffer << "\n";
-    etatConnexion = 0; //attente des joueurs
-
-    // Attente du message "P" du serveur
-    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);
+    
+    etatConnexion = 0;  // Changement d'état : attente des autres joueurs
+    
+    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);  // Attente du message "P" du serveur (nombre de joueurs et pseudos)
     if (n < 0) {
         perror("Erreur lors de la réception de la confirmation");
         close(recieve_sockfd);
         return;
     }
     buffer[n] = '\0';
+    
+    // Traitement du message "P"
     if (buffer[0] == 'P') {
         int parsed = sscanf(buffer, "P %d", &nbJoueur);
     
         if (parsed == 1) {  // Vérifie que sscanf a bien trouvé un nombre
             std::cout << "CLIENT nb joueurs : " << nbJoueur << std::endl;
-            std::cout << "✅ Serveur prêt !\n";
+            std::cout << "Serveur prêt !\n";
             etatConnexion = 1;
     
-            // Récupérer les pseudos
+            // Récupération des pseudos
             int pseudoIndex = 0;  // Index pour remplir le tableau pseudos
             char* token = strtok(buffer, " ");  // Découper le message en tokens
     
@@ -138,10 +150,10 @@ void Client::initconnexion() {
                 token = strtok(nullptr, " ");  // Passer au token suivant
             }
     
-            // Afficher les pseudos récupérés
+            // Affichage des pseudos récupérés
             std::cout << "Pseudos reçus :\n";
             for (int i = 0; i < pseudoIndex; ++i) {
-                std::cout <<pseudos[i] << std::endl;
+                std::cout << pseudos[i] << std::endl;
             }
         } else {
             std::cerr << "❌ Erreur : format du message incorrect (" << buffer << ")" << std::endl;
@@ -150,6 +162,7 @@ void Client::initconnexion() {
         std::cout << "Mauvais message du serveur !\n";
     }
     
+    // Fermeture du socket
     close(recieve_sockfd);
 }
 
