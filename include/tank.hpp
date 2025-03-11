@@ -11,6 +11,17 @@
 #include <unistd.h>
 #include "tir.hpp"
 
+
+
+#define VITESSE_TANK 1.2f
+#define VITESSE_CANON 1.1f
+#define VITESSE_OBUS 1
+#define DEGAT 1
+#define PORTE 500
+#define CADENCE 1
+#define VIE 5
+
+
 class tank {
 public:
     // Constructeur
@@ -31,6 +42,9 @@ public:
     ListeObus& getListeObus();
     virtual std::string getType() const = 0;
     virtual int get_type() const = 0;
+    int get_porte() const;
+    int get_degat() const;
+    int get_vie() const;
 
     void updateHitbox(); // Met à jour la hitbox
     void updateCollision(const sf::Sprite& otherSprite); // Met à jour l'état de collision
@@ -48,6 +62,9 @@ public:
     void set_cadence_tir(float new_cadence);
     void set_vitesse_obus(float new_vitesse_obus);
     virtual void setTexture() = 0;
+    void set_porte(int new_porte);
+    void set_degat(int new_degat);
+    void set_vie(int new_vie);
 
 protected:
     float x;
@@ -57,8 +74,11 @@ protected:
     float vitesse_canon;
     float cadence_tir;
     float vitesse_obus;
+    int porte;
     ListeObus liste_obus;
     int type;
+    int degat;
+    int vie;
 
     bool collision = false;
     bool touched;

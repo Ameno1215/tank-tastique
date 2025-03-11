@@ -18,10 +18,12 @@ SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 # Fichiers sources pour le client
 CLIENT_SRC_FILES = $(SRC_DIR)/main.cpp $(SRC_DIR)/lobby.cpp $(SRC_DIR)/partie.cpp \
                    $(SRC_DIR)/joueur.cpp $(SRC_DIR)/bouton.cpp $(SRC_DIR)/deplacement.cpp $(SRC_DIR)/client.cpp \
-                   $(SRC_DIR)/tank.cpp $(SRC_DIR)/tankVert.cpp $(SRC_DIR)/tankBleu.cpp $(SRC_DIR)/tankBlanc.cpp $(SRC_DIR)/tir.cpp 
+                   $(SRC_DIR)/tank.cpp $(SRC_DIR)/tankClassique.cpp $(SRC_DIR)/tankBleu.cpp $(SRC_DIR)/tankBlanc.cpp $(SRC_DIR)/tir.cpp \
+				   $(SRC_DIR)/tankRapide.cpp $(SRC_DIR)/tankHealer.cpp $(SRC_DIR)/tankMortier.cpp $(SRC_DIR)/tankSolide.cpp $(SRC_DIR)/tankSniper.cpp     
 
 # Fichiers sources pour le serveur
-SERVER_SRC_FILES = $(SRC_DIR)/server.cpp $(SRC_DIR)/partie.cpp $(SRC_DIR)/joueur.cpp $(SRC_DIR)/client.cpp $(SRC_DIR)/deplacement.cpp $(SRC_DIR)/tank.cpp $(SRC_DIR)/bouton.cpp $(SRC_DIR)/tankVert.cpp $(SRC_DIR)/tankBleu.cpp $(SRC_DIR)/tankBlanc.cpp $(SRC_DIR)/tir.cpp 
+SERVER_SRC_FILES = $(SRC_DIR)/server.cpp $(SRC_DIR)/partie.cpp $(SRC_DIR)/joueur.cpp $(SRC_DIR)/client.cpp $(SRC_DIR)/deplacement.cpp $(SRC_DIR)/tank.cpp $(SRC_DIR)/bouton.cpp $(SRC_DIR)/tankClassique.cpp $(SRC_DIR)/tankBleu.cpp $(SRC_DIR)/tankBlanc.cpp $(SRC_DIR)/tir.cpp \
+				   $(SRC_DIR)/tankRapide.cpp $(SRC_DIR)/tankHealer.cpp $(SRC_DIR)/tankMortier.cpp $(SRC_DIR)/tankSolide.cpp $(SRC_DIR)/tankSniper.cpp      
 
 # Fichiers objets générés pour le client
 CLIENT_OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(filter $(SRC_DIR)/%, $(CLIENT_SRC_FILES)))

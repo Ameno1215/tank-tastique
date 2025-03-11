@@ -4,28 +4,32 @@
 // Constructeur
 tank::tank() {
 
-    // Chargement des textures
-    if (!textureBase.loadFromFile("Image/base1.png") || 
-        !textureTourelle.loadFromFile("Image/tourelle2.png")) {
-        std::cerr << "Erreur de chargement des textures !" << std::endl;
-    }
+    // // Chargement des textures
+    // if (!textureBase.loadFromFile("Image/classique/base_classique.png") || 
+    //     !textureTourelle.loadFromFile("Image/classique/tourelle_classique.png")) {
+    //     std::cerr << "Erreur de chargement des textures !" << std::endl;
+    // }
 
-    // Assignation des textures aux sprites
-    spriteBase.setTexture(textureBase);
-    spriteTourelle.setTexture(textureTourelle);
+    // // Assignation des textures aux sprites
+    // spriteBase.setTexture(textureBase);
+    // spriteTourelle.setTexture(textureTourelle);
 
-    // Définir l'origine des sprites au centre
-    spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
-    spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
+    // // Définir l'origine des sprites au centre
+    // spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
+    // spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
 
     // Positionnement initial
     x = 300;
     y = 200;
     orientation = 0;
-    vitesse = 1.2f;
-    vitesse_canon = 1.1f; // Valeur par défaut
-    cadence_tir = 0.8;
-    vitesse_obus = 1;
+
+    set_vit(VITESSE_TANK);
+    set_vit_can(VITESSE_CANON);
+    set_vitesse_obus(VITESSE_OBUS);
+    set_cadence_tir(CADENCE);
+    set_porte(PORTE);
+    set_degat(DEGAT);
+    set_vie(VIE);
 
     spriteBase.setPosition(x, y);
     spriteTourelle.setPosition(x, y);
@@ -73,12 +77,27 @@ float tank::get_ori() { return orientation; }
 float tank::get_vit() { return vitesse; }
 float tank::get_vit_canon() { return vitesse_canon; }
 float tank::get_vitesse_obus() { return vitesse_obus; }
+int tank::get_vie() const { return vie; }
 sf::Sprite& tank::getBaseSprite() { return spriteBase; }
 sf::Sprite& tank::getTourelleSprite() { return spriteTourelle; }
 float tank::get_cadence_tir() { return cadence_tir; }
 ListeObus& tank::getListeObus() { return liste_obus; }
 bool tank::isColliding() const { return collision; }     // Retourne l'état de collision
 bool tank::isTouched(){ return touched;}// Retourne l'état de collision
+int tank::get_porte() const { return porte; }
+int tank::get_degat() const { return degat; }
+
+void tank::set_porte(int new_porte) {
+    porte = new_porte;
+}
+
+void tank::set_degat(int new_degat) {
+    degat = new_degat;
+}
+
+void tank::set_vie(int new_vie) {
+    vie = new_vie;
+}
 
 // Mise à jour de la hitbox du tank
 void tank::updateHitbox() { 

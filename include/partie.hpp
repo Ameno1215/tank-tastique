@@ -15,14 +15,25 @@
 #include "bouton.hpp"
 #include "client.hpp"
 #include "tankBleu.hpp"
-#include "tankVert.hpp"
+#include "tankClassique.hpp"
 #include "tankBlanc.hpp"
+#include "tankSolide.hpp"
+#include "tankHealer.hpp"
+#include "tankRapide.hpp"
+#include "tankSniper.hpp"
+#include "tankMortier.hpp"
 #include "deplacement.hpp"
+
+
 #define NB_JOUEUR 2
+#define MULT_VITESSE_TANK 0.3
+#define MULT_CADENCE_TIR 1.5
+#define MULT_PORTE 80
+#define MULT_VITESSE_OBUS 0.4
+#define MULT_VIE 2
 
 class Partie {
     public:
-        int go = 0;
         Partie(); // Constructeur pour initialiser les variables
         ~Partie(); // Destructeur pour libérer la mémoire
 
@@ -34,6 +45,9 @@ class Partie {
         int get_portactuel();
         int get_nbJoueur();
         std::string& get_buffer_missile();
+
+        int get_go();
+        void set_go(int val);
 
         void setBufferMissile(const std::string& newBuffer);
 
@@ -94,6 +108,9 @@ class Partie {
         int nbJoueur;
         int port_actuel;
         bool serverPret;
+
+
+        int go = 0;
 
         bool explosionActive = false;
         int currentFrameExplo = 0;

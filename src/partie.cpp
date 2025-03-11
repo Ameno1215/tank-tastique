@@ -48,6 +48,10 @@ bool Partie::ajouteJoueur() {
     }
 }
 
+void Partie::set_go(int val)  {go = val; }
+
+int Partie::get_go() { return go; }
+
 std::string& Partie::get_buffer_missile() {
     return buffer_missile;
 }
@@ -206,9 +210,9 @@ void Partie::update() {
                             listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, false); //on rajoute une explosion à afficher
                             std::cout<<"x y ajouté en fin"<<std::endl;
                             if(joueur[i].pV > 0){
-                                joueur[i].pV--;
+                                joueur[i].pV -= courant->obus.get_degat();
                             }
-                            if(joueur[i].pV == 0){
+                            if(joueur[i].pV <= 0){
                                 std::cout<<"joueur X a perdu";
                                 joueur[i].pV = -1;
                                 listexplosion.ajouterFin(joueur[i].Tank->getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank->getBaseSprite().getPosition().x, joueur[i].Tank->getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank->getBaseSprite().getPosition().y, 0, true);
@@ -234,9 +238,9 @@ void Partie::update() {
     if (joueur[joueur_courant].Clicked) {
         if ((get_time_seconds() - mon_tank.getListeObus().get_time_dernier_tir()) > mon_tank.get_cadence_tir()) {
             // ajout création du nouvel obus et l'ajouter à la liste d'obus du tank
-            int index = mon_tank.getListeObus().ajouterFin(mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getRotation(), 0.2, 500, "Image/obus.png");
+            int index = mon_tank.getListeObus().ajouterFin(mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getRotation(), mon_tank.get_vitesse_obus(), mon_tank.get_porte(), "Image/obus.png", mon_tank.get_degat());
             mon_tank.getListeObus().set_time_dernier_tir(get_time_seconds());
-            mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y);
+            mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getTexture()->getSize().y * mon_tank.getTourelleSprite().getScale().y / 2);
             // window.draw(mon_tank.getListeObus().trouverNoeud(index)->obus.get_Sprite());
 
             // printf("%d\n", nb_obus());
@@ -311,9 +315,8 @@ void Partie::renderWindow(int multi) {
     
                             stream >> joueur_id >> x >> y >> rotation;
                             // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
-                            
-                            joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, 10000, 500, "Image/obus.png");
-                            // joueur[joueur_id].Tank.getListeObus().afficher();
+                            joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, joueur[joueur_id].Tank->get_vitesse_obus(), joueur[joueur_id].Tank->get_porte(), "Image/obus.png", joueur[joueur_id].Tank->get_degat());
+                            // joueur[joueur_id].Tank->getListeObus().afficher();
                         }
                     }
                 
@@ -324,6 +327,7 @@ void Partie::renderWindow(int multi) {
                             window->draw(courant->obus.get_Sprite());
                         }
                         courant = courant->suivant;
+                    
                     }
                 }
             }
@@ -534,8 +538,8 @@ void Partie::recieveData(){
             close(client.recieve_sockfd);
             return;
         }
-
-        go = 1;
+        
+        set_go(1);
     }
     
 }
@@ -567,12 +571,26 @@ void Partie::recieveTank(){
             
             // modfif du type du tank du joueur
             if (type == 1) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_vert>());
+                joueur[joueur_id].setTank(std::make_unique<Tank_classique>());
             }
             else if (type == 2) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_bleu>());
+                joueur[joueur_id].setTank(std::make_unique<Tank_rapide>());
+            }
+            else if (type == 3) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_healer>());
+            }
+            else if (type == 4) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_mortier>());
+            }
+            else if (type == 5) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_solide>());
+            }
+            else if (type == 6) {
+                joueur[joueur_id].setTank(std::make_unique<Tank_sniper>());
             }
             // std::cout << "J " << joueur_id << " T " << type << "\n";
+            
+            
         }
     }    
 }
@@ -606,7 +624,7 @@ int Partie::Solo() {
     cursorSprite.setScale(0.12f, 0.12f);
 
     sf::Texture texturetest;
-    texturetest.loadFromFile("Image/base1.png");
+    texturetest.loadFromFile("Image/classique/base_classique.png");
     sf::Sprite cursorSprite(textureCurseur);
     testSprite.setTexture(texturetest);
     cursorSprite.setScale(0.08f, 0.08f);
@@ -618,6 +636,8 @@ int Partie::Solo() {
         getEvent();
         update();
         renderWindow(0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(8));
+
     }
 
     return 0;
@@ -657,7 +677,7 @@ int Partie::multiJoueur() {
     cursorSprite.setScale(0.12f, 0.12f);
 
     sf::Texture texturetest;
-    texturetest.loadFromFile("Image/base1.png");
+    texturetest.loadFromFile("Image/classique/base_classique.png");
     sf::Sprite cursorSprite(textureCurseur);
     testSprite.setTexture(texturetest);
     cursorSprite.setScale(0.08f, 0.08f);
@@ -712,7 +732,7 @@ int Partie::multiJoueur() {
     });
     
     // Tant que pas recu du serveur que tous les joueurs ont tous les tanks
-    while (!go) {
+    while (!get_go()) {
         affichageAttenteTank();
     }
 
@@ -959,7 +979,7 @@ void Partie::affichageAttenteTank() {
     bool oneSecondPassed = false;
     int xexplosion, yexplosion;
 
-    while (!go) {
+    while (!get_go()) {
         sf::Event event;
         while (window->pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -1130,17 +1150,66 @@ void Partie::afficheTableauScore() {
 
 
 int Partie::selectionTank() {
+    
     sf::Font font;
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
         std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
     }
 
-    // Création des boutons
-    Bouton boutonTankVert(700, 400, 200, 50, "Tank Vert", font);
-    Bouton boutonTankBleu(1000, 400, 200, 50, "Tank Bleu", font);
+    struct TankInfo {
+        std::string name;
+        std::string imagePath;
+        int speed, fireRate, damage, range, bulletSpeed, health;
+    };
 
-    sf::Text title("Selection du Tank", font, 40);
-    title.setPosition(750, 250);
+    std::vector<TankInfo> tanks = {
+        {"Tank Classique", "Image/classique/tankClassique.png", 3, 3, 2, 4, 3, 4},
+        {"Tank Rapide", "Image/petit/petit_tank.png", 5, 5, 1, 2, 5, 1},
+        {"Tank Soigneur", "Image/healer/tankHealer.png", 3, 3, 2, 3, 3, 2},
+        {"Tank Mortier", "Image/mortier/mortier.png", 2, 3, 2, 3, 3, 3},
+        {"Tank Solide", "Image/solide/tank_solide.png", 1, 1, 4, 2, 2, 4},
+        {"Tank Sniper", "Image/sniper/sniper_tank.png", 2, 1, 3, 5, 4, 3}
+    };
+
+    std::vector<sf::Texture> textures(tanks.size());
+    std::vector<sf::Sprite> sprites(tanks.size());
+    std::vector<Bouton> boutons;
+    std::vector<sf::Text> tankNames;
+
+    int tankWidth = 150, tankHeight = 250;
+    int squareSize = 20;
+    int numColumns = 3;
+    int numRows = (tanks.size() + numColumns - 1) / numColumns;
+
+    int windowWidth = window->getSize().x;
+    int windowHeight = window->getSize().y;
+
+    int paddingX = 200;  // Augmentation de l'espacement horizontal entre les tanks
+    int paddingY = 80;   // Espacement vertical déjà ajusté précédemment
+
+    int startX = (windowWidth - numColumns * (tankWidth + paddingX)) / 2 + paddingX / 2;
+    int startY = (windowHeight - numRows * (tankHeight + paddingY + 150)) / 2;
+
+    for (size_t i = 0; i < tanks.size(); ++i) {
+        int col = i % numColumns, row = i / numColumns;
+        int x = startX + col * (tankWidth + paddingX);
+        int y = startY + row * (tankHeight + paddingY + 150);
+
+        if (!textures[i].loadFromFile(tanks[i].imagePath)) {
+            std::cerr << "Impossible de charger l'image pour " << tanks[i].name << "\n";
+        }
+        sprites[i].setTexture(textures[i]);
+        sprites[i].setOrigin(textures[i].getSize().x / 2, textures[i].getSize().y / 2);
+        sprites[i].setRotation(90);
+        sprites[i].setPosition(x + tankWidth / 2, y + tankHeight / 2);
+        sprites[i].setScale(0.2f, 0.2f);
+
+
+        tankNames.emplace_back(tanks[i].name, font, 25);
+        tankNames.back().setPosition(x + (tankWidth - tankNames.back().getLocalBounds().width) / 2, y + 20);
+
+        boutons.emplace_back(x + (tankWidth - 150) / 2, y + 200, 150, 40, "Choisir", font);
+    }
 
     while (window->isOpen()) {
         sf::Event event;
@@ -1150,26 +1219,57 @@ int Partie::selectionTank() {
                 return -1;
             }
             if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-                // sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
                 sf::Vector2f mousePos = window->mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
-                if (boutonTankVert.isClicked(mousePos)) {
-                    joueur[joueur_courant].setTank(std::make_unique<Tank_vert>());
+                if (boutons[0].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_classique>());
                     return 1;
-                } else if (boutonTankBleu.isClicked(mousePos)) {
-                    joueur[joueur_courant].setTank(std::make_unique<Tank_bleu>());
+                } else if (boutons[1].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_rapide>());
                     return 2;
+                
+                } else if (boutons[2].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_healer>());
+                    return 3;
+                } else if (boutons[3].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_mortier>());
+                    return 4;
+                } else if (boutons[4].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_solide>());
+                    return 5;
+                } else if (boutons[5].isClicked(mousePos)) {
+                    joueur[joueur_courant].setTank(std::make_unique<Tank_sniper>());
+                    return 6;
                 }
             }
         }
 
-        sf::Vector2f mousePos = window->mapPixelToCoords(sf::Mouse::getPosition(*window));
-        boutonTankVert.update(mousePos);
-        boutonTankBleu.update(mousePos);
-
         window->clear(sf::Color::Black);
-        window->draw(title);
-        boutonTankVert.draw(*window);
-        boutonTankBleu.draw(*window);
+        for (size_t i = 0; i < tanks.size(); ++i) {
+            window->draw(tankNames[i]);
+            window->draw(sprites[i]);
+            boutons[i].draw(*window);
+
+            std::vector<int> stats = {tanks[i].speed, tanks[i].fireRate, tanks[i].damage, tanks[i].range, tanks[i].bulletSpeed, tanks[i].health};
+            std::vector<std::string> labels = {"Vitesse", "Cadence", "Degats", "Portee", "Vitesse Obus", "Vie"};
+
+            int statsStartX = startX + (i % numColumns) * (tankWidth + paddingX) + (tankWidth - 5 * (squareSize + 5)) / 2;
+            int statsStartY = startY + (i / numColumns) * (tankHeight + paddingY + 150) + tankHeight + 20;
+
+            for (size_t j = 0; j < stats.size(); ++j) {
+                for (int k = 0; k < 5; ++k) {
+                    sf::RectangleShape square(sf::Vector2f(squareSize, squareSize));
+                    square.setPosition(statsStartX + k * (squareSize + 5), statsStartY + j * (squareSize + 5));
+                    square.setFillColor(k < stats[j] ? sf::Color::White : sf::Color(50, 50, 50));
+                    window->draw(square);
+                }
+                sf::Text statLabel(labels[j], font, 15);
+                float textWidth = statLabel.getLocalBounds().width;
+                float totalWidth = 5 * (squareSize + 5);
+                statLabel.setPosition(statsStartX + (totalWidth / 2 - textWidth / 2) - 6 * squareSize , statsStartY + j * (squareSize + 5));
+                
+                window->draw(statLabel);
+            }
+        }
         window->display();
     }
     return 0;

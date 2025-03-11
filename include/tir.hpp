@@ -13,7 +13,7 @@
 class Obus {
     public :
         Obus() {}
-        Obus(int x_origine, int y_origine, float orientation, float vitesse, int porte, const std::string& nomTexture);
+        Obus(int x_origine, int y_origine, float orientation, float vitesse, int porte, const std::string& nomTexture, int degat);
 
         //accesseurs
         sf::Vector2i get_position_tir() const;
@@ -24,6 +24,7 @@ class Obus {
         sf::Sprite& get_Sprite();
         int get_status() const;
         double get_time_tir() const;
+        int get_degat()const;
         
         
         //setters
@@ -34,8 +35,9 @@ class Obus {
         void set_texture(const std::string& nom);
         void set_status(int new_status);
         void set_time_tir(double new_time);
+        void set_degat(int new_degat);
 
-        void initTir(float rotation_tourelle, int x_tourelle, int y_tourelle);
+        void initTir(float rotation_tourelle, int x_tourelle, int y_tourelle, float demi_longueur_tourelle);
 
         
     private :
@@ -46,8 +48,7 @@ class Obus {
         int porte;
         int status; // 1 tiré, 0 pas encore tiré
         double time_tir;
-
-        
+        int degat;
 
         sf::Texture texture;
         sf::Sprite spriteObus;
@@ -62,7 +63,7 @@ struct Noeud {
     int index;
 
     // constructeur
-    Noeud(int idx, int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture) : obus(x, y, orientation, vitesse, porte, nomTexture), suivant(nullptr), index(idx) {} 
+    Noeud(int idx, int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture, int degat) : obus(x, y, orientation, vitesse, porte, nomTexture, degat), suivant(nullptr), index(idx) {} 
 };
 
 
@@ -73,7 +74,7 @@ class ListeObus {
         // destructeur
         ~ListeObus();
 
-        int ajouterFin(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture);
+        int ajouterFin(int x, int y, float orientation, float vitesse, int porte, const std::string& nomTexture, int degat);
         void supprimer(int index);
         Noeud* trouverNoeud(int index);
         void afficher() const;

@@ -1,11 +1,11 @@
-#ifndef TANK_VERT_H
-#define TANK_VERT_H
+#ifndef TANK_HEALER_H
+#define TANK_HEALER_H
 
 #include "tank.hpp"
 
-class Tank_vert : public tank {
+class Tank_healer : public tank {
     public:
-        Tank_vert();
+        Tank_healer();
         void setTexture() override;
         std::string getType() const override;
         int get_type() const override;
