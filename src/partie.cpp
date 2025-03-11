@@ -760,6 +760,10 @@ int Partie::multiJoueur() {
     initialiserGameOverUI();
     // Arrêter le thread proprement
     if (connexionThread.joinable()) {
+        std::cout<<"arret du thread de connexion"<<std::endl;
+        if(client.get_etatConnexion() == 1){
+            std::cout<<"le client a eu le feu vert"<<std::endl;
+        }
         connexionThread.join();
     }
 
@@ -1099,6 +1103,7 @@ void Partie::affichageConnexion() {
 
         window->display();
     }
+    std::cout<<"je suis passé chez sosh"<<std::endl;
 }
 
 
@@ -1459,8 +1464,11 @@ int Partie::selectionTank() {
                 window->close();
                 return -1;
             }
+            sf::Vector2f mousePos = window->mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
+            for(int i = 0; i < 6; i ++){
+                boutons[i].update(mousePos);
+            }
             if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-                sf::Vector2f mousePos = window->mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
                 if (boutons[0].isClicked(mousePos)) {
                     joueur[joueur_courant].setTank(std::make_unique<Tank_classique>());
                     return 1;

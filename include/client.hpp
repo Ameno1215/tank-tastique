@@ -43,6 +43,6 @@ class Client{
         std::string pseudos[6];
 
     private :
-        int etatConnexion;
+        int etatConnexion = -1;
 };
 #endif

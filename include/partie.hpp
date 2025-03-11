@@ -32,7 +32,6 @@
 #define MULT_PORTE 80
 #define MULT_VITESSE_OBUS 0.4
 #define MULT_VIE 2
-#define NB_JOUEUR 3
 
 class Partie {
     public:
