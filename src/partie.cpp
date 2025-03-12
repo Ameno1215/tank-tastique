@@ -92,6 +92,7 @@ void Partie::getEvent() {
             joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
             joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
             joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+            joueur[joueur_courant].Xpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::X);
             joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
             joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
         }
@@ -169,6 +170,10 @@ void Partie::update() {
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, 1.2);
         }
+    }
+
+    if (joueur[joueur_courant].Xpressed){
+        printf("ultiiiiiii\n");
     }
     
     // Mise à jour de l'angle de la tourelle truc à Joshua
@@ -527,7 +532,8 @@ void Partie::sendData(){
     char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
     int test = 1;      // valeur à mettre par précaution à la fin du buffer
 
-    sprintf(buffer, "A %d %d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), joueur[joueur_courant].Clicked ? 1 : 0, test);
+    sprintf(buffer, "A %d %d %d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, joueur[joueur_courant].Xpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), joueur[joueur_courant].Clicked ? 1 : 0, test);
+    //buffer = id Z Q S D X posX posY Clicked test
     int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
     if (n < 0) {
         perror("❌ Erreur lors de l'envoi des données");

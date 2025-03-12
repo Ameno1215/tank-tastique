@@ -199,8 +199,8 @@ void Server::recevoirEvent() {
 
     //recupère les données 
     if (buffer[0] == 'A') {
-        int i, z, q, s, d, mouseX, mouseY, clicked; 
-        int valuesRead = sscanf(buffer, "A %d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &mouseX, &mouseY, &clicked);
+        int i, z, q, s, d, x, mouseX, mouseY, clicked; 
+        int valuesRead = sscanf(buffer, "A %d %d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &x, &mouseX, &mouseY, &clicked);
 
         if (valuesRead != 8) { 
             perror("Erreur de lecture avec sscanf, c'est la sauce !");
@@ -212,6 +212,7 @@ void Server::recevoirEvent() {
         partie.joueur[i].Qpressed = (q != 0);
         partie.joueur[i].Spressed = (s != 0);
         partie.joueur[i].Dpressed = (d != 0);
+        partie.joueur[i].Xpressed = (x != 0);
         partie.joueur[i].worldMousePos = sf::Vector2f(mouseX, mouseY);
         partie.joueur[i].Clicked = (clicked != 0);
 
@@ -446,23 +447,6 @@ void Server::init_choix_tank(){
             }
             // partie.affiche_type_tank();
         } 
-        else if (buffer[0] == 'M') {
-            int id;
-            int valuesRead = sscanf(buffer, "M %d", &id);
-
-            if (valuesRead != 1) { 
-                perror("Erreur de lecture avec sscanf, c'est la sauce !");
-                exit(EXIT_FAILURE);
-            }
-
-            setTankRecu(id, 1);
-            std::cout << "Joueur " << id << " a recu tous les tank\n";
-
-            if (getNbTanksRecus() == partie.get_nbJoueur()) {
-                sendTankRecu();
-            }
-            
-        }
         else{
             std::cout<<"message bizarre recu pour le choix des tank"<<std::endl;
         }
