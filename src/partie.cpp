@@ -134,7 +134,7 @@ void Partie::update() {
 
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, -2*speed);
@@ -146,7 +146,7 @@ void Partie::update() {
 
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, 2*speed);
@@ -158,7 +158,7 @@ void Partie::update() {
         
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, -1.2);
@@ -169,7 +169,7 @@ void Partie::update() {
         deplacement_rotation(mon_tank, &rotation, -1.2);
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, 1.2);

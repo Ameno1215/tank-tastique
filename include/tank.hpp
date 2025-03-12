@@ -47,7 +47,7 @@ public:
     int get_vie() const;
 
     void updateHitbox(); // Met à jour la hitbox
-    void updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id);
+    void updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id, const sf::Sprite& otherSprite);
     void collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::vector<sf::Vector2f>& hitbox2);
     bool isColliding() const; // Retourne l'état de collision
     bool isTouched(); // Retourne l'état de collision

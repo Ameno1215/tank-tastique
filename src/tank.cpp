@@ -111,7 +111,7 @@ void tank::updateHitbox() {
 }
 
 // Mise à jour de la collision avec un autre sprite
-void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id){
+void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id, const sf::Sprite& otherSprite){
     collision = false; // Réinitialisation
 
     for (const auto& point : tankHitbox) {
@@ -121,16 +121,20 @@ void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::
             point.y > backgroundBounds.top + backgroundBounds.height) {
             collision = true; // Le tank est sorti du background
             printf("sorti du background\n");
-            break;
+            return;
         }
         else{
-            for (size_t i = 0; i < hitboxes.size(); ++i) {
-                if (i != static_cast<size_t>(id)) { // Conversion de `id` en `size_t`
-                    collisionTank(tankHitbox, hitboxes[i]);
-                    if (collision) { //collision à true/false
-                        break;
-                    }
-                }
+            if (otherSprite.getGlobalBounds().contains(point)) {
+                collision = true;
+                return;
+            }
+        }
+    }
+    for (size_t i = 0; i < hitboxes.size(); ++i) {
+        if (i != static_cast<size_t>(id)) { // Conversion de `id` en `size_t`
+            collisionTank(tankHitbox, hitboxes[i]);
+            if (collision) { //collision à true/false
+                return;
             }
         }
     }
