@@ -780,7 +780,7 @@ int Partie::waitOthertank(){
 
 int Partie::multiJoueur() {
     joueur_courant = 0;
-    
+    client.test = TEST;
     std::thread connexionThread(&Client::initconnexion, &this->client);
 
     affichageConnexion();
@@ -1006,6 +1006,7 @@ void Partie::affichageConnexion() {
     sf::Clock timerClock;
     bool oneSecondPassed = false;
     int xexplosion, yexplosion;
+    bool entree = false;
 
     while (window->isOpen()) {
         sf::Event event;
@@ -1027,6 +1028,10 @@ void Partie::affichageConnexion() {
         while (window->pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window->close();
+            }
+
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
+                entree = true;
             }
             // Détection de la saisie clavier
             if (event.type == sf::Event::TextEntered){
@@ -1082,17 +1087,27 @@ void Partie::affichageConnexion() {
             obusSprite.setPosition(obusStartX, obusStartY);
         }
 
-        if(joueur[joueur_courant].Clicked){
-            if(valider.isClicked(joueur[joueur_courant].worldMousePos)){
-                if(validePseudo && !ip.empty()){
-                    client.server_ip = ip;
-                    client.ipValide = true;
-                }
-                else{
-                    if(!pseudo.empty()){
-                        client.joueur.pseudo = pseudo;
-                        validePseudo = true;
-                    }       
+        if(TEST){
+            client.server_ip = "127.0.0.1";      //affectation de l'adresse IP au client
+            client.ipValide = true;
+            client.joueur.pseudo = "Blase2test";
+            validePseudo = true;  //le pseudo par defaut est envoyé côté client
+        }
+        else{
+            if(joueur[joueur_courant].Clicked || entree){
+                if(valider.isClicked(joueur[joueur_courant].worldMousePos) || entree){
+                    if(validePseudo && !ip.empty()){
+                        entree = false;
+                        client.server_ip = ip;      //affectation de l'adresse IP au client
+                        client.ipValide = true;
+                    }
+                    else{
+                        if(!pseudo.empty()){
+                            entree = false;
+                            client.joueur.pseudo = pseudo;
+                            validePseudo = true;
+                        }       
+                    }
                 }
             }
         }
@@ -1102,15 +1117,18 @@ void Partie::affichageConnexion() {
         window->draw(statusText);
         window->draw(tankChargementSprite);
         window->draw(obusSprite);
-        if(validePseudo){
-            window->draw(inviteText);
-            valider.draw(*window);
-            window->draw(ipText);
-        }
-        else{
-            window->draw(nomText);
-            valider.draw(*window);
-            window->draw(pseudoText);
+
+        if(!TEST){
+            if(validePseudo){
+                window->draw(inviteText);
+                valider.draw(*window);
+                window->draw(ipText);
+            }
+            else{
+                window->draw(nomText);
+                valider.draw(*window);
+                window->draw(pseudoText);
+            }
         }
 
         // Si l'explosion est active, on la dessine et on met à jour son animation

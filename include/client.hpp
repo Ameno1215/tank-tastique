@@ -42,6 +42,8 @@ class Client{
         std::string server_ip;
         std::string pseudos[6];
 
+        int test;
+
     private :
         int etatConnexion = -1;
 };

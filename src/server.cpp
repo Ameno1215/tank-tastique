@@ -100,7 +100,7 @@ void Server::connexion() {
             pseudos[partie.get_nbJoueur() - 1] = pseudo;
     
             // Envoi du nouveau port au client
-            std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le client soit pret
+            std::this_thread::sleep_for(std::chrono::milliseconds(50)); // On attend que le client soit pret
             sendto(send_sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&send_clientaddr, send_len);
             close(send_sockfd); // Ferme le socket après envoi
             std::cout << "Port " << port_to_send << " envoyé au client\n";
@@ -123,7 +123,7 @@ void Server::connexion() {
                 // Envoi d'une confirmation au client
                 std::string confirmation = "Connexion réussie !";
                 createSocketConnexion(ipJoueur);
-                std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le client soit pret
+                std::this_thread::sleep_for(std::chrono::milliseconds(50)); // On attend que le client soit pret
                 sendto(send_sockfd, confirmation.c_str(), confirmation.length(), 0, (struct sockaddr*)&send_clientaddr, send_len);
                 close(send_sockfd); // Ferme le socket après envoi
             } else {
@@ -157,7 +157,7 @@ void Server::connexion() {
         port_connexion = partie.joueur[i].port;
         createSocketConnexion(ip[i]); // Crée un socket pour communiquer avec le joueur
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le client soit pret
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // On attend que le client soit pret
         int sent = sendto(send_sockfd, msg_pret, strlen(msg_pret), 0, (struct sockaddr*)&send_clientaddr, sizeof(send_clientaddr));
         if (sent < 0) {
             perror("Erreur lors de l'envoi du message au joueur");
@@ -442,7 +442,7 @@ void Server::init_choix_tank(){
             //envoie du nb de tank reçu à tous les joueurs ayant choisi (dont le joueur qui a envoyé son choix)
             for(int i = 0; i < nb_choix_recu; i++){
                 int indice = tabChoixRecu[i];
-                int n = sendto(sockfd[indice], buffer, strlen(buffer), 0, (const struct sockaddr*)&client[indice], sizeof(client[indice]));
+                sendto(sockfd[indice], buffer, strlen(buffer), 0, (const struct sockaddr*)&client[indice], sizeof(client[indice]));
             }
             // partie.affiche_type_tank();
         } 

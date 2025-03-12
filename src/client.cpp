@@ -76,7 +76,7 @@ void Client::initconnexion() {
     socklen_t recieve_len = sizeof(recieve_servaddr);
     
     // Envoi du premier message au serveur sur le port 3000
-    std::this_thread::sleep_for(std::chrono::milliseconds(200)); // On attend que le server soit pret
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // On attend que le server soit pret
     sendMessageToServer(message);
     std::cout << "Requête et IP envoyées au serveur.\n";
     
@@ -99,7 +99,7 @@ void Client::initconnexion() {
     // Attribution de l'ID du joueur en fonction du port
     joueur.id = num_port - 3001;
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(200)); //on attend que le server soit pret
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); //on attend que le server soit pret
     sendMessageToServer("T");                                    // Envoi du message de test "T" sur le nouveau port
     std::cout << "Message 'T' envoyé au serveur sur le port " << num_port << ".\n";
     
@@ -236,6 +236,12 @@ int Client::get_etatConnexion(){
 }
 
 std::string Client::getLocalIPAddress() {
-    sf::IpAddress ip = sf::IpAddress::getLocalAddress();
+    sf::IpAddress ip;
+    if(test){
+        ip = "127.0.0.1";
+    }
+    else{
+        ip = sf::IpAddress::getLocalAddress();
+    }
     return ip.toString();
 }

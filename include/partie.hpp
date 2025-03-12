@@ -26,12 +26,16 @@
 #include "deplacement.hpp"
 
 
-#define NB_JOUEUR 2
+#define NB_JOUEUR 2       //defini le nb de joueur
+#define TEST 0            // 0 -> automatiquement en localHost, 1 -> choix ip/pseudo
+
 #define MULT_VITESSE_TANK 0.3
 #define MULT_CADENCE_TIR 1.5
 #define MULT_PORTE 80
 #define MULT_VITESSE_OBUS 0.4
 #define MULT_VIE 2
+
+
 
 class Partie {
     public:
