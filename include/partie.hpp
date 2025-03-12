@@ -100,13 +100,17 @@ class Partie {
         void initialiserGameOverUI();
 
         int testGagnant();
-        std::atomic<bool> partieFinie {false};  // ✅ Initialisation correcte dans la classe
+        std::atomic<bool> partieFinie {false};
 
         sf::Sprite fondSprite;
         sf::Texture fondTexture;
         sf::FloatRect backgroundBounds;
 
         void afficherMinimap();
+
+        int utltiActive[6] = {0, 0, 0, 0, 0, 0};
+
+        std::vector<std::vector<sf::Vector2f>> hitboxes;
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive

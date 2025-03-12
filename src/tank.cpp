@@ -111,7 +111,7 @@ void tank::updateHitbox() {
 }
 
 // Mise à jour de la collision avec un autre sprite
-void tank::updateCollision(const sf::Sprite& otherSprite, sf::FloatRect backgroundBounds){
+void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id){
     collision = false; // Réinitialisation
 
     for (const auto& point : tankHitbox) {
@@ -123,10 +123,54 @@ void tank::updateCollision(const sf::Sprite& otherSprite, sf::FloatRect backgrou
             printf("sorti du background\n");
             break;
         }
-        else if (otherSprite.getGlobalBounds().contains(point)) {
-            collision = true;
-            break;
+        else{
+            for (size_t i = 0; i < hitboxes.size(); ++i) {
+                if (i != static_cast<size_t>(id)) { // Conversion de `id` en `size_t`
+                    collisionTank(tankHitbox, hitboxes[i]);
+                    if (collision) { //collision à true/false
+                        break;
+                    }
+                }
+            }
         }
+    }
+}
+
+void tank::collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::vector<sf::Vector2f>& hitbox2){
+    // Trouver les limites (AABB) de la première hitbox
+    float hitbox1Left = hitbox1[0].x;
+    float hitbox1Right = hitbox1[0].x;
+    float hitbox1Top = hitbox1[0].y;
+    float hitbox1Bottom = hitbox1[0].y;
+
+    for (const auto& point : hitbox1) {
+        hitbox1Left = std::min(hitbox1Left, point.x);
+        hitbox1Right = std::max(hitbox1Right, point.x);
+        hitbox1Top = std::min(hitbox1Top, point.y);
+        hitbox1Bottom = std::max(hitbox1Bottom, point.y);
+    }
+
+    // Trouver les limites (AABB) de la deuxième hitbox
+    float hitbox2Left = hitbox2[0].x;
+    float hitbox2Right = hitbox2[0].x;
+    float hitbox2Top = hitbox2[0].y;
+    float hitbox2Bottom = hitbox2[0].y;
+
+    for (const auto& point : hitbox2) {
+        hitbox2Left = std::min(hitbox2Left, point.x);
+        hitbox2Right = std::max(hitbox2Right, point.x);
+        hitbox2Top = std::min(hitbox2Top, point.y);
+        hitbox2Bottom = std::max(hitbox2Bottom, point.y);
+    }
+
+    // Vérifier si les AABB se chevauchent
+    if (hitbox1Right >= hitbox2Left && 
+        hitbox1Left <= hitbox2Right && 
+        hitbox1Bottom >= hitbox2Top && 
+        hitbox1Top <= hitbox2Bottom) {
+        collision = true; // Les hitbox se touchent
+    } else {
+        collision = false; // Pas de collision
     }
 }
 

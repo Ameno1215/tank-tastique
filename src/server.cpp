@@ -202,7 +202,7 @@ void Server::recevoirEvent() {
         int i, z, q, s, d, x, mouseX, mouseY, clicked; 
         int valuesRead = sscanf(buffer, "A %d %d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &x, &mouseX, &mouseY, &clicked);
 
-        if (valuesRead != 8) { 
+        if (valuesRead != 9) { 
             perror("Erreur de lecture avec sscanf, c'est la sauce !");
             exit(EXIT_FAILURE);
         }
@@ -243,7 +243,7 @@ void Server::sendToClient(){
 
             //recupère les tank/data processed de chaque joueur
             tank& tankjoueur = *(partie.joueur[j].Tank);
-            sprintf(buffer_processed_data, "T %d %f %f %f %f %d", partie.joueur[j].id, tankjoueur.get_x(), tankjoueur.get_y(), tankjoueur.get_ori(), tankjoueur.getTourelleSprite().getRotation(), 1);
+            sprintf(buffer_processed_data, "T %d %f %f %f %f %d %d", partie.joueur[j].id, tankjoueur.get_x(), tankjoueur.get_y(), tankjoueur.get_ori(), tankjoueur.getTourelleSprite().getRotation(), partie.utltiActive[j], 1);
 
             //les envoies à chaque autre client
             int n = sendto(sockfd[i], buffer_processed_data, strlen(buffer_processed_data), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
@@ -385,8 +385,11 @@ void Server::string_tank(std::string& chaine) {
 void Server::init_choix_tank(){
 
     int nb_choix_recu = 0;
-    int tabChoixRecu[partie.get_nbJoueur()]; //tableau qui va contenir les id des joueurs ayant envoyé leur choix
-    while(nb_choix_recu < partie.get_nbJoueur()){ // tant que tous les joueurs n'ont pas envoyé leur choix de tank
+    int nb_joueur = partie.get_nbJoueur();
+
+    int tabChoixRecu[nb_joueur]; //tableau qui va contenir les id des joueurs ayant envoyé leur choix
+    
+    while(nb_choix_recu < nb_joueur){ // tant que tous les joueurs n'ont pas envoyé leur choix de tank
         socklen_t len = sizeof(recieve_clientaddr);
 
         // Initialiser le buffer pour éviter des problèmes de lecture
@@ -461,7 +464,7 @@ void Server::init_choix_tank(){
     string_tank(listeTank);
     std::cout<<listeTank<<std::endl;
     //envoi de tous les tanks (au complet) aux joueurs
-    for (int i = 0; i < partie.get_nbJoueur(); i++) {
+    for (int i = 0; i < nb_joueur; i++) {
 
         const char* message = listeTank.c_str();
         size_t message_size = listeTank.size();
@@ -517,6 +520,18 @@ void Server::processEvent(){
         if(partie.joueur[i].pV>0){
             compt++;
             partie.joueur_courant = i;
+            if(partie.joueur[i].Xpressed && partie.utltiActive[i] != 1){ //cas où X pressé et l'ulti n'est pas encore activé 
+                chronoUlti[i][0] = time;
+                chronoUlti[i][1] = time + std::chrono::seconds(3);
+                partie.utltiActive[i] = 1;
+                std::cout<<"activation de l'utli du joueur "<<i<<std::endl;
+            }
+            if(partie.utltiActive[i] == 1){ //cas où l'ulti actif
+                if(time > chronoUlti[i][1]){
+                    partie.utltiActive[i] = -1;
+                    std::cout<<"Desactivation de l'utli du joueur "<<i<<std::endl;
+                }
+            }
             partie.update();
         }
     }
@@ -530,6 +545,14 @@ void Server::majDead(char* buffer) {
     }
 }
 
+void Server::init_Spawn(){
+    for(int i = 0; i < partie.get_nbJoueur(); i++){
+        partie.joueur[i].Tank->set_x(500 + i*300);
+        partie.joueur[i].Tank->set_y(400);
+        partie.joueur[i].Tank->updateHitbox(); //on met à jour la hitBox
+        partie.hitboxes.push_back(partie.joueur[i].Tank->tankHitbox);
+    }
+}
 
 void Server::startServer() {
     
@@ -556,6 +579,7 @@ void Server::startServer() {
 
     init_choix_tank();
 
+    init_Spawn();
     // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
         while (running && !partie.partieFinie.load()) {
@@ -564,10 +588,17 @@ void Server::startServer() {
     });
 
     std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
+    time = std::chrono::steady_clock::now();
+    //initialisation des chronos Ulti
+     for (int i = 0; i < 6; ++i) {
+        chronoUlti[i][0] = time;
+        chronoUlti[i][1] = time;
+    }
 
     // Boucle principale du serveur
     while (running) {
         //recevoirEvent();
+        time = std::chrono::steady_clock::now();
         processEvent();  
         sendToClient();
         // partie.affiche_type_tank();

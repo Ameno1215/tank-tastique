@@ -47,7 +47,8 @@ public:
     int get_vie() const;
 
     void updateHitbox(); // Met à jour la hitbox
-    void updateCollision(const sf::Sprite& otherSprite, sf::FloatRect backgroundBounds); // Met à jour l'état de collision
+    void updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id);
+    void collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::vector<sf::Vector2f>& hitbox2);
     bool isColliding() const; // Retourne l'état de collision
     bool isTouched(); // Retourne l'état de collision
     std::vector<sf::Vector2f> getTransformedPoints(const sf::Sprite& sprite);
@@ -65,6 +66,7 @@ public:
     void set_porte(int new_porte);
     void set_degat(int new_degat);
     void set_vie(int new_vie);
+    std::vector<sf::Vector2f> tankHitbox;
 
 protected:
     float x;
@@ -82,7 +84,6 @@ protected:
 
     bool collision = false;
     bool touched;
-    std::vector<sf::Vector2f> tankHitbox;
     int bornesHitBox[4];
     sf::ConvexShape rectangleHitBox;
 

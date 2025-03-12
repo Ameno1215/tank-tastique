@@ -133,7 +133,8 @@ void Partie::update() {
         deplacement_verticale(mon_tank, rotation, speed); //on avance
 
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        joueur[joueur_courant].Tank->updateCollision(testSprite, backgroundBounds); //check si ca touche un truc
+        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, -2*speed);
@@ -144,7 +145,8 @@ void Partie::update() {
         deplacement_verticale(mon_tank, rotation, -speed);
 
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        joueur[joueur_courant].Tank->updateCollision(testSprite, backgroundBounds); //check si ca touche un truc
+        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, 2*speed);
@@ -155,7 +157,8 @@ void Partie::update() {
         deplacement_rotation(mon_tank, &rotation, 1.2);
         
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        joueur[joueur_courant].Tank->updateCollision(testSprite, backgroundBounds); //check si ca touche un truc
+        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, -1.2);
@@ -165,15 +168,12 @@ void Partie::update() {
     if (joueur[joueur_courant].Qpressed){
         deplacement_rotation(mon_tank, &rotation, -1.2);
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        joueur[joueur_courant].Tank->updateCollision(testSprite, backgroundBounds); //check si ca touche un truc
+        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, 1.2);
         }
-    }
-
-    if (joueur[joueur_courant].Xpressed){
-        printf("ultiiiiiii\n");
     }
     
     // Mise à jour de l'angle de la tourelle truc à Joshua
@@ -415,9 +415,24 @@ void Partie::renderWindow(int multi) {
                 boutonScore.draw(*window);
             }
             else{
+                sf::Vector2f ultiPosition(viewCenter.x + viewSize.x / 2 - 50, viewCenter.y + viewSize.y / 2 - 50);
+                if(utltiActive[joueur_courant]==0){
+                    getpvSprite().setPosition(ultiPosition.x, ultiPosition.y);
+                    window->draw(getpvSprite());
+                }
+                if(utltiActive[joueur_courant]==1){
+                    getpvSprite().setPosition(ultiPosition.x, ultiPosition.y);
+                    window->draw(getpvSprite());
+                    getpvSprite().setPosition(ultiPosition.x - 40, ultiPosition.y);
+                    window->draw(getpvSprite());
+                }
                 afficherMinimap();
             }
             window->draw(testSprite);
+            // dessiner actif ici (je crois)
+            /*if(utltiActive[joueur_courant]==1){
+                printf("ulti actif");
+            }*/
         }
         else{ //si joueur courant est game over et ne regarde pas la partie
 
@@ -486,6 +501,7 @@ void Partie::renderWindow(int multi) {
         static_cast<float>(joueur[joueur_courant].worldMousePos.x) - cursorSprite.getGlobalBounds().width / 2,
         static_cast<float>(joueur[joueur_courant].worldMousePos.y) - cursorSprite.getGlobalBounds().height / 2
     );
+
     window->draw(cursorSprite);
 
     window->display();
@@ -558,20 +574,6 @@ void Partie::sendTank(int type) {
     }
 }
 
-void Partie::sendReceptionTank() {
-
-    char buffer[20]; 
-
-    sprintf(buffer, "M %d 1", joueur_courant);
-    int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
-    if (n < 0) {
-        perror("❌ Erreur lors de l'envoi réception de tous les tanks");
-        return;
-    } else {
-        //std::cout << "📨 Données envoyées : " << buffer << std::endl;
-    }
-}
-
 void Partie::recieveData(){
 
     char buffer[1024];
@@ -587,13 +589,15 @@ void Partie::recieveData(){
     if (buffer[0] == 'T') {
         int indice_joueur;
         float x,y,ori, oritourelle;
-        sscanf(buffer, "T %d %f %f %f %f",&indice_joueur, &x, &y, &ori, &oritourelle);
+        int ulti;
+        sscanf(buffer, "T %d %f %f %f %f %d",&indice_joueur, &x, &y, &ori, &oritourelle, &ulti);
 
         tank& tankjoueur = *(joueur[indice_joueur].Tank);  // Utilisation d'une référence
         tankjoueur.set_x(x);
         tankjoueur.set_y(y);
         tankjoueur.set_ori(ori);
         tankjoueur.getTourelleSprite().setRotation(oritourelle);
+        utltiActive[indice_joueur] = ulti;
 
         if (n < 0) {
             perror("Erreur lors de la réception de la confirmation");

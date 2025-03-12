@@ -15,7 +15,6 @@
 #define SERVER_PORT 3000  // Port du serveur
 #define BUFFER_SIZE 1024  // Taille du buffer de réception
 
-
 class Joueur {
 public :
     Joueur(); // Déclaration du constructeur

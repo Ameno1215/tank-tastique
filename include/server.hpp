@@ -9,6 +9,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <mutex>
+#include <chrono> 
+#include <array> 
+
 
 #include "joueur.hpp"
 #include "partie.hpp"
@@ -36,6 +39,7 @@ private:
     void sendToClient();
     void init_send_fd();
     void init_choix_tank();
+    void init_Spawn();
     std::string ip[6]; 
     std::string pseudos[6];
 
@@ -51,6 +55,9 @@ private:
 
     std::string extractIP(const std::string& message);
     std::string extractPseudo(const std::string& message);
+    std::chrono::time_point<std::chrono::steady_clock> time;
+    std::array<std::array<std::chrono::time_point<std::chrono::steady_clock>, 2>, 6> chronoUlti;        
+
 
 public:
     Server();
