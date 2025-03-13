@@ -228,13 +228,12 @@ void Partie::update() {
                                 joueur[i].vivant = false;
                             }
                             obusDestructeur = true;
+                            stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
                             courant->obus.set_status(0); // destruction obus
                             Noeud * temp = courant->suivant;
                             mon_tank.getListeObus().supprimer(courant->index);
                             courant = temp;
                             stat[joueur_courant][2]++; //ajoute un obus touché
-                            //ici il faut faire attention en fonction du type de tank pour les degats infligés
-                            stat[joueur_courant][3]++; //ajoute un obus touché
                             break;
                         }
                     }
@@ -314,7 +313,6 @@ void Partie::renderWindow(int multi) {
     float Yview = std::clamp(tankPos.y, minY, maxY);
 
     view.setCenter(Xview, Yview);
-
 
     window->setView(view); // Appliquer la View
 

@@ -11,6 +11,8 @@
 #include <mutex>
 #include <chrono> 
 #include <array> 
+#include <cstdlib> 
+#include <ctime> 
 
 
 #include "joueur.hpp"
@@ -43,6 +45,15 @@ private:
     std::string ip[6]; 
     std::string pseudos[6];
 
+    int spawn[6][2] = {
+        {350, 1800},  // Position en haut à gauche
+        {2100, 400},  // Position en haut à droite
+        {1200, 1200}, // Position centrale
+        {400, 900},   // Position en bas à gauche
+        {1800, 1700}, // Position en bas à droite
+        {1000, 300}   // Position aléatoire en haut
+    };
+    
     void majDead(char* buffer);
 
     void createSocketConnexion(const std::string& ip);
@@ -55,7 +66,7 @@ private:
 
     std::string extractIP(const std::string& message);
     std::string extractPseudo(const std::string& message);
-    std::chrono::time_point<std::chrono::steady_clock> time;
+    std::chrono::time_point<std::chrono::steady_clock> timer;
     std::array<std::array<std::chrono::time_point<std::chrono::steady_clock>, 2>, 6> chronoUlti;        
 
 

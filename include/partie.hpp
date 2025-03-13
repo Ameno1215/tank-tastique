@@ -45,7 +45,7 @@ class Partie {
         Joueur joueur[6];
         Client client;
 
-        float stat[6][4]; //dans l'ordre des colonnes : PV, obus tiré, obus tocuhés, dégats infligés.
+        float stat[6][4]; //dans l'ordre des colonnes : PV, obus tiré, obus touchés, dégats infligés.
         bool ajouteJoueur(); // Fonction pour ajouter un joueur
         int get_portactuel();
         int get_nbJoueur();
@@ -78,7 +78,6 @@ class Partie {
         void sendTank(int type);
         void recieveData();
         void recieveTank();
-        void sendReceptionTank();
         void affichageAttenteTank();
         void initialiserpseudo();
 

@@ -521,13 +521,13 @@ void Server::processEvent(){
             compt++;
             partie.joueur_courant = i;
             if(partie.joueur[i].Xpressed && partie.utltiActive[i] != 1){ //cas où X pressé et l'ulti n'est pas encore activé 
-                chronoUlti[i][0] = time;
-                chronoUlti[i][1] = time + std::chrono::seconds(3);
+                chronoUlti[i][0] = timer;
+                chronoUlti[i][1] = timer + std::chrono::seconds(3);
                 partie.utltiActive[i] = 1;
                 std::cout<<"activation de l'utli du joueur "<<i<<std::endl;
             }
             if(partie.utltiActive[i] == 1){ //cas où l'ulti actif
-                if(time > chronoUlti[i][1]){
+                if(timer > chronoUlti[i][1]){
                     partie.utltiActive[i] = -1;
                     std::cout<<"Desactivation de l'utli du joueur "<<i<<std::endl;
                 }
@@ -546,9 +546,19 @@ void Server::majDead(char* buffer) {
 }
 
 void Server::init_Spawn(){
+    int tab_deja[6] = {0,0,0,0,0,0};
     for(int i = 0; i < partie.get_nbJoueur(); i++){
-        partie.joueur[i].Tank->set_x(500 + i*300);
-        partie.joueur[i].Tank->set_y(400);
+        int dejapris = true;
+        int random_spawn;
+        while(dejapris){
+            random_spawn = rand() % 5; // Génère un nombre entre 1 et 6
+            if(tab_deja[random_spawn]==0){
+                tab_deja[random_spawn] = 1;
+                dejapris = false;
+            }
+        }
+        partie.joueur[i].Tank->set_x(spawn[random_spawn][0]);
+        partie.joueur[i].Tank->set_y(spawn[random_spawn][1]);
         partie.joueur[i].Tank->updateHitbox(); //on met à jour la hitBox
         partie.hitboxes.push_back(partie.joueur[i].Tank->tankHitbox);
     }
@@ -557,9 +567,8 @@ void Server::init_Spawn(){
 void Server::startServer() {
     
     connexion();  // Lancement de la gestion des connexions
-
     init_send_fd();
-
+    srand(time(0)); 
     sf::Texture texturetest;
     texturetest.loadFromFile("Image/classique/base_classique.png");
     partie.testSprite.setTexture(texturetest);
@@ -578,7 +587,7 @@ void Server::startServer() {
     partie.affiche_type_tank();
 
     init_choix_tank();
-
+    
     init_Spawn();
     // Thread dédié pour recevoir les événements des clients
     std::thread receptionThread([this]() {
@@ -588,24 +597,23 @@ void Server::startServer() {
     });
 
     std::chrono::time_point<std::chrono::steady_clock> finPartieTime; // Stocker le moment de fin
-    time = std::chrono::steady_clock::now();
     //initialisation des chronos Ulti
      for (int i = 0; i < 6; ++i) {
-        chronoUlti[i][0] = time;
-        chronoUlti[i][1] = time;
+        chronoUlti[i][0] = timer;
+        chronoUlti[i][1] = timer;
     }
 
     // Boucle principale du serveur
     while (running) {
         //recevoirEvent();
-        time = std::chrono::steady_clock::now();
+        timer = std::chrono::steady_clock::now();
         processEvent();  
         sendToClient();
         // partie.affiche_type_tank();
         std::this_thread::sleep_for(std::chrono::milliseconds(5));  // Ajout d'un délai pour éviter une boucle trop rapide
 
         if (partie.partieFinie.load()) {
-            // Démarrer le timer dès que la partie est terminée
+            // Démarrer le timerr dès que la partie est terminée
             if (finPartieTime.time_since_epoch().count() == 0) {
                 finPartieTime = std::chrono::steady_clock::now();
                 std::cout << "Fin de la partie signalée, arrêt dans 3 secondes..." << std::endl;
