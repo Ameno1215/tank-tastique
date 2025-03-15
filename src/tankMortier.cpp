@@ -12,6 +12,13 @@ Tank_mortier::Tank_mortier() : tank() {
     set_porte(MULT_PORTE * 4);
     set_vitesse_obus(MULT_VITESSE_OBUS * 3);
     set_vie(MULT_VIE * 3);
+
+    setSpriteUlti("Image/mortier/ulti.png");
+    setSpriteUltiPret("Image/mortier/ulti_pret.png");
+
+    getSpriteUlti().setScale(0.05f, 0.05f);
+    getSpriteUltiPret().setScale(0.05f, 0.05f);
+
 }
 
 void Tank_mortier::setTexture() {

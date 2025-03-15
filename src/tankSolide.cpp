@@ -12,6 +12,12 @@ Tank_solide::Tank_solide() : tank() {
     set_porte(MULT_PORTE * 2);
     set_vitesse_obus(MULT_VITESSE_OBUS * 2);
     set_vie(MULT_VIE * 4);
+
+    setSpriteUlti("Image/solide/ulti.png");
+    setSpriteUltiPret("Image/solide/ulti_pret.png");
+
+    getSpriteUlti().setScale(0.14f, 0.14f);
+    getSpriteUltiPret().setScale(0.14f, 0.14f);
 }
 
 void Tank_solide::setTexture() {

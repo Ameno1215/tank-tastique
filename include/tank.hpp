@@ -42,9 +42,13 @@ public:
     ListeObus& getListeObus();
     virtual std::string getType() const = 0;
     virtual int get_type() const = 0;
+
     int get_porte() const;
     int get_degat() const;
     int get_vie() const;
+
+    sf::Sprite& getSpriteUltiPret();
+    sf::Sprite& getSpriteUlti();
 
     void updateHitbox(); // Met à jour la hitbox
     void updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id, const sf::Sprite& otherSprite);
@@ -68,6 +72,10 @@ public:
     void set_vie(int new_vie);
     std::vector<sf::Vector2f> tankHitbox;
 
+    void setSpriteUltiPret(const std::string& texturePath);
+    void setSpriteUlti(const std::string& texturePath);
+
+
 protected:
     float x;
     float y;
@@ -81,6 +89,10 @@ protected:
     int type;
     int degat;
     int vie;
+    sf::Sprite spriteUltiPret;
+    sf::Sprite spriteUlti;
+    sf::Texture textureUltiPret;
+    sf::Texture textureUlti;
 
     bool collision = false;
     bool touched;

@@ -12,6 +12,12 @@ Tank_healer::Tank_healer() : tank() {
     set_porte(MULT_PORTE * 3);
     set_vitesse_obus(MULT_VITESSE_OBUS * 3);
     set_vie(MULT_VIE * 2);
+
+    setSpriteUlti("Image/healer/ulti.png");
+    setSpriteUltiPret("Image/healer/ulti_pret.png");
+
+    getSpriteUlti().setScale(0.07f, 0.07f);
+    getSpriteUltiPret().setScale(0.07f, 0.07f);
 }
 
 void Tank_healer::setTexture() {

@@ -12,6 +12,12 @@ Tank_sniper::Tank_sniper() : tank() {
     set_porte(MULT_PORTE * 5);
     set_vitesse_obus(MULT_VITESSE_OBUS * 4);
     set_vie(MULT_VIE * 3);
+
+    setSpriteUlti("Image/sniper/ulti.png");
+    setSpriteUltiPret("Image/sniper/ulti_pret.png");
+
+    getSpriteUlti().setScale(0.24f, 0.24f);
+    getSpriteUltiPret().setScale(0.24f, 0.24f);
 }
 
 void Tank_sniper::setTexture() {

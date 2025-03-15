@@ -87,6 +87,32 @@ bool tank::isTouched(){ return touched;}// Retourne l'état de collision
 int tank::get_porte() const { return porte; }
 int tank::get_degat() const { return degat; }
 
+
+sf::Sprite& tank::getSpriteUltiPret() {
+    return spriteUltiPret;
+}
+
+sf::Sprite& tank::getSpriteUlti() {
+    return spriteUlti;
+}
+
+void tank::setSpriteUltiPret(const std::string& texturePath) {
+    if (!textureUltiPret.loadFromFile(texturePath)) {
+        std::cerr << "Erreur : Impossible de charger la texture " << texturePath << std::endl;
+        return;
+    }
+    spriteUltiPret.setTexture(textureUltiPret);
+}
+
+void tank::setSpriteUlti(const std::string& texturePath) {
+    if (!textureUlti.loadFromFile(texturePath)) {
+        std::cerr << "Erreur : Impossible de charger la texture " << texturePath << std::endl;
+        return;
+    }
+    spriteUlti.setTexture(textureUlti);
+}
+
+
 void tank::set_porte(int new_porte) {
     porte = new_porte;
 }

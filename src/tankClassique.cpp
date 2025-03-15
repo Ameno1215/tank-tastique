@@ -12,6 +12,12 @@ Tank_classique::Tank_classique() : tank() {
     set_porte(MULT_PORTE * 4);
     set_vitesse_obus(MULT_VITESSE_OBUS * 3);
     set_vie(MULT_VIE * 3);
+
+    setSpriteUlti("Image/classique/ulti.png");
+    setSpriteUltiPret("Image/classique/ulti_pret.png");
+
+    getSpriteUlti().setScale(0.2f, 0.2f);
+    getSpriteUltiPret().setScale(0.2f, 0.2f);
 }
 
 void Tank_classique::setTexture() {

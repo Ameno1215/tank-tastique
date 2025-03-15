@@ -4,12 +4,12 @@ Partie::Partie() {
     nbJoueur = 0;
     port_actuel = 0;
     joueur_courant = 0;
-    if (!pvTexture.loadFromFile("Image/obus.png")) {
+    if (!pvTexture.loadFromFile("Image/pv.png")) {
         std::cerr << "Erreur lors du chargement de la texture des PV !\n";
     }
 
     pvSprite.setTexture(pvTexture);
-    pvSprite.setScale(0.2f, 0.2f);
+    pvSprite.setScale(0.06f, 0.06f);
 
     for (int i = 0; i < 11; i++) {
         std::string filename = "Image/explosion/explosion_frame" + std::to_string(i + 1) + ".png";
@@ -415,14 +415,12 @@ void Partie::renderWindow(int multi) {
             else{
                 sf::Vector2f ultiPosition(viewCenter.x + viewSize.x / 2 - 50, viewCenter.y + viewSize.y / 2 - 50);
                 if(utltiActive[joueur_courant]==0){
-                    getpvSprite().setPosition(ultiPosition.x, ultiPosition.y);
-                    window->draw(getpvSprite());
+                    joueur[joueur_courant].Tank->getSpriteUltiPret().setPosition(ultiPosition.x, ultiPosition.y);
+                    window->draw(joueur[joueur_courant].Tank->getSpriteUltiPret());
                 }
                 if(utltiActive[joueur_courant]==1){
-                    getpvSprite().setPosition(ultiPosition.x, ultiPosition.y);
-                    window->draw(getpvSprite());
-                    getpvSprite().setPosition(ultiPosition.x - 40, ultiPosition.y);
-                    window->draw(getpvSprite());
+                    joueur[joueur_courant].Tank->getSpriteUlti().setPosition(ultiPosition.x, ultiPosition.y);
+                    window->draw(joueur[joueur_courant].Tank->getSpriteUlti());
                 }
                 afficherMinimap();
             }

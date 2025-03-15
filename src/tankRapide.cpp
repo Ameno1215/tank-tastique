@@ -14,6 +14,12 @@ Tank_rapide::Tank_rapide() : tank() {
     set_vie(MULT_VIE * 1);
 
     spriteTourelle.setScale(0.11f, 0.11f);
+
+    setSpriteUlti("Image/petit/ulti.png");
+    setSpriteUltiPret("Image/petit/ulti_pret.png");
+
+    getSpriteUlti().setScale(0.05f, 0.05f);
+    getSpriteUltiPret().setScale(0.05f, 0.05f);
 }
 
 void Tank_rapide::setTexture() {
