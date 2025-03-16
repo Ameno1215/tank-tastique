@@ -185,6 +185,35 @@ void Partie::update() {
     
     mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon); //rotation tourelle
 
+
+    // ULTI
+    if(utltiActive[joueur_courant]==1){
+        // tank rapide double dégat
+        if (joueur[joueur_courant].Tank->get_type() == 2) {
+            joueur[joueur_courant].Tank->set_degat(2);
+        }
+        // tank solide one shot
+        else if (joueur[joueur_courant].Tank->get_type() == 5) {
+            joueur[joueur_courant].Tank->set_degat(10);
+        }
+        // tank sniper augmente cadence de tir
+        else if (joueur[joueur_courant].Tank->get_type() == 6) {
+            joueur[joueur_courant].Tank->set_cadence_tir(MULT_CADENCE_TIR / 3);
+        }
+    }
+    else {
+        if (joueur[joueur_courant].Tank->get_type() == 2) {
+            joueur[joueur_courant].Tank->set_degat(1);
+        }
+        else if (joueur[joueur_courant].Tank->get_type() == 5) {
+            joueur[joueur_courant].Tank->set_degat(4);
+        }
+        else if (joueur[joueur_courant].Tank->get_type() == 6) {
+            joueur[joueur_courant].Tank->set_cadence_tir(MULT_CADENCE_TIR / 1);
+        }
+    }
+
+
     // CALCUL DEPLACEMENT OBUS
     Noeud* courant = mon_tank.getListeObus().get_tete();
     while (courant) {
