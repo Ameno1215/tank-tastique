@@ -110,6 +110,14 @@ class Partie {
         int utltiActive[6] = {0, 0, 0, 0, 0, 0};
 
         std::vector<std::vector<sf::Vector2f>> hitboxes;
+
+        std::vector<sf::Sprite> mursSprites;
+
+    // Liste de positions spécifiques
+        std::vector<sf::Vector2f> positions = {
+            {50, 50}, {200, 100}, {350, 150}, {500, 200}, {650, 250},
+            {100, 300}, {250, 350}, {400, 400}, {550, 450}, {700, 500}, {150, 550}
+        };
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive

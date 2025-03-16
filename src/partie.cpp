@@ -11,6 +11,21 @@ Partie::Partie() {
     pvSprite.setTexture(pvTexture);
     pvSprite.setScale(0.2f, 0.2f);
 
+    std::vector<sf::Texture> mursTextures(12);
+
+    for (int i = 0; i < 12; i++) {
+        std::string filename = "Image/murs/murs" + std::to_string(i + 1) + ".png";
+
+        if (!mursTextures[i].loadFromFile(filename)) {
+            std::cerr << "Erreur : Impossible de charger " << filename << std::endl;
+        } else {
+            sf::Sprite sprite;
+            sprite.setTexture(mursTextures[i]);
+            sprite.setPosition(positions[i]); // Appliquer la position unique
+            mursSprites.push_back(sprite);
+        }
+    }
+
     for (int i = 0; i < 11; i++) {
         std::string filename = "Image/explosion/explosion_frame" + std::to_string(i + 1) + ".png";
         if (!explosionTextureFrames[i].loadFromFile(filename)) {
@@ -134,7 +149,7 @@ void Partie::update() {
 
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, -2*speed);
@@ -146,7 +161,7 @@ void Partie::update() {
 
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, 2*speed);
@@ -158,7 +173,7 @@ void Partie::update() {
         
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, -1.2);
@@ -169,7 +184,7 @@ void Partie::update() {
         deplacement_rotation(mon_tank, &rotation, -1.2);
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, testSprite); //check si ca touche un truc
+        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
 
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, 1.2);
@@ -289,6 +304,9 @@ void Partie::renderWindow(int multi) {
 
     window->draw(fondSprite);
 
+    for(int i=0;i<12;i++){
+        window->draw(mursSprites[i]);
+    }
     // Obtenir les dimensions du fond
     backgroundBounds = fondSprite.getGlobalBounds();
 
@@ -839,7 +857,7 @@ int Partie::multiJoueur() {
     client.num_port = numport;
     client.createBindedSocket();    //creation du port d'écoute sur le port dédié au client
     
-    fondTexture.loadFromFile("Image/Keep_Off_The_Grass.png");
+    fondTexture.loadFromFile("Image/cartef.png");
     fondSprite.setTexture(fondTexture);
     fondSprite.setScale(2, 2);
     
