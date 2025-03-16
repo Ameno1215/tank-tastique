@@ -11,7 +11,7 @@ Partie::Partie() {
     pvSprite.setTexture(pvTexture);
     pvSprite.setScale(0.2f, 0.2f);
 
-    std::vector<sf::Texture> mursTextures(12);
+    mursTextures.resize(12);
 
     for (int i = 0; i < 12; i++) {
         std::string filename = "Image/murs/mur" + std::to_string(i + 1) + ".png";
@@ -307,6 +307,7 @@ void Partie::renderWindow(int multi) {
     for(int i=0;i<12;i++){
         window->draw(mursSprites[i]);
     }
+
     // Obtenir les dimensions du fond
     backgroundBounds = fondSprite.getGlobalBounds();
 

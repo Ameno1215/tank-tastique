@@ -112,6 +112,7 @@ class Partie {
         std::vector<std::vector<sf::Vector2f>> hitboxes;
 
         std::vector<sf::Sprite> mursSprites;
+        std::vector<sf::Texture> mursTextures;
 
     // Liste de positions spécifiques
         std::vector<sf::Vector2f> positions = {
