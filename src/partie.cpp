@@ -257,20 +257,28 @@ void Partie::update() {
                 }
 
                 if(!obusDestructeur){
-                    for (int i = 0; i < 12; i++) {
-                        sf::Sprite obus = courant->obus.get_Sprite();  
+                    if(joueur[joueur_courant].Tank->get_type() == 4 && utltiActive[joueur_courant]==1){
+                        continue;
+                    }
+                    else{
+                        for (int i = 0; i < 12; i++) {
+
+                            sf::Sprite obus = courant->obus.get_Sprite();  
                         
-                        if (mursSprites[i].getGlobalBounds().intersects(obus.getGlobalBounds())) {
-                            obusDestructeur = true;
-                            listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, 0); //on rajoute une explosion à afficher en petit                   
-                        }
-                    
-                        if (obusDestructeur) {
-                            courant->obus.set_status(0);  
-                            Noeud* temp = courant->suivant;
-                            mon_tank.getListeObus().supprimer(courant->index);  
-                            courant = temp;  
-                            break; 
+                            if (mursSprites[i].getGlobalBounds().intersects(obus.getGlobalBounds())) {
+                                obusDestructeur = true;
+                                listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, 0); //on rajoute une explosion à afficher en petit                   
+                            }
+                        
+                            if (obusDestructeur) {
+                                courant->obus.set_status(0);  
+                                Noeud* temp = courant->suivant;
+                                mon_tank.getListeObus().supprimer(courant->index);  
+                                courant = temp;  
+                                break; 
+                            }
+                        
+                            
                         }
                     }
                 }
