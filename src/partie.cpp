@@ -281,9 +281,14 @@ void Partie::update() {
                                     if(joueur[i].Tank->ultiClassicUse == false){
                                         joueur[i].Tank->ultiClassicUse = true;
                                     }
+                                    else{
+                                        joueur[i].pV -= courant->obus.get_degat();
+                                        stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
+                                    }
                                 }
                                 else{
                                     joueur[i].pV -= courant->obus.get_degat();
+                                    stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
                                 }
                             }
                             if(joueur[i].pV <= 0){
@@ -293,7 +298,6 @@ void Partie::update() {
                                 joueur[i].vivant = false;
                             }
                             obusDestructeur = true;
-                            stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
                             courant->obus.set_status(0); // destruction obus
                             Noeud * temp = courant->suivant;
                             mon_tank.getListeObus().supprimer(courant->index);
@@ -306,7 +310,7 @@ void Partie::update() {
 
                 if(!obusDestructeur){
                     if(joueur[joueur_courant].Tank->get_type() == 4 && utltiActive[joueur_courant] == 1){
-                        printf("bite");
+                        //rien ahahaha
                     }
                     else{
                         for (int i = 0; i < 12; i++) {
