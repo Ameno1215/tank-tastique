@@ -213,7 +213,7 @@ void ListeObus::vider() {
     compteur = 0;
 }
 
-int ListeExplosion::ajouterFin(int x, int y, int frameActu, bool big) {
+int ListeExplosion::ajouterFin(int x, int y, int frameActu, int big) {
     NoeudExplosion* nouveau = new NoeudExplosion(x, y, frameActu, big);
     if (!queue) {
         tete = queue = nouveau;
@@ -312,12 +312,12 @@ void ListeExplosion::toCharArray(char buffer[100]) {
     
     while (courant) {
         if (courant->frameActu == 0) {
-            std::cout << "y'a du nouveau" << std::endl;
+            //std::cout << "y'a du nouveau" << std::endl;
             nouveau = true;
 
             // Ajout des coordonnées à buffer
             char temp[20];  // Buffer temporaire pour chaque explosion
-            snprintf(temp, sizeof(temp), " %d %d %d", courant->x, courant->y, static_cast<int>(courant->big));
+            snprintf(temp, sizeof(temp), " %d %d %d", courant->x, courant->y, courant->big);
 
             // Vérifier que la taille totale ne dépasse pas 100 caractères
             if (strlen(buffer) + strlen(temp) < 100) {

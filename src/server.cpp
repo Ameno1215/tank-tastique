@@ -288,7 +288,7 @@ void Server::sendToClient(){
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
         if(partie.listexplosion.nouveau){
-            std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
+            //std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
             n = sendto(sockfd[i], buffer_explo, strlen(buffer_explo), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
             if (n < 0) {
                 perror("❌ Erreur lors de l'envoi des données des explosions");

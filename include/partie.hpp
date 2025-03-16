@@ -26,7 +26,7 @@
 #include "deplacement.hpp"
 
 
-#define NB_JOUEUR 2       //defini le nb de joueur
+#define NB_JOUEUR 3       //defini le nb de joueur
 #define TEST 1         // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
 
 #define MULT_VITESSE_TANK 0.3
@@ -113,6 +113,9 @@ class Partie {
 
         std::vector<sf::Sprite> mursSprites;
         std::vector<sf::Texture> mursTextures;
+        int laissePasserObus[20];              //mettre à un pour laisser passer les obus
+
+        sf::Sprite bonus;
 
     // Liste de positions spécifiques
         std::vector<sf::Vector2f> positions = {

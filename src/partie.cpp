@@ -33,6 +33,8 @@ Partie::Partie() {
         }
     }
 
+
+
     explosionSprite.setScale(4.0f,4.0f);
 
 }
@@ -231,7 +233,7 @@ void Partie::update() {
                         testank.updateTouched(courant->obus.get_Sprite());
                         
                         if(testank.isTouched()){
-                            listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, false); //on rajoute une explosion à afficher
+                            listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, 1); //on rajoute une explosion à afficher
                             std::cout<<"x y ajouté en fin"<<std::endl;
                             if(joueur[i].pV > 0){
                                 joueur[i].pV -= courant->obus.get_degat();
@@ -239,7 +241,7 @@ void Partie::update() {
                             if(joueur[i].pV <= 0){
                                 std::cout<<"joueur X a perdu";
                                 joueur[i].pV = -1;
-                                listexplosion.ajouterFin(joueur[i].Tank->getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank->getBaseSprite().getPosition().x, joueur[i].Tank->getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank->getBaseSprite().getPosition().y, 0, true);
+                                listexplosion.ajouterFin(joueur[i].Tank->getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank->getBaseSprite().getPosition().x, joueur[i].Tank->getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank->getBaseSprite().getPosition().y, 0, 2);
                                 joueur[i].vivant = false;
                             }
                             obusDestructeur = true;
@@ -252,11 +254,31 @@ void Partie::update() {
                             break;
                         }
                     }
-
                 }
+
+                if(!obusDestructeur){
+                    for (int i = 0; i < 12; i++) {
+                        sf::Sprite obus = courant->obus.get_Sprite();  
+                        
+                        if (mursSprites[i].getGlobalBounds().intersects(obus.getGlobalBounds())) {
+                            obusDestructeur = true;
+                            listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, 0); //on rajoute une explosion à afficher en petit                   
+                        }
+                    
+                        if (obusDestructeur) {
+                            courant->obus.set_status(0);  
+                            Noeud* temp = courant->suivant;
+                            mon_tank.getListeObus().supprimer(courant->index);  
+                            courant = temp;  
+                            break; 
+                        }
+                    }
+                }
+
                 if(!obusDestructeur){ //si l'obus n'a rien rencontré on détruit
                     courant = courant->suivant;
                 }
+
             } 
         }
     }
@@ -403,9 +425,14 @@ void Partie::renderWindow(int multi) {
                 if (courant->frameActu < 20 && courant->frameActu > 0) {
                     courant->explosionSprite.setTexture(explosionTextureFrames[courant->frameActu]);
                     courant->explosionSprite.setPosition(courant->x - courant->explosionSprite.getGlobalBounds().width / 2, courant->y - courant->explosionSprite.getGlobalBounds().height / 2);
-                    if(courant->big){
-                        std::cout<<"affichage en Grand";
+                    if(courant->big == 2){
                         courant->explosionSprite.setScale(3.0f, 3.0f);
+                    }
+                    if(courant->big == 1){
+                        courant->explosionSprite.setScale(1.4f, 1.4f);
+                    }
+                    if(courant->big == 0){
+                        courant->explosionSprite.setScale(0.75f, 0.75f);
                     }
                     window->draw(courant->explosionSprite);
                 }
@@ -445,7 +472,6 @@ void Partie::renderWindow(int multi) {
                 }
                 afficherMinimap();
             }
-            window->draw(testSprite);
             // dessiner actif ici (je crois)
             /*if(utltiActive[joueur_courant]==1){
                 printf("ulti actif");
@@ -509,8 +535,6 @@ void Partie::renderWindow(int multi) {
         gameOverText.setPosition(viewCenter); // Positionner le texte au centre de la vue
         window->draw(gameOverText);
 
-        boutonScore.draw(*window);
-        boutonReplay.draw(*window);
     }
 
     //affichage souris
@@ -623,7 +647,7 @@ void Partie::recieveData(){
         }
     }
 
-    // RECEPTION DE LA LSITE D'OBUS
+    // RECEPTION DE LA LISTE D'OBUS
     if (buffer[0] == 'O') { 
         setBufferMissile(std::string(buffer));
     }
@@ -633,8 +657,7 @@ void Partie::recieveData(){
         int x, y, big;
 
         while (stream >> x >> y >> big) {  // Extrait les couples de coordonnées car il peut y avoir plusieurs explosions à la fois
-            bool isBig = (big != 0);  // Convertit en booléen
-            listexplosion.ajouterFin(x, y, 0, isBig);
+            listexplosion.ajouterFin(x, y, 0, big);
         }
     }
 
@@ -1457,7 +1480,9 @@ void Partie::afficheTableauScore() {
 
 //renvoie le numéro du tank
 int Partie::selectionTank() {
-    
+
+    window->setMouseCursorVisible(false);
+
     sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
         std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
@@ -1518,14 +1543,19 @@ int Partie::selectionTank() {
         boutons.emplace_back(x + (tankWidth - 150) / 2, y + 200, 150, 40, "Choisir", font);
     }
 
+    sf::Vector2f mousePos;
+
     while (window->isOpen()) {
         sf::Event event;
+        window->clear(sf::Color::Black);
         while (window->pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window->close();
                 return -1;
             }
-            sf::Vector2f mousePos = window->mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
+            if (window->hasFocus()) { //uniquement si on est sur la fenetre 
+                mousePos = window->mapPixelToCoords(sf::Mouse::getPosition(*window));   //la mettre dans le repère de la fenetre (je crois)
+            }
             for(int i = 0; i < 6; i ++){
                 boutons[i].update(mousePos);
             }
@@ -1553,7 +1583,6 @@ int Partie::selectionTank() {
             }
         }
 
-        window->clear(sf::Color::Black);
         for (size_t i = 0; i < tanks.size(); ++i) {
             window->draw(tankNames[i]);
             window->draw(sprites[i]);
@@ -1580,6 +1609,15 @@ int Partie::selectionTank() {
                 window->draw(statLabel);
             }
         }
+
+        //affichage souris
+        cursorSprite.setPosition(
+            static_cast<float>(mousePos.x) - cursorSprite.getGlobalBounds().width / 2,
+            static_cast<float>(mousePos.y) - cursorSprite.getGlobalBounds().height / 2
+        );
+
+        window->draw(cursorSprite);
+
         window->display();
     }
     return 0;
