@@ -53,6 +53,9 @@ class Partie {
 
         int get_go();
         void set_go(int val);
+        
+        int get_coeur_ajouter();
+        void set_coeur_ajouter(int val);
 
         void setBufferMissile(const std::string& newBuffer);
 
@@ -126,6 +129,7 @@ class Partie {
 
         int go = 0;
         int nbchoix;
+        int coeurAjouter = 0;
 
         bool explosionActive = false;
         int currentFrameExplo = 0;

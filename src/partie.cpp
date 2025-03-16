@@ -52,6 +52,10 @@ void Partie::set_go(int val)  {go = val; }
 
 int Partie::get_go() { return go; }
 
+void Partie::set_coeur_ajouter(int val) { coeurAjouter = val; }
+
+int Partie::get_coeur_ajouter() { return coeurAjouter; }
+
 std::string& Partie::get_buffer_missile() {
     return buffer_missile;
 }
@@ -199,6 +203,14 @@ void Partie::update() {
         // tank sniper augmente cadence de tir
         else if (joueur[joueur_courant].Tank->get_type() == 6) {
             joueur[joueur_courant].Tank->set_cadence_tir(MULT_CADENCE_TIR / 3);
+        }
+        // tank healer ajoute 2 coeurs
+        else if (joueur[joueur_courant].Tank->get_type() == 3) {
+            // si les coeurs sont pas encore ajouter on les ajoute
+            if (!get_coeur_ajouter()) {
+                joueur[joueur_courant].pV += 2;
+                set_coeur_ajouter(1);
+            }
         }
     }
     else {
