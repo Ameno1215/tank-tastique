@@ -14,7 +14,7 @@ Partie::Partie() {
     std::vector<sf::Texture> mursTextures(12);
 
     for (int i = 0; i < 12; i++) {
-        std::string filename = "Image/murs/murs" + std::to_string(i + 1) + ".png";
+        std::string filename = "Image/murs/mur" + std::to_string(i + 1) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
             std::cerr << "Erreur : Impossible de charger " << filename << std::endl;
