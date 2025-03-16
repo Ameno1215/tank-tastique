@@ -51,7 +51,7 @@ public:
     sf::Sprite& getSpriteUlti();
 
     void updateHitbox(); // Met à jour la hitbox
-    void updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id, const sf::Sprite& otherSprite);
+    void updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id, std::vector<sf::Sprite> mursSprites);
     void collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::vector<sf::Vector2f>& hitbox2);
     bool isColliding() const; // Retourne l'état de collision
     bool isTouched(); // Retourne l'état de collision
@@ -74,7 +74,7 @@ public:
 
     void setSpriteUltiPret(const std::string& texturePath);
     void setSpriteUlti(const std::string& texturePath);
-
+    bool ultiClassicUse = false;
 
 protected:
     float x;

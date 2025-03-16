@@ -288,7 +288,7 @@ void Server::sendToClient(){
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
         if(partie.listexplosion.nouveau){
-            std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
+            //std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
             n = sendto(sockfd[i], buffer_explo, strlen(buffer_explo), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
             if (n < 0) {
                 perror("❌ Erreur lors de l'envoi des données des explosions");
@@ -524,6 +524,9 @@ void Server::processEvent(){
                 chronoUlti[i][0] = timer;
                 chronoUlti[i][1] = timer + std::chrono::seconds(3);
                 partie.utltiActive[i] = 1;
+                if(partie.joueur[i].Tank->get_type() == 1){
+                    partie.joueur[i].Tank->ultiClassicUse = false;
+                }
                 std::cout<<"activation de l'utli du joueur "<<i<<std::endl;
             }
             if(partie.utltiActive[i] == 1){ //cas où l'ulti actif
@@ -575,7 +578,7 @@ void Server::startServer() {
     partie.testSprite.setScale(0.08f, 0.08f);
     partie.testSprite.setPosition(300, 300);
 
-    partie.fondTexture.loadFromFile("Image/Keep_Off_The_Grass.png");
+    partie.fondTexture.loadFromFile("Image/cartef.png");
     partie.fondSprite.setTexture(partie.fondTexture);
     partie.fondSprite.setScale(2, 2);
 

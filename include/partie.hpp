@@ -26,7 +26,7 @@
 #include "deplacement.hpp"
 
 
-#define NB_JOUEUR 2       //defini le nb de joueur
+#define NB_JOUEUR 3       //defini le nb de joueur
 #define TEST 1         // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
 
 #define MULT_VITESSE_TANK 0.3
@@ -113,6 +113,20 @@ class Partie {
         int utltiActive[6] = {0, 0, 0, 0, 0, 0};
 
         std::vector<std::vector<sf::Vector2f>> hitboxes;
+
+        std::vector<sf::Sprite> mursSprites;
+        std::vector<sf::Texture> mursTextures;
+        int laissePasserObus[20];              //mettre à un pour laisser passer les obus
+
+        sf::Sprite bonus;
+        bool ultiClassicUse = false;
+
+
+    // Liste de positions spécifiques
+        std::vector<sf::Vector2f> positions = {
+            {50, 50}, {200, 100}, {350, 150}, {500, 200}, {650, 250},
+            {100, 300}, {250, 350}, {400, 400}, {550, 450}, {700, 500}, {150, 550}
+        };
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive

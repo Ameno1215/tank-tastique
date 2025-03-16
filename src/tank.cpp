@@ -137,7 +137,7 @@ void tank::updateHitbox() {
 }
 
 // Mise à jour de la collision avec un autre sprite
-void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id, const sf::Sprite& otherSprite){
+void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::FloatRect backgroundBounds, int id, std::vector<sf::Sprite> mursSprites){
     collision = false; // Réinitialisation
 
     for (const auto& point : tankHitbox) {
@@ -150,9 +150,11 @@ void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::
             return;
         }
         else{
-            if (otherSprite.getGlobalBounds().contains(point)) {
-                collision = true;
-                return;
+            for (int i=0;i<12;i++){
+                if (mursSprites[i].getGlobalBounds().contains(point)) {
+                    collision = true;
+                    return;
+                }
             }
         }
     }
