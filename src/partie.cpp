@@ -21,6 +21,7 @@ Partie::Partie() {
         } else {
             sf::Sprite sprite;
             sprite.setTexture(mursTextures[i]);
+            sprite.setScale(scale[i]);
             sprite.setPosition(positions[i]); // Appliquer la position unique
             mursSprites.push_back(sprite);
         }
