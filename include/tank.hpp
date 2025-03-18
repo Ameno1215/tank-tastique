@@ -55,6 +55,7 @@ public:
     void collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::vector<sf::Vector2f>& hitbox2);
     bool isColliding() const; // Retourne l'état de collision
     bool isTouched(); // Retourne l'état de collision
+    int updateRegenCollision(std::vector<sf::Sprite> regenSprite);
     std::vector<sf::Vector2f> getTransformedPoints(const sf::Sprite& sprite);
     void updateTouched(const sf::Sprite& otherSprite);
 

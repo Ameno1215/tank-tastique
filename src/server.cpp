@@ -65,7 +65,7 @@ void Server::connexion() {
     socklen_t send_len = sizeof(send_clientaddr);
     char buffer[BUFFER_SIZE];
     
-    while (NB_JOUEUR > partie.get_nbJoueur()) {
+    while (nb_joueur > partie.get_nbJoueur()) {
         port_connexion = SERVER_PORT; // Port par défaut : 3000
         createBindedSocket(); // Crée un socket lié au port 3000
     
@@ -92,16 +92,18 @@ void Server::connexion() {
             }
     
             // Attribution d'un nouveau port au client
-            int port_to_send = htons(3000 + partie.get_nbJoueur()); // Ports 3001 à 3007 pour 6 joueurs
+            int port_to_send = 3000 + partie.get_nbJoueur(); // Ports 3001 à 3007 pour 6 joueurs
+            char buffer_config[100];
+            sprintf(buffer_config,"C %d %d %d %d", port_to_send, nb_joueur, 1, 1);
             createSocketConnexion(ipJoueur); // Crée un socket pour communiquer avec le client
     
             // Ajoute l'IP et le pseudo du joueur aux tableaux
             ip[partie.get_nbJoueur() - 1] = ipJoueur;
             pseudos[partie.get_nbJoueur() - 1] = pseudo;
-    
+            
             // Envoi du nouveau port au client
             std::this_thread::sleep_for(std::chrono::milliseconds(50)); // On attend que le client soit pret
-            sendto(send_sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&send_clientaddr, send_len);
+            sendto(send_sockfd, &buffer_config, sizeof(buffer_config), 0, (struct sockaddr*)&send_clientaddr, send_len);
             close(send_sockfd); // Ferme le socket après envoi
             std::cout << "Port " << port_to_send << " envoyé au client\n";
     
@@ -142,7 +144,7 @@ void Server::connexion() {
     sprintf(msg_pret, "P %d", partie.get_nbJoueur());
     
     // Ajout des pseudos au message
-    for (int i = 0; i < NB_JOUEUR; ++i) {
+    for (int i = 0; i < nb_joueur; ++i) {
         if (!pseudos[i].empty()) {
             strcat(msg_pret, " ");
             strcat(msg_pret, pseudos[i].c_str());
@@ -153,7 +155,7 @@ void Server::connexion() {
     printf("Message final : %s\n", msg_pret);
     
     // Envoi du message "P" à tous les joueurs
-    for (int i = 0; i < NB_JOUEUR; i++) {
+    for (int i = 0; i < nb_joueur; i++) {
         port_connexion = partie.joueur[i].port;
         createSocketConnexion(ip[i]); // Crée un socket pour communiquer avec le joueur
 
@@ -230,6 +232,8 @@ void Server::sendToClient(){
 
     char buffer_stat[1 + 6 * 4 * sizeof(float)];
     buffer_stat[0] = 'Z';
+
+    char buffer_regen[100];
     // Sérialisation du tableau stat après le marqueur
     std::memcpy(buffer_stat + 1, partie.stat, sizeof(partie.stat));
 
@@ -237,9 +241,9 @@ void Server::sendToClient(){
     
     sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
 
-    for(int i = 0; i<NB_JOUEUR; i++){   
+    for(int i = 0; i<nb_joueur; i++){   
 
-        for(int j = 0; j<NB_JOUEUR; j++){
+        for(int j = 0; j<nb_joueur; j++){
 
             //recupère les tank/data processed de chaque joueur
             tank& tankjoueur = *(partie.joueur[j].Tank);
@@ -303,6 +307,21 @@ void Server::sendToClient(){
                   (const struct sockaddr*)&client[i], sizeof(client[i]));
         if (n < 0) {
             perror("❌ Erreur lors de l'envoi des données du tableau stat");
+        } else {
+            //std::cout << "📨 Tableau stat envoyé avec succès (" << n << " octets)\n";
+        }
+
+        sprintf(buffer_regen, "R %d %d %d %d %d %d %d %d %d %d %d %d", partie.regen[0][0], partie.regen[0][1], partie.regen[0][2], 
+            partie.regen[1][0], partie.regen[1][1], partie.regen[1][2],
+            partie.regen[2][0], partie.regen[2][1], partie.regen[2][2],
+            partie.regen[3][0], partie.regen[3][1], partie.regen[3][2]);
+        
+        std::cout<<buffer_regen<<std::endl;
+        
+        n = sendto(sockfd[i], buffer_regen, sizeof(buffer_regen), 0, 
+            (const struct sockaddr*)&client[i], sizeof(client[i]));
+        if (n < 0) {
+            perror("❌ Erreur lors de l'envoi des données des regens");
         } else {
             //std::cout << "📨 Tableau stat envoyé avec succès (" << n << " octets)\n";
         }
@@ -490,7 +509,7 @@ void Server::init_send_fd(){
     int recup = send_sockfd;              //pour ne pas tout casse
     int port = port_connexion;
 
-    for(int i=0; i<NB_JOUEUR; i++){
+    for(int i=0; i<nb_joueur; i++){
         port_connexion = 3001 + i;
         createSocketConnexion(ip[i]);
         sockfd[i] = send_sockfd;
@@ -516,7 +535,7 @@ void Server::afficher_buffer(char tab[][5], int nb_lignes) {
 
 void Server::processEvent(){
     int compt = 0;
-    for(int i = 0; i<NB_JOUEUR; i++){
+    for(int i = 0; i<nb_joueur; i++){
         if(partie.joueur[i].pV>0){
             compt++;
             partie.joueur_courant = i;
@@ -543,7 +562,7 @@ void Server::processEvent(){
 void Server::majDead(char* buffer) {
     int offset = snprintf(buffer, 100, "D "); // Commence par "D "
 
-    for (int i = 0; i < NB_JOUEUR && offset < 100; i++) {
+    for (int i = 0; i < nb_joueur && offset < 100; i++) {
         offset += snprintf(buffer + offset, 100 - offset, "%d ", partie.joueur[i].vivant ? 1 : 0);
     }
 }
@@ -583,7 +602,7 @@ void Server::startServer() {
     partie.fondSprite.setScale(2, 2);
 
     // TYPE DE TANK BLANC POUR TOUS LES JOUEURS AU DEBUT
-    for (int i = 0; i < NB_JOUEUR; i ++) {
+    for (int i = 0; i < nb_joueur; i ++) {
         partie.joueur[i].setTank(std::make_unique<Tank_blanc>());
     }
     std::cout << "tank en début de partie sur le server\n";
@@ -645,9 +664,29 @@ std::string Server::extractPseudo(const std::string& message) {
     return "Batar"; // Retourne une chaîne vide si "N:  " n'est pas trouvé
 }
 
+int main(int argc, char* argv[]) {
+    std::ofstream pidFile("server.pid");
+    pidFile << getpid();  // Stocke son propre PID
+    pidFile.close();
 
-int main() {
     Server server;
+
+    // Vérifie s'il y a un argument et le convertit en entier
+    int nbJoueur = NB_JOUEUR; // Valeur par défaut
+
+    if (argc > 1) {
+        nbJoueur = std::atoi(argv[1]);
+
+        // Vérifie que nbJoueur est bien entre 0 et 6
+        if (nbJoueur < 0 || nbJoueur > 6) {
+            std::cerr << "Erreur: nbJoueur doit être compris entre 0 et 6." << std::endl;
+            return 1;  // Quitte le programme avec un code d'erreur
+        }
+        std::cout<<"le server est lancé pour "<<nbJoueur<<" joueurs"<<std::endl;
+    }
+
+    server.nb_joueur = nbJoueur;
     server.startServer();
+    
     return 0;
 }

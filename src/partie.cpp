@@ -33,10 +33,22 @@ Partie::Partie() {
         }
     }
 
-
-
+    for (int i = 0; i < 4; i++) {
+        if (!regenTextures.loadFromFile("Image/base_vert.png")) {
+            std::cerr << "Erreur : Impossible de charger " << "Image/base_vert.png" << std::endl;
+        } else {
+            regen[i][0] = 1;
+            regen[i][1] = 500 + i*100;
+            regen[i][2] = 500;
+            sf::Sprite sprite;
+            sprite.setTexture(regenTextures);
+            sprite.setScale(0.1f, 0.1f);
+            sf::Vector2f pos(regen[i][1], regen[i][2]);
+            sprite.setPosition(pos);
+            regenSprites.push_back(sprite);
+        }
+    }
     explosionSprite.setScale(4.0f,4.0f);
-
 }
 
 // Destructeur pour éviter les fuites mémoire
@@ -86,7 +98,11 @@ int Partie::get_nbJoueur(){
 }
 
 void Partie::setBufferMissile(const std::string& newBuffer) {
-        buffer_missile = newBuffer;
+    buffer_missile = newBuffer;
+}
+
+void Partie::set_nbJoueur(int i){
+    nbJoueur = i;
 }
 
 void Partie::getEvent() { 
@@ -156,7 +172,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, -2*speed);
         }
@@ -168,7 +184,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, 2*speed);
         }
@@ -180,7 +196,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, -1.2);
         }
@@ -191,7 +207,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, 1.2);
         }
@@ -267,7 +283,7 @@ void Partie::update() {
 
                 bool obusDestructeur = false; //variable pour savoir si l'obus a touché quelque chose
 
-                for(int i = 0; i<NB_JOUEUR; i++){
+                for(int i = 0; i<nbJoueur; i++){
                     if(joueur[i].pV>0){
                         tank& testank = *(joueur[i].Tank);
                         testank.updateHitbox(); //il faut update car si le tank adverse bouge pas c'est pas bon 
@@ -277,6 +293,7 @@ void Partie::update() {
                             listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, 1); //on rajoute une explosion à afficher
                             std::cout<<"x y ajouté en fin"<<std::endl;
                             if(joueur[i].pV > 0){
+                                //condition pour ulti bouclier
                                 if(joueur[i].Tank->get_type() ==  1 && utltiActive[i] == 1){
                                     if(joueur[i].Tank->ultiClassicUse == false){
                                         joueur[i].Tank->ultiClassicUse = true;
@@ -286,6 +303,7 @@ void Partie::update() {
                                         stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
                                     }
                                 }
+
                                 else{
                                     joueur[i].pV -= courant->obus.get_degat();
                                     stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
@@ -356,12 +374,22 @@ void Partie::update() {
     testGagnant();
 }
 
+void Partie::updateRegen(){
+    int r = joueur[joueur_courant].Tank->updateRegenCollision(regenSprites);
+    if(r > -1 ){
+        regen[r][0] = 0; 
+        utltiActive[joueur_courant] = 0;
+        std::cout<<r<<" touché"<<std::endl;
+    }
+    std::cout<<"[0][0] "<<regen[0][0]<<std::endl;
+}
+
 //cette fonction renvoie -1 si il y a plusieurs joueurs en jeu, l'indice du joueur gagnant sinon
 int Partie::testGagnant(){
     int compt = 0;
     int joueurVivant;
 
-    for(int i = 0; i<NB_JOUEUR; i++){
+    for(int i = 0; i<nbJoueur; i++){
         
         if(joueur[i].pV > 0){
             compt ++;
@@ -505,6 +533,12 @@ void Partie::renderWindow(int multi) {
             for (int i = 0; i < joueur[joueur_courant].pV; i++) {
                 getpvSprite().setPosition(pvBasePosition.x + i * 40, pvBasePosition.y);
                 window->draw(getpvSprite());
+            }
+
+            for(int i = 0; i<4; i++){
+                regenSprites[i].setPosition(regen[i][1],regen[i][2]);
+                regenSprites[i].setScale(0.1f, 0.1f);
+                window->draw(regenSprites[i]);
             }
  
             //Affichage tableau des scores
@@ -721,7 +755,7 @@ void Partie::recieveData(){
         int pV[6];
         sscanf(buffer, "V %d %d %d %d %d %d", &pV[0], &pV[1], &pV[2], &pV[3], &pV[4], &pV[5]);
 
-        for(int i = 0; i< NB_JOUEUR; i++){
+        for(int i = 0; i< nbJoueur; i++){
             Joueur& joueuri = joueur[i];  
             joueuri.pV = pV[i];
         }
@@ -748,6 +782,14 @@ void Partie::recieveData(){
 
     if(buffer[0] == 'Z'){
         std::memcpy(stat, buffer + 1, sizeof(stat)); // Désérialisation des données
+    }
+
+    if(buffer[0] == 'R'){
+        sprintf(buffer, "R %d %d %d %d %d %d %d %d %d %d %d %d", regen[0][0], regen[0][1], regen[0][2], 
+            regen[1][0], regen[1][1], regen[1][2],
+            regen[2][0], regen[2][1], regen[2][2],
+            regen[3][0], regen[3][1], regen[3][2]);
+        std::cout<<buffer<<std::endl;
     }
     
 }
@@ -1336,7 +1378,6 @@ void Partie::affichageAttenteTank() {
 
         sf::Time elapsed = clock.restart();
         float deltaTime = elapsed.asSeconds();
-
 
         textBounds = statusText.getLocalBounds();
         statusText.setPosition((window->getSize().x - textBounds.width) / 2.0f, 200);

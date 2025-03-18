@@ -118,15 +118,21 @@ class Partie {
         std::vector<sf::Texture> mursTextures;
         int laissePasserObus[20];              //mettre à un pour laisser passer les obus
 
+        std::vector<sf::Sprite> regenSprites;
+        sf::Texture regenTextures;
+
         sf::Sprite bonus;
         bool ultiClassicUse = false;
-
+        void updateRegen();
+        int regen[4][5];
 
     // Liste de positions spécifiques
         std::vector<sf::Vector2f> positions = {
             {50, 50}, {200, 100}, {350, 150}, {500, 200}, {650, 250},
             {100, 300}, {250, 350}, {400, 400}, {550, 450}, {700, 500}, {150, 550}
         };
+
+        void set_nbJoueur(int i);
         
     private:
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive

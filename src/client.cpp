@@ -67,7 +67,6 @@ void Client::initconnexion() {
     printf("La fête commence !\n");
     
     etatConnexion = -1; // État : connexion avec le serveur en cours
-    int received_port;
     
     // Construction du message contenant l'IP locale et le pseudo
     std::string message = "C " + getLocalIPAddress() + " N: " + joueur.pseudo;
@@ -82,19 +81,24 @@ void Client::initconnexion() {
     
     num_port = SERVER_PORT; // Port par défaut : 3000
     createBindedSocket();
-    
+
+    char buffer_config[1024];
     // Réception du nouveau port attribué par le serveur
-    int n = recvfrom(recieve_sockfd, &received_port, sizeof(received_port), 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);
-    if (n < 0) {
+    int n = recvfrom(recieve_sockfd, buffer_config, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len); // Attente de la confirmation du serveur    if (n < 0) {
+    if(n<0){   
         perror("Erreur lors de la réception du port");
         close(recieve_sockfd);
         return;
     }
+    if(buffer_config[0]=='C'){
+        sscanf(buffer_config, "C %d %d %d",&num_port, &nbJoueurFinal, &mode);
+        std::cout<<buffer_config<<std::endl;
+        std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
+    }
+    else{
+        std::cout<<"buffer config mal receptionné"<<std::endl;
+    }
     close(recieve_sockfd);
-    
-    // Conversion du port reçu en format hôte
-    num_port = ntohs(received_port);
-    std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
     
     // Attribution de l'ID du joueur en fonction du port
     joueur.id = num_port - 3001;

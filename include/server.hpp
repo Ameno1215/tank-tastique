@@ -13,7 +13,7 @@
 #include <array> 
 #include <cstdlib> 
 #include <ctime> 
-
+#include <fstream>
 
 #include "joueur.hpp"
 #include "partie.hpp"
@@ -27,8 +27,7 @@ std::atomic<bool> running(true);  // Permet d'arrêter le serveur proprement
 
 class Server {
 private:
-    
-    Partie partie;
+
     char buffer[100];
     int recieve_sockfd, send_sockfd = SERVER_PORT;
     int port_connexion;
@@ -69,8 +68,8 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> timer;
     std::array<std::array<std::chrono::time_point<std::chrono::steady_clock>, 2>, 6> chronoUlti;        
 
-
 public:
+    Partie partie;
     Server();
     ~Server();
     
@@ -78,6 +77,8 @@ public:
     void setTankRecu(int index, int value);
     int getTankRecu(int index);
     int getNbTanksRecus();
+    int nb_joueur = 0;
+
 
 };
 
