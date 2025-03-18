@@ -18,6 +18,7 @@ class Lobby{
         Lobby();
         void config();
         int nbJoueurChoisi;
+        int mode;
 
     private:
         sf::RenderWindow window;

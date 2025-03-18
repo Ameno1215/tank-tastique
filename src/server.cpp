@@ -94,7 +94,7 @@ void Server::connexion() {
             // Attribution d'un nouveau port au client
             int port_to_send = 3000 + partie.get_nbJoueur(); // Ports 3001 à 3007 pour 6 joueurs
             char buffer_config[100];
-            sprintf(buffer_config,"C %d %d %d %d", port_to_send, nb_joueur, 1, 1);
+            sprintf(buffer_config,"C %d %d %d", port_to_send, mode, 1);
             createSocketConnexion(ipJoueur); // Crée un socket pour communiquer avec le client
     
             // Ajoute l'IP et le pseudo du joueur aux tableaux
@@ -673,18 +673,26 @@ int main(int argc, char* argv[]) {
 
     // Vérifie s'il y a un argument et le convertit en entier
     int nbJoueur = NB_JOUEUR; // Valeur par défaut
+    int m = -1;
 
-    if (argc > 1) {
+    if (argc > 2) {
         nbJoueur = std::atoi(argv[1]);
-
+        m = std::atoi(argv[2]);
         // Vérifie que nbJoueur est bien entre 0 et 6
         if (nbJoueur < 0 || nbJoueur > 6) {
             std::cerr << "Erreur: nbJoueur doit être compris entre 0 et 6." << std::endl;
             return 1;  // Quitte le programme avec un code d'erreur
         }
         std::cout<<"le server est lancé pour "<<nbJoueur<<" joueurs"<<std::endl;
+
+        if(m != 1 && m != 2){
+            std::cerr << "Erreur: MODE doit être compris entre 1 et 2." << std::endl;
+            return 1;  // Quitte le programme avec un code d'erreur
+        }
+        std::cout<<"le server est lancé mode "<<m<<" (1 MG 2 MME)"<<std::endl;
     }
 
+    server.mode = m;
     server.nb_joueur = nbJoueur;
     server.startServer();
     

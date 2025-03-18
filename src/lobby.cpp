@@ -116,9 +116,15 @@ void Lobby::config() {
                                 otherButton.setOutline(sf::Color::Transparent, 0.0f);  // Pas de contour pour les autres boutons
                             }
                         }
+                        if(strcmp(bouton.getLabel().c_str(),"Melee generale") == 0){
+                            mode = 1;
+                        }
+                        if(strcmp(bouton.getLabel().c_str(),"Equipe") == 0){
+                            mode = 2;
+                        }
                         equipe = true;
                         bouton.setOutline(sf::Color::Green, 4.0f);
-                        std::cout << "Mode choisi "<< std::endl;
+                        std::cout << "Mode choisi "<<mode<< std::endl;
                     }
                 }
             }

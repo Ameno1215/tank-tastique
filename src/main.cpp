@@ -45,7 +45,7 @@ int main(){
     if(choix == 1){
         signal(SIGINT, signalHandler);
         std::cout << "On teste le lancement du server" << std::endl;
-        std::string startServer = "./zbin/server " + std::to_string(lobby.nbJoueurChoisi) + "&";
+        std::string startServer = "./zbin/server " + std::to_string(lobby.nbJoueurChoisi) + " " + std::to_string(lobby.mode) + "&";
         std::system(startServer.c_str());
         sleep(2);
         //voir si on peut greffer le code de Joshua

@@ -78,7 +78,7 @@ public:
     int getTankRecu(int index);
     int getNbTanksRecus();
     int nb_joueur = 0;
-
+    int mode = 1;  //par defaut en MG
 
 };
 

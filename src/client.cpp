@@ -91,7 +91,7 @@ void Client::initconnexion() {
         return;
     }
     if(buffer_config[0]=='C'){
-        sscanf(buffer_config, "C %d %d %d",&num_port, &nbJoueurFinal, &mode);
+        sscanf(buffer_config, "C %d %d",&num_port, &mode);
         std::cout<<buffer_config<<std::endl;
         std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
     }
