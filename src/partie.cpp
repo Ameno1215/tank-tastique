@@ -112,8 +112,21 @@ void Partie::getEvent() {
     sf::Event event;
     while (window->pollEvent(event)) {
 
-        if (event.type == sf::Event::Closed)
+        if (event.type == sf::Event::Closed){
             window->close();
+            std::ifstream pidFile("server.pid");
+            if (!pidFile) {
+                std::cerr << "Pas de server associé au processus client\n";
+            }
+            int pid;
+            pidFile >> pid;
+            if (pid > 0) {
+                std::cout << "\nArrêt du serveur...\n";
+                kill(pid, SIGTERM);  // Envoie SIGTERM au serveur
+            }
+            exit(0);
+        }
+            
     }
     
     // Réinitialiser les entrées clavier

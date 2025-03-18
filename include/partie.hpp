@@ -11,6 +11,8 @@
 #include <sstream>  
 #include <atomic>
 #include <iomanip> 
+#include <fstream>
+#include <signal.h>
 
 #include "joueur.hpp" 
 #include "bouton.hpp"
