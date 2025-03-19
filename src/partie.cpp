@@ -37,9 +37,9 @@ Partie::Partie() {
         if (!regenTextures.loadFromFile("Image/base_vert.png")) {
             std::cerr << "Erreur : Impossible de charger " << "Image/base_vert.png" << std::endl;
         } else {
-            regen[i][0] = 1;
-            regen[i][1] = 500 + i*100;
-            regen[i][2] = 500;
+            regen[i][0] = 0; // y en a pas au debut
+            regen[i][1] = 0;
+            regen[i][2] = 0;
             sf::Sprite sprite;
             sprite.setTexture(regenTextures);
             sprite.setScale(0.1f, 0.1f);
@@ -384,7 +384,12 @@ void Partie::update() {
     }
 
     stat[joueur_courant][0] = joueur[joueur_courant].pV;
-    testGagnant();
+    if(client.mode == 1){
+        testGagnant();
+    }
+    else{
+        testEquipeGagnant();
+    }
 }
 
 void Partie::updateRegen(){
@@ -392,9 +397,9 @@ void Partie::updateRegen(){
     if(r > -1 ){
         regen[r][0] = 0; 
         utltiActive[joueur_courant] = 0;
-        std::cout<<r<<" touché"<<std::endl;
+        //std::cout<<r<<" touché"<<std::endl;
     }
-    std::cout<<"[0][0] "<<regen[0][0]<<std::endl;
+    //std::cout<<"[0][0] "<<regen[0][0]<<std::endl;
 }
 
 //cette fonction renvoie -1 si il y a plusieurs joueurs en jeu, l'indice du joueur gagnant sinon
@@ -417,6 +422,35 @@ int Partie::testGagnant(){
     }
 
     return -1;
+}
+
+int Partie::testEquipeGagnant(){
+
+    int gagnant = -1;
+    int compt1 = 0;
+    int compt2 = 0;
+
+    for(int i = 0; i < get_nbJoueur(); i++){
+        if(joueur[i].equipe == 1 && joueur[i].pV > 0){
+            compt1 ++;
+        }
+        if(joueur[i].equipe == 2 && joueur[i].pV > 0){
+            compt2 ++;
+        }
+    }
+
+    if(compt1 == 0){ //equipe 1 decime
+        gagnant = 2;
+        partieFinie = true;
+    }
+
+    if(compt2 == 0){
+        gagnant = 1;
+        partieFinie = true;
+    }
+
+    return gagnant;
+
 }
 
 void Partie::renderWindow(int multi) {
@@ -462,7 +496,13 @@ void Partie::renderWindow(int multi) {
     sf::Vector2f bottomLeftPosition(viewCenter.x - viewSize.x / 2 + 20, viewCenter.y + viewSize.y / 2 - 60);
     sf::Vector2f upperBottomLeftPosition(viewCenter.x - viewSize.x / 2 + 20, viewCenter.y + viewSize.y / 2 - 150);
 
-    int gagnant = testGagnant();
+    int gagnant;
+    if(client.mode == 2){
+        gagnant = testEquipeGagnant();
+    }
+    else{
+        gagnant = testGagnant();
+    }
 
     if(gagnant < 0){ //pas de gagnant 
 
@@ -473,8 +513,15 @@ void Partie::renderWindow(int multi) {
     
                 if(joueur[i].pV > 0){  //vivant
                     tank& mon_tank = *(joueur[i].Tank);
-    
-                    window->draw(mon_tank.getBaseSprite());
+                    
+                    if((joueur[i].equipe == joueur[joueur_courant].equipe) && (i != joueur_courant)){
+                        sf::Sprite coloredSprite = mon_tank.getBaseSprite();
+                        coloredSprite.setColor(sf::Color(100, 100, 255, 255)); // Bleu avec un effet doux
+                        window->draw(coloredSprite);
+                    }
+                    else{
+                        window->draw(mon_tank.getBaseSprite());
+                    }
                     window->draw(mon_tank.getTourelleSprite());
     
                     // OBUS
@@ -548,10 +595,13 @@ void Partie::renderWindow(int multi) {
                 window->draw(getpvSprite());
             }
 
+            //affichage regen
             for(int i = 0; i<4; i++){
-                regenSprites[i].setPosition(regen[i][1],regen[i][2]);
-                regenSprites[i].setScale(0.1f, 0.1f);
-                window->draw(regenSprites[i]);
+                if(regen[i][0] == 1){
+                    regenSprites[i].setPosition(regen[i][1],regen[i][2]);
+                    regenSprites[i].setScale(0.1f, 0.1f);
+                    window->draw(regenSprites[i]);
+                }
             }
  
             //Affichage tableau des scores
@@ -616,29 +666,55 @@ void Partie::renderWindow(int multi) {
             }
         }
     }
-    else if(gagnant == joueur_courant){  // si le joueur courant est le gagnant
+    else if(client.mode == 1){ //gagnant (ou pas) en MG
+        if(gagnant == joueur_courant){  // si le joueur courant est le gagnant
 
-        sf::Text victoryText;
-        victoryText.setFont(font);
-        victoryText.setString("VICTOIRE !!!");
-        victoryText.setCharacterSize(100); 
-        victoryText.setFillColor(sf::Color::Green); 
-        victoryText.setStyle(sf::Text::Bold);
-        
-        sf::FloatRect textRect = victoryText.getLocalBounds();
-        victoryText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
-        victoryText.setPosition(viewCenter); // Positionner le texte au centre de la vue
-
-        // Afficher le texte
-        window->draw(victoryText);
+            sf::Text victoryText;
+            victoryText.setFont(font);
+            victoryText.setString("VICTOIRE !!!");
+            victoryText.setCharacterSize(100); 
+            victoryText.setFillColor(sf::Color::Green); 
+            victoryText.setStyle(sf::Text::Bold);
+            
+            sf::FloatRect textRect = victoryText.getLocalBounds();
+            victoryText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            victoryText.setPosition(viewCenter); // Positionner le texte au centre de la vue
+    
+            // Afficher le texte
+            window->draw(victoryText);
+        }
+        else{ // si le joueur n'est pas gagnant
+            sf::FloatRect textRect = gameOverText.getLocalBounds();
+            gameOverText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            gameOverText.setPosition(viewCenter); // Positionner le texte au centre de la vue
+            window->draw(gameOverText);
+        }
     }
-    else{ // si le joueur n'est pas gagnant
-        sf::FloatRect textRect = gameOverText.getLocalBounds();
-        gameOverText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
-        gameOverText.setPosition(viewCenter); // Positionner le texte au centre de la vue
-        window->draw(gameOverText);
+    else{ //gagnant (ou pas) en MME
+        if(gagnant == joueur[joueur_courant].equipe){
+            sf::Text victoryText;
+            victoryText.setFont(font);
+            victoryText.setString("VICTOIRE DE L'EQUIPE !");
+            victoryText.setCharacterSize(100); 
+            victoryText.setFillColor(sf::Color::Green); 
+            victoryText.setStyle(sf::Text::Bold);
+            
+            sf::FloatRect textRect = victoryText.getLocalBounds();
+            victoryText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            victoryText.setPosition(viewCenter); // Positionner le texte au centre de la vue
 
+            // Afficher le texte
+            window->draw(victoryText);
+        }
+        else{ // si le joueur n'est pas gagnant
+            sf::FloatRect textRect = gameOverText.getLocalBounds();
+            gameOverText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            gameOverText.setPosition(viewCenter); // Positionner le texte au centre de la vue
+            window->draw(gameOverText);
+        }
     }
+    
+    
 
     //affichage souris
     cursorSprite.setPosition(
@@ -797,12 +873,24 @@ void Partie::recieveData(){
         std::memcpy(stat, buffer + 1, sizeof(stat)); // Désérialisation des données
     }
 
-    if(buffer[0] == 'R'){
-        sprintf(buffer, "R %d %d %d %d %d %d %d %d %d %d %d %d", regen[0][0], regen[0][1], regen[0][2], 
-            regen[1][0], regen[1][1], regen[1][2],
-            regen[2][0], regen[2][1], regen[2][2],
-            regen[3][0], regen[3][1], regen[3][2]);
-        std::cout<<buffer<<std::endl;
+    if (buffer[0] == 'R') {
+        int values[12];
+
+        int count = std::sscanf(buffer, "R %d %d %d %d %d %d %d %d %d %d %d %d", 
+                                &values[0], &values[1], &values[2], 
+                                &values[3], &values[4], &values[5], 
+                                &values[6], &values[7], &values[8], 
+                                &values[9], &values[10], &values[11]);
+
+        if (count == 12) { 
+            for (int i = 0, k = 0; i < 4; ++i) {
+                for (int j = 0; j < 3; ++j, ++k) {
+                    regen[i][j] = values[k];
+                }
+            }
+        } else {
+            std::cerr << " Erreur lors de la lecture des données de regen !" << std::endl;
+        }
     }
     
 }
@@ -939,6 +1027,16 @@ int Partie::waitOthertank(){
     }
 }
 
+void Partie::recup_equip(){
+    std::cout<<"RECCCCCCCUUUUUUP EQUIPE"<<std::endl;
+    if(client.mode == 2){
+        for(int i = 0; i < get_nbJoueur(); i++){
+            joueur[i].equipe = client.equipe[i];
+            std::cout<<joueur[i].equipe<<std::endl;
+        }
+    }
+}
+
 int Partie::multiJoueur() {
     joueur_courant = 0;
     client.test = TEST;
@@ -958,6 +1056,7 @@ int Partie::multiJoueur() {
     nbJoueur = client.nbJoueur;
     joueur_courant = client.joueur.id;
     initialiserpseudo();
+    recup_equip(); //ne le fais pas si MG
 
     if (window) {
         delete window;
@@ -1510,7 +1609,6 @@ void Partie::afficheTableauScore() {
 
     // Centrer la boîte dans la vue
     scoreBox.setPosition(viewCenter.x - scoreBoxSize.x / 2, viewCenter.y - scoreBoxSize.y / 2);
-
     window->draw(scoreBox); // Affichage de la boîte
 
     // Charger une police
@@ -1533,6 +1631,7 @@ void Partie::afficheTableauScore() {
     float startY = scoreBox.getPosition().y + 60;
     float columnSpacing = 150; // Espacement entre colonnes
     float rowSpacing = 40; // Espacement entre lignes
+    float currentY = startY;
 
     // Affichage de l'en-tête
     sf::Text headerText;
@@ -1540,23 +1639,41 @@ void Partie::afficheTableauScore() {
     headerText.setCharacterSize(22);
     headerText.setFillColor(sf::Color::White);
 
-    // Colonnes d'en-tête avec positionnement manuel
     std::vector<std::string> headers = {"Joueur", "Obus Tires", "Obus Touches", "Precision", "Degats"};
     for (size_t col = 0; col < headers.size(); col++) {
         headerText.setString(headers[col]);
-        headerText.setPosition(startX + col * columnSpacing, startY);
+        headerText.setPosition(startX + col * columnSpacing, currentY);
         window->draw(headerText);
     }
 
-    // Affichage des joueurs et statistiques
+    currentY += rowSpacing; // Descendre d'une ligne après l'en-tête
+
+    // Vecteurs pour stocker les joueurs de chaque équipe
+    std::vector<int> equipe1, equipe2;
     for (int i = 0; i < nbJoueur; i++) {
+        if (joueur[i].equipe == 1) {
+            equipe1.push_back(i);
+        } else {
+            equipe2.push_back(i);
+        }
+    }
+
+    // Afficher Equipe 1
+    if (!equipe1.empty()) {
+        sf::Text equipe1Text("Equipe 1", font, 22);
+        equipe1Text.setFillColor(sf::Color::White);
+        equipe1Text.setStyle(sf::Text::Bold);
+        equipe1Text.setPosition(startX, currentY);
+        window->draw(equipe1Text);
+        currentY += rowSpacing; // Espacement après "Equipe 1"
+    }
+
+    // Affichage des joueurs de l'équipe 1
+    for (int i : equipe1) {
         sf::Text playerText;
         playerText.setFont(font);
         playerText.setCharacterSize(20);
         playerText.setFillColor(sf::Color::White);
-
-        // Position de départ pour chaque ligne
-        float rowY = startY + (i + 1) * rowSpacing;
 
         // Convertir les valeurs en string
         std::ostringstream stat1Stream, stat2Stream, stat3Stream;
@@ -1581,12 +1698,66 @@ void Partie::afficheTableauScore() {
         // Affichage des statistiques du joueur
         for (size_t col = 0; col < playerStats.size(); col++) {
             playerText.setString(playerStats[col]);
-            playerText.setPosition(startX + col * columnSpacing, rowY);
+            playerText.setPosition(startX + col * columnSpacing, currentY);
             window->draw(playerText);
         }
+
+        currentY += rowSpacing; // Avancer à la ligne suivante
     }
 
+    // Ligne vide entre les équipes
+    if (!equipe1.empty() && !equipe2.empty()) {
+        currentY += rowSpacing;
+    }
+
+    // Afficher Equipe 2
+    if (!equipe2.empty()) {
+        sf::Text equipe2Text("Equipe 2", font, 22);
+        equipe2Text.setFillColor(sf::Color::White);
+        equipe2Text.setStyle(sf::Text::Bold);
+        equipe2Text.setPosition(startX, currentY);
+        window->draw(equipe2Text);
+        currentY += rowSpacing; // Espacement après "Equipe 2"
+    }
+
+    // Affichage des joueurs de l'équipe 2
+    for (int i : equipe2) {
+        sf::Text playerText;
+        playerText.setFont(font);
+        playerText.setCharacterSize(20);
+        playerText.setFillColor(sf::Color::White);
+
+        // Convertir les valeurs en string
+        std::ostringstream stat1Stream, stat2Stream, stat3Stream;
+        stat1Stream << std::fixed << std::setprecision(0) << stat[i][1];
+        stat2Stream << std::fixed << std::setprecision(0) << stat[i][2];
+        stat3Stream << std::fixed << std::setprecision(0) << stat[i][3];
+
+        std::string stat1Str = stat1Stream.str();
+        std::string stat2Str = stat2Stream.str();
+        std::string stat3Str = stat3Stream.str();
+
+        // Calcul de la précision
+        float precision = (stat[i][1] > 0) ? (stat[i][2] / stat[i][1]) * 100 : 0;
+        std::ostringstream precisionStream;
+        precisionStream << std::fixed << std::setprecision(2) << precision;
+        std::string precisionStr = precisionStream.str() + "%";
+
+        // Stocker les valeurs dans un vecteur pour affichage
+        std::vector<std::string> playerStats = {
+            joueur[i].pseudo, stat1Str, stat2Str, precisionStr, stat3Str};
+
+        // Affichage des statistiques du joueur
+        for (size_t col = 0; col < playerStats.size(); col++) {
+            playerText.setString(playerStats[col]);
+            playerText.setPosition(startX + col * columnSpacing, currentY);
+            window->draw(playerText);
+        }
+
+        currentY += rowSpacing; // Avancer à la ligne suivante
+    }
 }
+
 
 //renvoie le numéro du tank
 int Partie::selectionTank() {

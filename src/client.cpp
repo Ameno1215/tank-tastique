@@ -139,7 +139,7 @@ void Client::initconnexion() {
             std::cout << "Serveur prêt !\n";
             etatConnexion = 1;
     
-            // Récupération des pseudos
+            // Récupération des pseudos et des équipes si mode == 2
             int pseudoIndex = 0;  // Index pour remplir le tableau pseudos
             char* token = strtok(buffer, " ");  // Découper le message en tokens
     
@@ -147,23 +147,34 @@ void Client::initconnexion() {
             token = strtok(nullptr, " ");  // Passer au token suivant (nombre de joueurs)
             token = strtok(nullptr, " ");  // Passer au premier pseudo
     
-            // Remplir le tableau pseudos
             while (token != nullptr && pseudoIndex < 6) {
                 pseudos[pseudoIndex] = token;  // Stocker le pseudo dans le tableau
+                token = strtok(nullptr, " "); // Passer au token suivant (équipe si mode == 2)
+    
+                if (mode == 2 && token != nullptr) {
+                    if(pseudoIndex == joueur.id){
+                        joueur.equipe = atoi(token); //on stocke l'equipe du joueur
+                    }
+                    equipe[pseudoIndex] = atoi(token); // Stocker l'équipe du joueur
+                    token = strtok(nullptr, " "); // Passer au pseudo suivant
+                }
                 pseudoIndex++;
-                token = strtok(nullptr, " ");  // Passer au token suivant
             }
     
-            // Affichage des pseudos récupérés
+            // Affichage des pseudos et équipes récupérés
             std::cout << "Pseudos reçus :\n";
             for (int i = 0; i < pseudoIndex; ++i) {
-                std::cout << pseudos[i] << std::endl;
+                std::cout << pseudos[i];
+                if (mode == 2) {
+                    std::cout << " (Équipe " << equipe[i] << ")";
+                }
+                std::cout << std::endl;
             }
         } else {
             std::cerr << "❌ Erreur : format du message incorrect (" << buffer << ")" << std::endl;
         }
     } else {
-        std::cout << "Mauvais message du serveur !\n";
+        std::cout << "Mauvais message du serveur : "<<buffer<<std::endl;
     }
     
     // Fermeture du socket
