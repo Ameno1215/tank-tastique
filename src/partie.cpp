@@ -384,6 +384,14 @@ void Partie::update() {
     }
 
     stat[joueur_courant][0] = joueur[joueur_courant].pV;
+
+    if (joueur[joueur_courant].pV < 0) {
+        if (joueur_courant >= 0 && joueur_courant < static_cast<int>(hitboxes.size())) {
+            std::cout<<"hitbox supprimée"<<std::endl;
+            hitboxes[joueur_courant].clear(); // Marque comme "supprimée"
+        }
+    }
+
     if(client.mode == 1){
         testGagnant();
     }

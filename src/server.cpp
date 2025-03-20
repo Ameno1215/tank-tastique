@@ -621,7 +621,7 @@ void Server::processEvent(){
             compt++;
             partie.joueur_courant = i;
 
-            if(partie.joueur[i].Xpressed && partie.utltiActive[i] != 1){ //cas où X pressé et l'ulti n'est pas encore activé 
+            if(partie.joueur[i].Xpressed && partie.utltiActive[i] != 1 && partie.utltiActive[i] == 0){ //cas où X pressé et l'ulti n'est pas encore activé 
                 
                 chronoUlti[i][0] = timer;
                 chronoUlti[i][1] = timer + std::chrono::seconds(3);

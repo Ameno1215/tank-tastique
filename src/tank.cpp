@@ -159,9 +159,15 @@ void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::
     }
     for (size_t i = 0; i < hitboxes.size(); ++i) {
         if (i != static_cast<size_t>(id)) { // Conversion de `id` en `size_t`
-            collisionTank(tankHitbox, hitboxes[i]);
-            if (collision) { //collision à true/false
-                return;
+            if (hitboxes[i].empty()){
+                //sauter
+            } 
+            else{
+                collisionTank(tankHitbox, hitboxes[i]);
+                if (collision) { //collision à true/false
+                    std::cout<<"touché"<<std::endl;
+                    return;
+                }
             }
         }
     }
