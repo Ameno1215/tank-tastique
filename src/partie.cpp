@@ -514,16 +514,18 @@ void Partie::renderWindow(int multi) {
                 if(joueur[i].pV > 0){  //vivant
                     tank& mon_tank = *(joueur[i].Tank);
                     
-                    if((joueur[i].equipe == joueur[joueur_courant].equipe) && (i != joueur_courant)){
+                    if((joueur[i].equipe == joueur[joueur_courant].equipe) && (client.mode == 2)){
                         sf::Sprite coloredSprite = mon_tank.getBaseSprite();
                         coloredSprite.setColor(sf::Color(100, 100, 255, 255)); // Bleu avec un effet doux
                         window->draw(coloredSprite);
+                        sf::Sprite coloredTourelle = mon_tank.getTourelleSprite();
+                        coloredTourelle.setColor(sf::Color(100, 100, 255, 255)); // Bleu avec un effet doux
+                        window->draw(coloredTourelle);
                     }
                     else{
                         window->draw(mon_tank.getBaseSprite());
+                        window->draw(mon_tank.getTourelleSprite());
                     }
-                    window->draw(mon_tank.getTourelleSprite());
-    
                     // OBUS
                     if (multi) {
                         std::istringstream stream(get_buffer_missile());
@@ -606,7 +608,7 @@ void Partie::renderWindow(int multi) {
  
             //Affichage tableau des scores
             if(joueur[joueur_courant].Tabpressed){
-                afficheTableauScore();
+                afficheTableauScore(0);
             }
             
             if(visionnage){
@@ -635,7 +637,7 @@ void Partie::renderWindow(int multi) {
             if(boutonScore.clicked){
                 boutonReplay.setPosition(bottomLeftPosition);
                 boutonReplay.draw(*window);
-                afficheTableauScore();
+                afficheTableauScore(0);
             }
             else if(boutonReplay.clicked){
                 boutonScore.setPosition(upperBottomLeftPosition);
@@ -714,8 +716,6 @@ void Partie::renderWindow(int multi) {
         }
     }
     
-    
-
     //affichage souris
     cursorSprite.setPosition(
         static_cast<float>(joueur[joueur_courant].worldMousePos.x) - cursorSprite.getGlobalBounds().width / 2,
@@ -1162,13 +1162,97 @@ int Partie::multiJoueur() {
         recievethread.join();
         std::cout << "Thread terminé proprement." << std::endl;
     }
+    
+    finDePartie();
 
     if (window) {
         delete window;
         window = nullptr;
     }
-    
     std::cout << "Fenêtre supprimée proprement." << std::endl;
+    return 0;
+
+}
+
+int Partie::finDePartie() {
+    std::cout << "TEST1" << std::endl;
+    windowSize = window->getSize();
+    
+    if (!fondTexture.loadFromFile("Image/imagechargement.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+    }
+
+    sf::Sprite backgroundSprite(fondTexture);
+    backgroundSprite.setScale(
+        static_cast<float>(windowSize.x) / backgroundSprite.getGlobalBounds().width,
+        static_cast<float>(windowSize.y) / backgroundSprite.getGlobalBounds().height
+    );
+    std::cout << "TEST2" << std::endl;
+
+    sf::Font font;
+    if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
+        std::cerr << "Erreur : Impossible de charger la police.\n";
+    }
+    
+    float buttonWidth = 200.0f;
+    float buttonHeight = 50.0f;
+    float centerX = windowSize.x / 2.0f;
+    float centerY = windowSize.y / 2.0f;
+    
+    Bouton boutonLobby(centerX - buttonWidth - 50, centerY, buttonWidth, buttonHeight, "Retourner au Lobby", font);
+    Bouton boutonQuitter(centerX + 50, centerY, buttonWidth, buttonHeight, "Quitter", font);
+    std::cout << "TEST3" << std::endl;
+
+    sf::View defaultView = window->getDefaultView(); // Sauvegarde de la vue par défaut
+
+    sf::Event event;
+    while (window->isOpen()) {
+        window->setView(defaultView); // Réapplique la vue par défaut
+        
+        while (window->pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                return 0;
+            }
+            if (event.type == sf::Event::Resized) {
+                windowSize = window->getSize(); // Met à jour la taille de la fenêtre
+        
+                // Recalcule les positions des boutons
+                centerX = windowSize.x / 2.0f;
+                centerY = windowSize.y / 2.0f;
+                boutonLobby.setPosition(sf::Vector2f(centerX - buttonWidth - 50, centerY));
+                boutonQuitter.setPosition(sf::Vector2f(centerX + 50, centerY));
+
+            }
+            if (event.type == sf::Event::MouseButtonPressed) {
+                sf::Vector2f mousePos = window->mapPixelToCoords(sf::Mouse::getPosition(*window));
+                if (boutonLobby.isClicked(mousePos)) {
+                    return 1;
+                }
+                if (boutonQuitter.isClicked(mousePos)) {
+                    return 0;
+                }
+            }
+        }
+        
+        sf::Vector2f mousePos = window->mapPixelToCoords(sf::Mouse::getPosition(*window));
+        boutonLobby.update(mousePos);
+        boutonQuitter.update(mousePos);
+        
+        window->clear();
+        window->draw(backgroundSprite);
+        afficheTableauScore(1);
+        boutonLobby.draw(*window);
+        boutonQuitter.draw(*window);
+
+        // affichage souris
+        cursorSprite.setPosition(
+            static_cast<float>(mousePos.x) - cursorSprite.getGlobalBounds().width / 2,
+            static_cast<float>(mousePos.y) - cursorSprite.getGlobalBounds().height / 2
+        );
+
+        window->draw(cursorSprite);
+        window->display();
+    }
     
     return 0;
 }
@@ -1594,46 +1678,50 @@ void Partie::renderExplosion(int x, int y) {
 }
 
 
-void Partie::afficheTableauScore() {
+void Partie::afficheTableauScore(int fin) {
     if (!window) return;
 
-    // Récupérer le centre et la taille de la vue
-    sf::Vector2f viewCenter = view.getCenter();
+    sf::Vector2f positionCentre;
+    sf::Vector2u windowSize = window->getSize(); // Récupère la nouvelle taille de la fenêtre
+
+    if (fin == 0) {
+        positionCentre = view.getCenter(); // Centrage par rapport à la vue
+    } else {
+        positionCentre = sf::Vector2f(windowSize.x / 2.0f, windowSize.y / 2.0f); // Centrage par rapport à la fenêtre
+    }
 
     // Définir la taille de la boîte centrale
-    sf::Vector2f scoreBoxSize(800, 400); // Largeur x Hauteur
+    sf::Vector2f scoreBoxSize(800, 400);
     sf::RectangleShape scoreBox(scoreBoxSize);
-    scoreBox.setFillColor(sf::Color(0, 0, 0, 150)); // Fond noir semi-transparent
+    scoreBox.setFillColor(sf::Color(0, 0, 0, 150)); 
     scoreBox.setOutlineThickness(3);
     scoreBox.setOutlineColor(sf::Color::White);
 
-    // Centrer la boîte dans la vue
-    scoreBox.setPosition(viewCenter.x - scoreBoxSize.x / 2, viewCenter.y - scoreBoxSize.y / 2);
-    window->draw(scoreBox); // Affichage de la boîte
+    // Centrer la boîte dans la fenêtre
+    scoreBox.setPosition(positionCentre.x - scoreBoxSize.x / 2, positionCentre.y - scoreBoxSize.y / 2);
+    window->draw(scoreBox);
 
-    // Charger une police
+    // Recalcul dynamique des positions du texte
     static sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
         std::cerr << "Erreur: Impossible de charger la police!" << std::endl;
         return;
     }
 
-    // Afficher le titre
     sf::Text title("Tableau des Scores", font, 24);
     title.setFillColor(sf::Color::White);
     title.setStyle(sf::Text::Bold);
     title.setPosition(scoreBox.getPosition().x + (scoreBoxSize.x - title.getLocalBounds().width) / 2,
-                      scoreBox.getPosition().y + 20); // Titre centré horizontalement
+                      scoreBox.getPosition().y + 20);
     window->draw(title);
 
-    // Position de base
     float startX = scoreBox.getPosition().x + 20;
     float startY = scoreBox.getPosition().y + 60;
-    float columnSpacing = 150; // Espacement entre colonnes
-    float rowSpacing = 40; // Espacement entre lignes
+    float columnSpacing = scoreBoxSize.x / 5.0f; // Ajustement dynamique
+    float rowSpacing = 40; 
     float currentY = startY;
 
-    // Affichage de l'en-tête
+    // Affichage des en-têtes
     sf::Text headerText;
     headerText.setFont(font);
     headerText.setCharacterSize(22);
@@ -1646,116 +1734,85 @@ void Partie::afficheTableauScore() {
         window->draw(headerText);
     }
 
-    currentY += rowSpacing; // Descendre d'une ligne après l'en-tête
+    currentY += rowSpacing;
 
-    // Vecteurs pour stocker les joueurs de chaque équipe
-    std::vector<int> equipe1, equipe2;
-    for (int i = 0; i < nbJoueur; i++) {
-        if (joueur[i].equipe == 1) {
-            equipe1.push_back(i);
-        } else {
-            equipe2.push_back(i);
-        }
-    }
-
-    // Afficher Equipe 1
-    if (!equipe1.empty()) {
-        sf::Text equipe1Text("Equipe 1", font, 22);
-        equipe1Text.setFillColor(sf::Color::White);
-        equipe1Text.setStyle(sf::Text::Bold);
-        equipe1Text.setPosition(startX, currentY);
-        window->draw(equipe1Text);
-        currentY += rowSpacing; // Espacement après "Equipe 1"
-    }
-
-    // Affichage des joueurs de l'équipe 1
-    for (int i : equipe1) {
-        sf::Text playerText;
-        playerText.setFont(font);
-        playerText.setCharacterSize(20);
-        playerText.setFillColor(sf::Color::White);
-
-        // Convertir les valeurs en string
-        std::ostringstream stat1Stream, stat2Stream, stat3Stream;
-        stat1Stream << std::fixed << std::setprecision(0) << stat[i][1];
-        stat2Stream << std::fixed << std::setprecision(0) << stat[i][2];
-        stat3Stream << std::fixed << std::setprecision(0) << stat[i][3];
-
-        std::string stat1Str = stat1Stream.str();
-        std::string stat2Str = stat2Stream.str();
-        std::string stat3Str = stat3Stream.str();
-
-        // Calcul de la précision
-        float precision = (stat[i][1] > 0) ? (stat[i][2] / stat[i][1]) * 100 : 0;
-        std::ostringstream precisionStream;
-        precisionStream << std::fixed << std::setprecision(2) << precision;
-        std::string precisionStr = precisionStream.str() + "%";
-
-        // Stocker les valeurs dans un vecteur pour affichage
-        std::vector<std::string> playerStats = {
-            joueur[i].pseudo, stat1Str, stat2Str, precisionStr, stat3Str};
-
-        // Affichage des statistiques du joueur
-        for (size_t col = 0; col < playerStats.size(); col++) {
-            playerText.setString(playerStats[col]);
-            playerText.setPosition(startX + col * columnSpacing, currentY);
-            window->draw(playerText);
+    // Gestion du mode de jeu (équipe ou mêlée générale)
+    if (client.mode == 2) { // Mode par équipe
+        std::vector<int> equipe1, equipe2;
+        for (int i = 0; i < nbJoueur; i++) {
+            if (joueur[i].equipe == 1) {
+                equipe1.push_back(i);
+            } else {
+                equipe2.push_back(i);
+            }
         }
 
-        currentY += rowSpacing; // Avancer à la ligne suivante
-    }
+        if (!equipe1.empty()) {
+            sf::Text equipe1Text("Equipe 1", font, 22);
+            equipe1Text.setFillColor(sf::Color::White);
+            equipe1Text.setStyle(sf::Text::Bold);
+            equipe1Text.setPosition(startX, currentY);
+            window->draw(equipe1Text);
+            currentY += rowSpacing;
+        }
+        for (int i : equipe1) afficherStatJoueur(i, startX, columnSpacing, currentY, rowSpacing);
 
-    // Ligne vide entre les équipes
-    if (!equipe1.empty() && !equipe2.empty()) {
-        currentY += rowSpacing;
-    }
-
-    // Afficher Equipe 2
-    if (!equipe2.empty()) {
-        sf::Text equipe2Text("Equipe 2", font, 22);
-        equipe2Text.setFillColor(sf::Color::White);
-        equipe2Text.setStyle(sf::Text::Bold);
-        equipe2Text.setPosition(startX, currentY);
-        window->draw(equipe2Text);
-        currentY += rowSpacing; // Espacement après "Equipe 2"
-    }
-
-    // Affichage des joueurs de l'équipe 2
-    for (int i : equipe2) {
-        sf::Text playerText;
-        playerText.setFont(font);
-        playerText.setCharacterSize(20);
-        playerText.setFillColor(sf::Color::White);
-
-        // Convertir les valeurs en string
-        std::ostringstream stat1Stream, stat2Stream, stat3Stream;
-        stat1Stream << std::fixed << std::setprecision(0) << stat[i][1];
-        stat2Stream << std::fixed << std::setprecision(0) << stat[i][2];
-        stat3Stream << std::fixed << std::setprecision(0) << stat[i][3];
-
-        std::string stat1Str = stat1Stream.str();
-        std::string stat2Str = stat2Stream.str();
-        std::string stat3Str = stat3Stream.str();
-
-        // Calcul de la précision
-        float precision = (stat[i][1] > 0) ? (stat[i][2] / stat[i][1]) * 100 : 0;
-        std::ostringstream precisionStream;
-        precisionStream << std::fixed << std::setprecision(2) << precision;
-        std::string precisionStr = precisionStream.str() + "%";
-
-        // Stocker les valeurs dans un vecteur pour affichage
-        std::vector<std::string> playerStats = {
-            joueur[i].pseudo, stat1Str, stat2Str, precisionStr, stat3Str};
-
-        // Affichage des statistiques du joueur
-        for (size_t col = 0; col < playerStats.size(); col++) {
-            playerText.setString(playerStats[col]);
-            playerText.setPosition(startX + col * columnSpacing, currentY);
-            window->draw(playerText);
+        if (!equipe1.empty() && !equipe2.empty()) {
+            currentY += rowSpacing;
         }
 
-        currentY += rowSpacing; // Avancer à la ligne suivante
+        if (!equipe2.empty()) {
+            sf::Text equipe2Text("Equipe 2", font, 22);
+            equipe2Text.setFillColor(sf::Color::White);
+            equipe2Text.setStyle(sf::Text::Bold);
+            equipe2Text.setPosition(startX, currentY);
+            window->draw(equipe2Text);
+            currentY += rowSpacing;
+        }
+        for (int i : equipe2) afficherStatJoueur(i, startX, columnSpacing, currentY, rowSpacing);
+
+    } else { // Mode mêlée générale
+        for (int i = 0; i < nbJoueur; i++) {
+            afficherStatJoueur(i, startX, columnSpacing, currentY, rowSpacing);
+        }
     }
+}
+
+// Fonction auxiliaire pour afficher les stats d'un joueur
+void Partie::afficherStatJoueur(int i, float startX, float columnSpacing, float &currentY, float rowSpacing) {
+    sf::Text playerText;
+    playerText.setFont(font);
+    playerText.setCharacterSize(20);
+    playerText.setFillColor(sf::Color::White);
+
+    // Convertir les valeurs en string
+    std::ostringstream stat1Stream, stat2Stream, stat3Stream;
+    stat1Stream << std::fixed << std::setprecision(0) << stat[i][1];
+    stat2Stream << std::fixed << std::setprecision(0) << stat[i][2];
+    stat3Stream << std::fixed << std::setprecision(0) << stat[i][3];
+
+    std::string stat1Str = stat1Stream.str();
+    std::string stat2Str = stat2Stream.str();
+    std::string stat3Str = stat3Stream.str();
+
+    // Calcul de la précision
+    float precision = (stat[i][1] > 0) ? (stat[i][2] / stat[i][1]) * 100 : 0;
+    std::ostringstream precisionStream;
+    precisionStream << std::fixed << std::setprecision(2) << precision;
+    std::string precisionStr = precisionStream.str() + "%";
+
+    // Stocker les valeurs dans un vecteur pour affichage
+    std::vector<std::string> playerStats = {
+        joueur[i].pseudo, stat1Str, stat2Str, precisionStr, stat3Str};
+
+    // Affichage des statistiques du joueur
+    for (size_t col = 0; col < playerStats.size(); col++) {
+        playerText.setString(playerStats[col]);
+        playerText.setPosition(startX + col * columnSpacing, currentY);
+        window->draw(playerText);
+    }
+
+    currentY += rowSpacing; // Avancer à la ligne suivante
 }
 
 

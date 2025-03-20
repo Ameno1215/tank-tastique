@@ -29,7 +29,7 @@
 
 
 #define NB_JOUEUR 2       //defini le nb de joueur
-#define TEST 1         // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
+#define TEST 1      // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
 
 #define MULT_VITESSE_TANK 0.3
 #define MULT_CADENCE_TIR 1.5
@@ -63,7 +63,9 @@ class Partie {
 
         sf::Sprite& getpvSprite();
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
-        void afficheTableauScore();
+        void afficheTableauScore(int fin);
+        void afficherStatJoueur(int i, float startX, float columnSpacing, float &currentY, float rowSpacing);
+
         void renderExplosion(int x, int y);
 
         sf::Sprite testSprite;
@@ -127,6 +129,8 @@ class Partie {
         bool ultiClassicUse = false;
         void updateRegen();
         int regen[4][5];
+
+        int finDePartie();
 
         // Liste de positions spécifiques
         std::vector<sf::Vector2f> positions = {
