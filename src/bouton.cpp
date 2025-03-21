@@ -15,6 +15,11 @@ Bouton::Bouton(float x, float y, float width, float height, const std::string& l
     sf::FloatRect textBounds = text.getLocalBounds();
     text.setOrigin(textBounds.left + textBounds.width / 2, textBounds.top + textBounds.height / 2);
     text.setPosition(x + width / 2, y + height / 2);
+
+    // Par défaut, pas de contour
+    shape.setOutlineThickness(outlineThickness);  // L'épaisseur du contour est 0 au départ
+    shape.setOutlineColor(outlineColor);  // Pas de couleur de contour au départ
+
 }
 
 bool Bouton::isClicked(sf::Vector2f mousePos) {
@@ -57,4 +62,25 @@ void Bouton::setPosition(sf::Vector2f newPosition) {
 
 sf::FloatRect Bouton::getLocalBounds() const {
     return shape.getGlobalBounds();
+}
+
+std::string Bouton::getLabel(){
+    return text.getString();  
+}
+
+void Bouton::setOutlineColor(sf::Color color) {
+    outlineColor = color;
+    shape.setOutlineColor(outlineColor);
+}
+
+void Bouton::setOutlineThickness(float thickness) {
+    outlineThickness = thickness;
+    shape.setOutlineThickness(outlineThickness);
+}
+
+void Bouton::setOutline(sf::Color color, float thickness) {
+    outlineColor = color;
+    outlineThickness = thickness;
+    shape.setOutlineColor(outlineColor);
+    shape.setOutlineThickness(outlineThickness);
 }

@@ -146,7 +146,6 @@ void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::
             point.y < backgroundBounds.top || 
             point.y > backgroundBounds.top + backgroundBounds.height) {
             collision = true; // Le tank est sorti du background
-            printf("sorti du background\n");
             return;
         }
         else{
@@ -160,12 +159,29 @@ void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::
     }
     for (size_t i = 0; i < hitboxes.size(); ++i) {
         if (i != static_cast<size_t>(id)) { // Conversion de `id` en `size_t`
-            collisionTank(tankHitbox, hitboxes[i]);
-            if (collision) { //collision à true/false
-                return;
+            if (hitboxes[i].empty()){
+                //sauter
+            } 
+            else{
+                collisionTank(tankHitbox, hitboxes[i]);
+                if (collision) { //collision à true/false
+                    std::cout<<"touché"<<std::endl;
+                    return;
+                }
             }
         }
     }
+}
+
+int tank::updateRegenCollision(std::vector<sf::Sprite> regenSprite){
+    for (const auto& point : tankHitbox) {
+        for (int i=0;i<4;i++){
+            if (regenSprite[i].getGlobalBounds().contains(point)) {
+                return i;
+            }
+        }
+    }
+    return -1;
 }
 
 void tank::collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::vector<sf::Vector2f>& hitbox2){

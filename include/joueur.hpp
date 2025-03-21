@@ -43,6 +43,7 @@ public :
     sf::Vector2i mousePos;
     sf::Vector2f worldMousePos;
     bool vivant = true;
+    int equipe = 0;
 };
 
 #endif

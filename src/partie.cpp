@@ -34,10 +34,22 @@ Partie::Partie() {
         }
     }
 
-
-
+    for (int i = 0; i < 4; i++) {
+        if (!regenTextures.loadFromFile("Image/base_vert.png")) {
+            std::cerr << "Erreur : Impossible de charger " << "Image/base_vert.png" << std::endl;
+        } else {
+            regen[i][0] = 0; // y en a pas au debut
+            regen[i][1] = 0;
+            regen[i][2] = 0;
+            sf::Sprite sprite;
+            sprite.setTexture(regenTextures);
+            sprite.setScale(0.1f, 0.1f);
+            sf::Vector2f pos(regen[i][1], regen[i][2]);
+            sprite.setPosition(pos);
+            regenSprites.push_back(sprite);
+        }
+    }
     explosionSprite.setScale(4.0f,4.0f);
-
 }
 
 // Destructeur pour éviter les fuites mémoire
@@ -87,7 +99,11 @@ int Partie::get_nbJoueur(){
 }
 
 void Partie::setBufferMissile(const std::string& newBuffer) {
-        buffer_missile = newBuffer;
+    buffer_missile = newBuffer;
+}
+
+void Partie::set_nbJoueur(int i){
+    nbJoueur = i;
 }
 
 void Partie::getEvent() { 
@@ -97,8 +113,21 @@ void Partie::getEvent() {
     sf::Event event;
     while (window->pollEvent(event)) {
 
-        if (event.type == sf::Event::Closed)
+        if (event.type == sf::Event::Closed){
             window->close();
+            std::ifstream pidFile("server.pid");
+            if (!pidFile) {
+                std::cerr << "Pas de server associé au processus client\n";
+            }
+            int pid;
+            pidFile >> pid;
+            if (pid > 0) {
+                std::cout << "\nArrêt du serveur...\n";
+                kill(pid, SIGTERM);  // Envoie SIGTERM au serveur
+            }
+            exit(0);
+        }
+            
     }
     
     // Réinitialiser les entrées clavier
@@ -157,7 +186,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, -2*speed);
         }
@@ -169,7 +198,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, 2*speed);
         }
@@ -181,7 +210,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, -1.2);
         }
@@ -192,7 +221,7 @@ void Partie::update() {
         joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
         hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
         joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-
+        updateRegen();
         if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, 1.2);
         }
@@ -268,7 +297,7 @@ void Partie::update() {
 
                 bool obusDestructeur = false; //variable pour savoir si l'obus a touché quelque chose
 
-                for(int i = 0; i<NB_JOUEUR; i++){
+                for(int i = 0; i<nbJoueur; i++){
                     if(joueur[i].pV>0){
                         tank& testank = *(joueur[i].Tank);
                         testank.updateHitbox(); //il faut update car si le tank adverse bouge pas c'est pas bon 
@@ -278,6 +307,7 @@ void Partie::update() {
                             listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, 1); //on rajoute une explosion à afficher
                             std::cout<<"x y ajouté en fin"<<std::endl;
                             if(joueur[i].pV > 0){
+                                //condition pour ulti bouclier
                                 if(joueur[i].Tank->get_type() ==  1 && utltiActive[i] == 1){
                                     if(joueur[i].Tank->ultiClassicUse == false){
                                         joueur[i].Tank->ultiClassicUse = true;
@@ -287,6 +317,7 @@ void Partie::update() {
                                         stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
                                     }
                                 }
+
                                 else{
                                     joueur[i].pV -= courant->obus.get_degat();
                                     stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
@@ -297,7 +328,15 @@ void Partie::update() {
                                 joueur[i].pV = -1;
                                 listexplosion.ajouterFin(joueur[i].Tank->getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank->getBaseSprite().getPosition().x, joueur[i].Tank->getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank->getBaseSprite().getPosition().y, 0, 2);
                                 joueur[i].vivant = false;
+                                
+                                std::cout<<"teessssstttt"<<std::endl;
+                                if (i >= 0 && i < static_cast<int>(hitboxes.size())) {
+                                    std::cout<<"hitbox supprimée"<<std::endl;
+                                    hitboxes[i].clear(); // Marque comme "supprimée"
+                                }
+                            
                             }
+                            
                             obusDestructeur = true;
                             courant->obus.set_status(0); // destruction obus
                             Noeud * temp = courant->suivant;
@@ -354,7 +393,23 @@ void Partie::update() {
     }
 
     stat[joueur_courant][0] = joueur[joueur_courant].pV;
-    testGagnant();
+
+    if(client.mode == 1){
+        testGagnant();
+    }
+    else{
+        testEquipeGagnant();
+    }
+}
+
+void Partie::updateRegen(){
+    int r = joueur[joueur_courant].Tank->updateRegenCollision(regenSprites);
+    if(r > -1 ){
+        regen[r][0] = 0; 
+        utltiActive[joueur_courant] = 0;
+        //std::cout<<r<<" touché"<<std::endl;
+    }
+    //std::cout<<"[0][0] "<<regen[0][0]<<std::endl;
 }
 
 //cette fonction renvoie -1 si il y a plusieurs joueurs en jeu, l'indice du joueur gagnant sinon
@@ -362,7 +417,7 @@ int Partie::testGagnant(){
     int compt = 0;
     int joueurVivant;
 
-    for(int i = 0; i<NB_JOUEUR; i++){
+    for(int i = 0; i<nbJoueur; i++){
         
         if(joueur[i].pV > 0){
             compt ++;
@@ -377,6 +432,35 @@ int Partie::testGagnant(){
     }
 
     return -1;
+}
+
+int Partie::testEquipeGagnant(){
+
+    int gagnant = -1;
+    int compt1 = 0;
+    int compt2 = 0;
+
+    for(int i = 0; i < get_nbJoueur(); i++){
+        if(joueur[i].equipe == 1 && joueur[i].pV > 0){
+            compt1 ++;
+        }
+        if(joueur[i].equipe == 2 && joueur[i].pV > 0){
+            compt2 ++;
+        }
+    }
+
+    if(compt1 == 0){ //equipe 1 decime
+        gagnant = 2;
+        partieFinie = true;
+    }
+
+    if(compt2 == 0){
+        gagnant = 1;
+        partieFinie = true;
+    }
+
+    return gagnant;
+
 }
 
 void Partie::renderWindow(int multi) {
@@ -422,7 +506,13 @@ void Partie::renderWindow(int multi) {
     sf::Vector2f bottomLeftPosition(viewCenter.x - viewSize.x / 2 + 20, viewCenter.y + viewSize.y / 2 - 60);
     sf::Vector2f upperBottomLeftPosition(viewCenter.x - viewSize.x / 2 + 20, viewCenter.y + viewSize.y / 2 - 150);
 
-    int gagnant = testGagnant();
+    int gagnant;
+    if(client.mode == 2){
+        gagnant = testEquipeGagnant();
+    }
+    else{
+        gagnant = testGagnant();
+    }
 
     if(gagnant < 0){ //pas de gagnant 
 
@@ -433,10 +523,19 @@ void Partie::renderWindow(int multi) {
     
                 if(joueur[i].pV > 0){  //vivant
                     tank& mon_tank = *(joueur[i].Tank);
-    
-                    window->draw(mon_tank.getBaseSprite());
-                    window->draw(mon_tank.getTourelleSprite());
-    
+                    
+                    if((joueur[i].equipe == joueur[joueur_courant].equipe) && (client.mode == 2)){
+                        sf::Sprite coloredSprite = mon_tank.getBaseSprite();
+                        coloredSprite.setColor(sf::Color(100, 100, 255, 255)); // Bleu avec un effet doux
+                        window->draw(coloredSprite);
+                        sf::Sprite coloredTourelle = mon_tank.getTourelleSprite();
+                        coloredTourelle.setColor(sf::Color(100, 100, 255, 255)); // Bleu avec un effet doux
+                        window->draw(coloredTourelle);
+                    }
+                    else{
+                        window->draw(mon_tank.getBaseSprite());
+                        window->draw(mon_tank.getTourelleSprite());
+                    }
                     // OBUS
                     if (multi) {
                         std::istringstream stream(get_buffer_missile());
@@ -507,10 +606,19 @@ void Partie::renderWindow(int multi) {
                 getpvSprite().setPosition(pvBasePosition.x + i * 40, pvBasePosition.y);
                 window->draw(getpvSprite());
             }
+
+            //affichage regen
+            for(int i = 0; i<4; i++){
+                if(regen[i][0] == 1){
+                    regenSprites[i].setPosition(regen[i][1],regen[i][2]);
+                    regenSprites[i].setScale(0.1f, 0.1f);
+                    window->draw(regenSprites[i]);
+                }
+            }
  
             //Affichage tableau des scores
             if(joueur[joueur_courant].Tabpressed){
-                afficheTableauScore();
+                afficheTableauScore(0);
             }
             
             if(visionnage){
@@ -539,7 +647,7 @@ void Partie::renderWindow(int multi) {
             if(boutonScore.clicked){
                 boutonReplay.setPosition(bottomLeftPosition);
                 boutonReplay.draw(*window);
-                afficheTableauScore();
+                afficheTableauScore(0);
             }
             else if(boutonReplay.clicked){
                 boutonScore.setPosition(upperBottomLeftPosition);
@@ -570,30 +678,54 @@ void Partie::renderWindow(int multi) {
             }
         }
     }
-    else if(gagnant == joueur_courant){  // si le joueur courant est le gagnant
+    else if(client.mode == 1){ //gagnant (ou pas) en MG
+        if(gagnant == joueur_courant){  // si le joueur courant est le gagnant
 
-        sf::Text victoryText;
-        victoryText.setFont(font);
-        victoryText.setString("VICTOIRE !!!");
-        victoryText.setCharacterSize(100); 
-        victoryText.setFillColor(sf::Color::Green); 
-        victoryText.setStyle(sf::Text::Bold);
-        
-        sf::FloatRect textRect = victoryText.getLocalBounds();
-        victoryText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
-        victoryText.setPosition(viewCenter); // Positionner le texte au centre de la vue
-
-        // Afficher le texte
-        window->draw(victoryText);
+            sf::Text victoryText;
+            victoryText.setFont(font);
+            victoryText.setString("VICTOIRE !!!");
+            victoryText.setCharacterSize(100); 
+            victoryText.setFillColor(sf::Color::Green); 
+            victoryText.setStyle(sf::Text::Bold);
+            
+            sf::FloatRect textRect = victoryText.getLocalBounds();
+            victoryText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            victoryText.setPosition(viewCenter); // Positionner le texte au centre de la vue
+    
+            // Afficher le texte
+            window->draw(victoryText);
+        }
+        else{ // si le joueur n'est pas gagnant
+            sf::FloatRect textRect = gameOverText.getLocalBounds();
+            gameOverText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            gameOverText.setPosition(viewCenter); // Positionner le texte au centre de la vue
+            window->draw(gameOverText);
+        }
     }
-    else{ // si le joueur n'est pas gagnant
-        sf::FloatRect textRect = gameOverText.getLocalBounds();
-        gameOverText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
-        gameOverText.setPosition(viewCenter); // Positionner le texte au centre de la vue
-        window->draw(gameOverText);
+    else{ //gagnant (ou pas) en MME
+        if(gagnant == joueur[joueur_courant].equipe){
+            sf::Text victoryText;
+            victoryText.setFont(font);
+            victoryText.setString("VICTOIRE DE L'EQUIPE !");
+            victoryText.setCharacterSize(100); 
+            victoryText.setFillColor(sf::Color::Green); 
+            victoryText.setStyle(sf::Text::Bold);
+            
+            sf::FloatRect textRect = victoryText.getLocalBounds();
+            victoryText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            victoryText.setPosition(viewCenter); // Positionner le texte au centre de la vue
 
+            // Afficher le texte
+            window->draw(victoryText);
+        }
+        else{ // si le joueur n'est pas gagnant
+            sf::FloatRect textRect = gameOverText.getLocalBounds();
+            gameOverText.setOrigin(textRect.width / 2, textRect.height / 2); // Définir l'origine au centre du texte
+            gameOverText.setPosition(viewCenter); // Positionner le texte au centre de la vue
+            window->draw(gameOverText);
+        }
     }
-
+    
     //affichage souris
     cursorSprite.setPosition(
         static_cast<float>(joueur[joueur_courant].worldMousePos.x) - cursorSprite.getGlobalBounds().width / 2,
@@ -722,7 +854,7 @@ void Partie::recieveData(){
         int pV[6];
         sscanf(buffer, "V %d %d %d %d %d %d", &pV[0], &pV[1], &pV[2], &pV[3], &pV[4], &pV[5]);
 
-        for(int i = 0; i< NB_JOUEUR; i++){
+        for(int i = 0; i< nbJoueur; i++){
             Joueur& joueuri = joueur[i];  
             joueuri.pV = pV[i];
         }
@@ -749,6 +881,26 @@ void Partie::recieveData(){
 
     if(buffer[0] == 'Z'){
         std::memcpy(stat, buffer + 1, sizeof(stat)); // Désérialisation des données
+    }
+
+    if (buffer[0] == 'R') {
+        int values[12];
+
+        int count = std::sscanf(buffer, "R %d %d %d %d %d %d %d %d %d %d %d %d", 
+                                &values[0], &values[1], &values[2], 
+                                &values[3], &values[4], &values[5], 
+                                &values[6], &values[7], &values[8], 
+                                &values[9], &values[10], &values[11]);
+
+        if (count == 12) { 
+            for (int i = 0, k = 0; i < 4; ++i) {
+                for (int j = 0; j < 3; ++j, ++k) {
+                    regen[i][j] = values[k];
+                }
+            }
+        } else {
+            std::cerr << " Erreur lors de la lecture des données de regen !" << std::endl;
+        }
     }
     
 }
@@ -885,6 +1037,16 @@ int Partie::waitOthertank(){
     }
 }
 
+void Partie::recup_equip(){
+    std::cout<<"RECCCCCCCUUUUUUP EQUIPE"<<std::endl;
+    if(client.mode == 2){
+        for(int i = 0; i < get_nbJoueur(); i++){
+            joueur[i].equipe = client.equipe[i];
+            std::cout<<joueur[i].equipe<<std::endl;
+        }
+    }
+}
+
 int Partie::multiJoueur() {
     joueur_courant = 0;
     client.test = TEST;
@@ -904,6 +1066,7 @@ int Partie::multiJoueur() {
     nbJoueur = client.nbJoueur;
     joueur_courant = client.joueur.id;
     initialiserpseudo();
+    recup_equip(); //ne le fais pas si MG
 
     if (window) {
         delete window;
@@ -1009,6 +1172,8 @@ int Partie::multiJoueur() {
         recievethread.join();
         std::cout << "Thread terminé proprement." << std::endl;
     }
+    
+    int fin = finDePartie();
 
     if (window) {
         delete window;
@@ -1016,6 +1181,87 @@ int Partie::multiJoueur() {
     }
     
     std::cout << "Fenêtre supprimée proprement." << std::endl;
+    return fin;
+
+}
+
+int Partie::finDePartie() {
+    windowSize = window->getSize();
+    
+    if (!fondTexture.loadFromFile("Image/imagechargement.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+    }
+
+    sf::Sprite backgroundSprite(fondTexture);
+    backgroundSprite.setScale(
+        static_cast<float>(windowSize.x) / backgroundSprite.getGlobalBounds().width,
+        static_cast<float>(windowSize.y) / backgroundSprite.getGlobalBounds().height
+    );
+
+    sf::Font font;
+    if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
+        std::cerr << "Erreur : Impossible de charger la police.\n";
+    }
+
+    float buttonWidth = 200.0f;
+    float buttonHeight = 50.0f;
+
+    defaultView = window->getDefaultView(); // Sauvegarde et application de la vue par défaut
+    window->setView(defaultView);
+
+    sf::Vector2f center = defaultView.getCenter(); // Utilisation correcte de la vue
+
+    float centerX = center.x;
+    float centerY = center.y * 0.85f;
+
+    Bouton boutonLobby(centerX - buttonWidth - 50, centerY, buttonWidth, buttonHeight, "Retourner au Lobby", font);
+    Bouton boutonQuitter(centerX + 50, centerY, buttonWidth, buttonHeight, "Quitter", font);
+
+    sf::Event event;
+    while (window->isOpen()) {
+        window->setView(defaultView); // Assurer que la vue reste correcte
+        center = defaultView.getCenter(); // Mettre à jour le centre
+
+        centerX = center.x;
+        centerY = center.y * 0.85f;
+        boutonLobby.setPosition(sf::Vector2f(centerX - buttonWidth - 50, centerY));
+        boutonQuitter.setPosition(sf::Vector2f(centerX + 50, centerY));
+
+        while (window->pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                return 0;
+            }
+            if (event.type == sf::Event::MouseButtonPressed) {
+                sf::Vector2f mousePos = window->mapPixelToCoords(sf::Mouse::getPosition(*window), defaultView);
+                if (boutonLobby.isClicked(mousePos)) {
+                    return 1;
+                }
+                if (boutonQuitter.isClicked(mousePos)) {
+                    return 0;
+                }
+            }
+        }
+
+        sf::Vector2f mousePos = window->mapPixelToCoords(sf::Mouse::getPosition(*window), defaultView);
+        boutonLobby.update(mousePos);
+        boutonQuitter.update(mousePos);
+
+        window->clear();
+        window->draw(backgroundSprite);
+        afficheTableauScore(1);
+
+        boutonLobby.draw(*window);
+        boutonQuitter.draw(*window);
+
+        // Affichage du curseur centré sur la souris
+        cursorSprite.setPosition(
+            mousePos.x - cursorSprite.getGlobalBounds().width / 2,
+            mousePos.y - cursorSprite.getGlobalBounds().height / 2
+        );
+
+        window->draw(cursorSprite);
+        window->display();
+    }
     
     return 0;
 }
@@ -1264,7 +1510,7 @@ void Partie::affichageAttenteTank() {
     //     static_cast<float>(window->getSize().y) / backgroundSprite.getGlobalBounds().height
     // );
 
-        // Fonction pour ajuster la taille du fond
+    // Fonction pour ajuster la taille du fond
     auto updateBackgroundSize = [&]() {
         backgroundSprite.setScale(
             static_cast<float>(window->getSize().x) / backgroundSprite.getLocalBounds().width,
@@ -1337,7 +1583,6 @@ void Partie::affichageAttenteTank() {
 
         sf::Time elapsed = clock.restart();
         float deltaTime = elapsed.asSeconds();
-
 
         textBounds = statusText.getLocalBounds();
         statusText.setPosition((window->getSize().x - textBounds.width) / 2.0f, 200);
@@ -1442,104 +1687,172 @@ void Partie::renderExplosion(int x, int y) {
 }
 
 
-void Partie::afficheTableauScore() {
+void Partie::afficheTableauScore(int fin) {
     if (!window) return;
 
-    // Récupérer le centre et la taille de la vue
-    sf::Vector2f viewCenter = view.getCenter();
+    sf::Vector2f positionCentre;
+
+    if (fin == 0) {
+        positionCentre = view.getCenter(); // Centrage par rapport à la vue
+    } else {
+        sf::Vector2f center = view.getCenter(); // Récupérer le centre
+        center.x = center.x / 2.0f;
+        center.y = center.y / 2.0f;
+        positionCentre = center; // Centrage par rapport à la fenêtre
+    }
 
     // Définir la taille de la boîte centrale
-    sf::Vector2f scoreBoxSize(800, 400); // Largeur x Hauteur
+    sf::Vector2f scoreBoxSize(800, 400);
     sf::RectangleShape scoreBox(scoreBoxSize);
-    scoreBox.setFillColor(sf::Color(0, 0, 0, 150)); // Fond noir semi-transparent
+    scoreBox.setFillColor(sf::Color(0, 0, 0, 150)); 
     scoreBox.setOutlineThickness(3);
     scoreBox.setOutlineColor(sf::Color::White);
 
-    // Centrer la boîte dans la vue
-    scoreBox.setPosition(viewCenter.x - scoreBoxSize.x / 2, viewCenter.y - scoreBoxSize.y / 2);
+    // Centrer la boîte dans la fenêtre
+    scoreBox.setPosition(positionCentre.x - scoreBoxSize.x / 2, positionCentre.y - scoreBoxSize.y / 2);
+    window->draw(scoreBox);
 
-    window->draw(scoreBox); // Affichage de la boîte
-
-    // Charger une police
+    // Recalcul dynamique des positions du texte
     static sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
         std::cerr << "Erreur: Impossible de charger la police!" << std::endl;
         return;
     }
 
-    // Afficher le titre
     sf::Text title("Tableau des Scores", font, 24);
     title.setFillColor(sf::Color::White);
     title.setStyle(sf::Text::Bold);
     title.setPosition(scoreBox.getPosition().x + (scoreBoxSize.x - title.getLocalBounds().width) / 2,
-                      scoreBox.getPosition().y + 20); // Titre centré horizontalement
+                      scoreBox.getPosition().y + 20);
     window->draw(title);
 
-    // Position de base
     float startX = scoreBox.getPosition().x + 20;
     float startY = scoreBox.getPosition().y + 60;
-    float columnSpacing = 150; // Espacement entre colonnes
-    float rowSpacing = 40; // Espacement entre lignes
+    float columnSpacing = scoreBoxSize.x / 5.0f; // Ajustement dynamique
+    float rowSpacing = 40; 
+    float currentY = startY;
 
-    // Affichage de l'en-tête
+    // Affichage des en-têtes
     sf::Text headerText;
     headerText.setFont(font);
     headerText.setCharacterSize(22);
     headerText.setFillColor(sf::Color::White);
 
-    // Colonnes d'en-tête avec positionnement manuel
     std::vector<std::string> headers = {"Joueur", "Obus Tires", "Obus Touches", "Precision", "Degats"};
     for (size_t col = 0; col < headers.size(); col++) {
         headerText.setString(headers[col]);
-        headerText.setPosition(startX + col * columnSpacing, startY);
+        headerText.setPosition(startX + col * columnSpacing, currentY);
         window->draw(headerText);
     }
 
-    // Affichage des joueurs et statistiques
-    for (int i = 0; i < nbJoueur; i++) {
-        sf::Text playerText;
-        playerText.setFont(font);
-        playerText.setCharacterSize(20);
-        playerText.setFillColor(sf::Color::White);
+    currentY += rowSpacing;
 
-        // Position de départ pour chaque ligne
-        float rowY = startY + (i + 1) * rowSpacing;
+    // Gestion du mode de jeu (équipe ou mêlée générale)
+    if (client.mode == 2) { // Mode par équipe
+        std::vector<int> equipe1, equipe2;
+        for (int i = 0; i < nbJoueur; i++) {
+            if (joueur[i].equipe == 1) {
+                equipe1.push_back(i);
+            } else {
+                equipe2.push_back(i);
+            }
+        }
 
-        // Convertir les valeurs en string
-        std::ostringstream stat1Stream, stat2Stream, stat3Stream;
-        stat1Stream << std::fixed << std::setprecision(0) << stat[i][1];
-        stat2Stream << std::fixed << std::setprecision(0) << stat[i][2];
-        stat3Stream << std::fixed << std::setprecision(0) << stat[i][3];
+        if (!equipe1.empty()) {
+            sf::Text equipe1Text("Equipe 1", font, 22);
+            equipe1Text.setFillColor(sf::Color::White);
+            equipe1Text.setStyle(sf::Text::Bold);
+            equipe1Text.setPosition(startX, currentY);
+            window->draw(equipe1Text);
+            currentY += rowSpacing;
+        }
+        for (int i : equipe1) afficherStatJoueur(i, startX, columnSpacing, currentY, rowSpacing);
 
-        std::string stat1Str = stat1Stream.str();
-        std::string stat2Str = stat2Stream.str();
-        std::string stat3Str = stat3Stream.str();
+        if (!equipe1.empty() && !equipe2.empty()) {
+            currentY += rowSpacing;
+        }
 
-        // Calcul de la précision
-        float precision = (stat[i][1] > 0) ? (stat[i][2] / stat[i][1]) * 100 : 0;
-        std::ostringstream precisionStream;
-        precisionStream << std::fixed << std::setprecision(2) << precision;
-        std::string precisionStr = precisionStream.str() + "%";
+        if (!equipe2.empty()) {
+            sf::Text equipe2Text("Equipe 2", font, 22);
+            equipe2Text.setFillColor(sf::Color::White);
+            equipe2Text.setStyle(sf::Text::Bold);
+            equipe2Text.setPosition(startX, currentY);
+            window->draw(equipe2Text);
+            currentY += rowSpacing;
+        }
+        for (int i : equipe2) afficherStatJoueur(i, startX, columnSpacing, currentY, rowSpacing);
 
-        // Stocker les valeurs dans un vecteur pour affichage
-        std::vector<std::string> playerStats = {
-            joueur[i].pseudo, stat1Str, stat2Str, precisionStr, stat3Str};
-
-        // Affichage des statistiques du joueur
-        for (size_t col = 0; col < playerStats.size(); col++) {
-            playerText.setString(playerStats[col]);
-            playerText.setPosition(startX + col * columnSpacing, rowY);
-            window->draw(playerText);
+    } else { // Mode mêlée générale
+        for (int i = 0; i < nbJoueur; i++) {
+            afficherStatJoueur(i, startX, columnSpacing, currentY, rowSpacing);
         }
     }
-
 }
+
+// Fonction auxiliaire pour afficher les stats d'un joueur
+void Partie::afficherStatJoueur(int i, float startX, float columnSpacing, float &currentY, float rowSpacing) {
+    sf::Text playerText;
+    playerText.setFont(font);
+    playerText.setCharacterSize(20);
+    playerText.setFillColor(sf::Color::White);
+
+    // Convertir les valeurs en string
+    std::ostringstream stat1Stream, stat2Stream, stat3Stream;
+    stat1Stream << std::fixed << std::setprecision(0) << stat[i][1];
+    stat2Stream << std::fixed << std::setprecision(0) << stat[i][2];
+    stat3Stream << std::fixed << std::setprecision(0) << stat[i][3];
+
+    std::string stat1Str = stat1Stream.str();
+    std::string stat2Str = stat2Stream.str();
+    std::string stat3Str = stat3Stream.str();
+
+    // Calcul de la précision
+    float precision = (stat[i][1] > 0) ? (stat[i][2] / stat[i][1]) * 100 : 0;
+    std::ostringstream precisionStream;
+    precisionStream << std::fixed << std::setprecision(2) << precision;
+    std::string precisionStr = precisionStream.str() + "%";
+
+    // Stocker les valeurs dans un vecteur pour affichage
+    std::vector<std::string> playerStats = {
+        joueur[i].pseudo, stat1Str, stat2Str, precisionStr, stat3Str};
+
+    // Affichage des statistiques du joueur
+    for (size_t col = 0; col < playerStats.size(); col++) {
+        playerText.setString(playerStats[col]);
+        playerText.setPosition(startX + col * columnSpacing, currentY);
+        window->draw(playerText);
+    }
+
+    currentY += rowSpacing; // Avancer à la ligne suivante
+}
+
 
 //renvoie le numéro du tank
 int Partie::selectionTank() {
 
     window->setMouseCursorVisible(false);
 
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("Image/imagechargement.png")) {
+        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+    }
+
+    
+    sf::Sprite backgroundSprite(backgroundTexture);
+    // backgroundSprite.setScale(
+    //     static_cast<float>(window->getSize().x) / backgroundSprite.getGlobalBounds().width,
+    //     static_cast<float>(window->getSize().y) / backgroundSprite.getGlobalBounds().height
+    // );
+
+    // Fonction pour ajuster la taille du fond
+    auto updateBackgroundSize = [&]() {
+        backgroundSprite.setScale(
+            static_cast<float>(window->getSize().x) / backgroundSprite.getLocalBounds().width,
+            static_cast<float>(window->getSize().y) / backgroundSprite.getLocalBounds().height
+        );
+    };
+
+    updateBackgroundSize(); // Appliquer le scale une fois
     sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
         std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
@@ -1605,6 +1918,7 @@ int Partie::selectionTank() {
     while (window->isOpen()) {
         sf::Event event;
         window->clear(sf::Color::Black);
+        window->draw(backgroundSprite);
         while (window->pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
                 window->close();
@@ -1641,16 +1955,31 @@ int Partie::selectionTank() {
         }
 
         for (size_t i = 0; i < tanks.size(); ++i) {
+
+            // Définir la taille de la boîte pour chaque tank
+            sf::Vector2f scoreBoxSize(305, 455); // Ajuste selon besoin
+            sf::RectangleShape scoreBox(scoreBoxSize);
+            scoreBox.setFillColor(sf::Color(0, 0, 0, 150));
+            scoreBox.setOutlineThickness(3);
+            scoreBox.setOutlineColor(sf::Color::White);
+        
+            // Positionner la boîte en fonction de la position du tank
+            int boxX = startX + (i % numColumns) * (tankWidth + paddingX) - 20;
+            int boxY = startY + (i / numColumns) * (tankHeight + paddingY + 150) - 20;
+            scoreBox.setPosition(boxX - 72, boxY + 25);
+        
+            window->draw(scoreBox); // Dessiner la boîte
+        
             window->draw(tankNames[i]);
             window->draw(sprites[i]);
             boutons[i].draw(*window);
-
+        
             std::vector<int> stats = {tanks[i].speed, tanks[i].fireRate, tanks[i].damage, tanks[i].range, tanks[i].bulletSpeed, tanks[i].health};
             std::vector<std::string> labels = {"Vitesse", "Cadence", "Degats", "Portee", "Vitesse Obus", "Vie"};
-
+        
             int statsStartX = startX + (i % numColumns) * (tankWidth + paddingX) + (tankWidth - 5 * (squareSize + 5)) / 2;
             int statsStartY = startY + (i / numColumns) * (tankHeight + paddingY + 150) + tankHeight + 20;
-
+        
             for (size_t j = 0; j < stats.size(); ++j) {
                 for (int k = 0; k < 5; ++k) {
                     sf::RectangleShape square(sf::Vector2f(squareSize, squareSize));
@@ -1661,11 +1990,12 @@ int Partie::selectionTank() {
                 sf::Text statLabel(labels[j], font, 15);
                 float textWidth = statLabel.getLocalBounds().width;
                 float totalWidth = 5 * (squareSize + 5);
-                statLabel.setPosition(statsStartX + (totalWidth / 2 - textWidth / 2) - 6 * squareSize , statsStartY + j * (squareSize + 5));
-                
+                statLabel.setPosition(statsStartX + (totalWidth / 2 - textWidth / 2) - 6 * squareSize, statsStartY + j * (squareSize + 5));
+        
                 window->draw(statLabel);
             }
         }
+        
 
         //affichage souris
         cursorSprite.setPosition(

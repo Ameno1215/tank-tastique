@@ -11,6 +11,8 @@
 #include <sstream>  
 #include <atomic>
 #include <iomanip> 
+#include <fstream>
+#include <signal.h>
 
 #include "joueur.hpp" 
 #include "bouton.hpp"
@@ -27,7 +29,7 @@
 
 
 #define NB_JOUEUR 2       //defini le nb de joueur
-#define TEST 0         // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
+#define TEST 1    // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
 
 #define MULT_VITESSE_TANK 0.3
 #define MULT_CADENCE_TIR 1.5
@@ -61,7 +63,9 @@ class Partie {
 
         sf::Sprite& getpvSprite();
         bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
-        void afficheTableauScore();
+        void afficheTableauScore(int fin);
+        void afficherStatJoueur(int i, float startX, float columnSpacing, float &currentY, float rowSpacing);
+
         void renderExplosion(int x, int y);
 
         sf::Sprite testSprite;
@@ -117,11 +121,18 @@ class Partie {
         std::vector<sf::Sprite> mursSprites;
         int laissePasserObus[20];              //mettre à un pour laisser passer les obus
 
+        std::vector<sf::Sprite> regenSprites;
+        sf::Texture regenTextures;
+
         sf::Sprite bonus;
         bool ultiClassicUse = false;
+        void updateRegen();
+        int regen[4][5];
+        sf::View defaultView;
 
+        int finDePartie();
 
-    // Liste de positions spécifiques
+        // Liste de positions spécifiques
         std::vector<sf::Vector2f> positions = {
             {245, 320}, {240, 170}, {710, 660}, {605, 1240}, {2, 1215},
             {1460,2370}, {2135, 2360}, {1780, 2}, {2810, 250}, {2805, 620}, {3162, 620},{3480, 620}
@@ -131,7 +142,12 @@ class Partie {
             {2.2f, 2.2f}, {2.2f, 2.2f}, {2.05f, 2.05f}, {2.f, 2.f}, {2.f,2.f},
             {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f},{2.f, 2.f}
         };
-        
+
+        void set_nbJoueur(int i);
+        void recup_equip();
+        int testEquipeGagnant();
+
+
     private:
         std::vector<sf::Texture> mursTextures;
         sf::RenderWindow* window = nullptr;  // Pointeur pour gérer l'initialisation tardive

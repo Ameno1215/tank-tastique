@@ -13,7 +13,9 @@
 #include <array> 
 #include <cstdlib> 
 #include <ctime> 
-
+#include <fstream>
+#include <algorithm>
+#include <random>
 
 #include "joueur.hpp"
 #include "partie.hpp"
@@ -27,8 +29,7 @@ std::atomic<bool> running(true);  // Permet d'arrêter le serveur proprement
 
 class Server {
 private:
-    
-    Partie partie;
+
     char buffer[100];
     int recieve_sockfd, send_sockfd = SERVER_PORT;
     int port_connexion;
@@ -53,6 +54,15 @@ private:
         {1800, 1700}, // Position en bas à droite
         {1000, 300}   // Position aléatoire en haut
     };
+
+    int spawnRegen[6][3] = {
+        {350, 1800, 0},  // Position en haut à gauche
+        {2100, 400, 0},  // Position en haut à droite
+        {1200, 1200, 0}, // Position centrale
+        {400, 900, 0},   // Position en bas à gauche
+        {1800, 1700, 0}, // Position en bas à droite
+        {1000, 300, 0}   // Position aléatoire en haut
+    };
     
     void majDead(char* buffer);
 
@@ -68,9 +78,12 @@ private:
     std::string extractPseudo(const std::string& message);
     std::chrono::time_point<std::chrono::steady_clock> timer;
     std::array<std::array<std::chrono::time_point<std::chrono::steady_clock>, 2>, 6> chronoUlti;        
+    void updateRegen();
+    std::chrono::time_point<std::chrono::steady_clock> timerRegen;
 
 
 public:
+    Partie partie;
     Server();
     ~Server();
     
@@ -78,6 +91,8 @@ public:
     void setTankRecu(int index, int value);
     int getTankRecu(int index);
     int getNbTanksRecus();
+    int nb_joueur = 0;
+    int mode = 1;  //par defaut en MG
 
 };
 

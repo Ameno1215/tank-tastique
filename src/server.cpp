@@ -65,7 +65,7 @@ void Server::connexion() {
     socklen_t send_len = sizeof(send_clientaddr);
     char buffer[BUFFER_SIZE];
     
-    while (NB_JOUEUR > partie.get_nbJoueur()) {
+    while (nb_joueur > partie.get_nbJoueur()) {
         port_connexion = SERVER_PORT; // Port par défaut : 3000
         createBindedSocket(); // Crée un socket lié au port 3000
     
@@ -92,16 +92,18 @@ void Server::connexion() {
             }
     
             // Attribution d'un nouveau port au client
-            int port_to_send = htons(3000 + partie.get_nbJoueur()); // Ports 3001 à 3007 pour 6 joueurs
+            int port_to_send = 3000 + partie.get_nbJoueur(); // Ports 3001 à 3007 pour 6 joueurs
+            char buffer_config[100];
+            sprintf(buffer_config,"C %d %d %d", port_to_send, mode, 1);
             createSocketConnexion(ipJoueur); // Crée un socket pour communiquer avec le client
     
             // Ajoute l'IP et le pseudo du joueur aux tableaux
             ip[partie.get_nbJoueur() - 1] = ipJoueur;
             pseudos[partie.get_nbJoueur() - 1] = pseudo;
-    
+            
             // Envoi du nouveau port au client
             std::this_thread::sleep_for(std::chrono::milliseconds(50)); // On attend que le client soit pret
-            sendto(send_sockfd, &port_to_send, sizeof(port_to_send), 0, (struct sockaddr*)&send_clientaddr, send_len);
+            sendto(send_sockfd, &buffer_config, sizeof(buffer_config), 0, (struct sockaddr*)&send_clientaddr, send_len);
             close(send_sockfd); // Ferme le socket après envoi
             std::cout << "Port " << port_to_send << " envoyé au client\n";
     
@@ -137,15 +139,44 @@ void Server::connexion() {
         }
     }
     
+    std::cout<<"tout le monde est la"<<std::endl;
     // Préparation du message "P" contenant le nombre de joueurs et leurs pseudos
     char msg_pret[256];
     sprintf(msg_pret, "P %d", partie.get_nbJoueur());
     
-    // Ajout des pseudos au message
-    for (int i = 0; i < NB_JOUEUR; ++i) {
-        if (!pseudos[i].empty()) {
-            strcat(msg_pret, " ");
-            strcat(msg_pret, pseudos[i].c_str());
+    // Ajout des pseudos (et equipe) au message
+    if (mode == 2) { // Mode par équipe
+
+        std::vector<int> equipe_assignment(nb_joueur); //vecteur dans lequel vont etre tirés les joueurs
+
+        // Remplir le vecteur avec le bon nombre de 1 et 2
+        int nb_equipe1 = (nb_joueur + 1) / 2; // Plus de joueurs dans équipe 1 si impair
+        for (int i = 0; i < nb_equipe1; ++i) equipe_assignment[i] = 1;
+        for (int i = nb_equipe1; i < nb_joueur; ++i) equipe_assignment[i] = 2;
+        
+        // Mélanger aléatoirement les affectations d'équipe
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(equipe_assignment.begin(), equipe_assignment.end(), g);
+        
+        for (int i = 0; i < nb_joueur; ++i) {
+            if (!pseudos[i].empty()) {
+                strcat(msg_pret, " ");
+                strcat(msg_pret, pseudos[i].c_str());
+                strcat(msg_pret, " ");
+                
+                char equipe_str[2];
+                sprintf(equipe_str, "%d", equipe_assignment[i]);
+                strcat(msg_pret, equipe_str);
+                partie.joueur[i].equipe = equipe_assignment[i];
+            }
+        }
+    } else {
+        for (int i = 0; i < nb_joueur; ++i) {
+            if (!pseudos[i].empty()) {
+                strcat(msg_pret, " ");
+                strcat(msg_pret, pseudos[i].c_str());
+            }
         }
     }
     
@@ -153,7 +184,7 @@ void Server::connexion() {
     printf("Message final : %s\n", msg_pret);
     
     // Envoi du message "P" à tous les joueurs
-    for (int i = 0; i < NB_JOUEUR; i++) {
+    for (int i = 0; i < nb_joueur; i++) {
         port_connexion = partie.joueur[i].port;
         createSocketConnexion(ip[i]); // Crée un socket pour communiquer avec le joueur
 
@@ -230,6 +261,7 @@ void Server::sendToClient(){
 
     char buffer_stat[1 + 6 * 4 * sizeof(float)];
     buffer_stat[0] = 'Z';
+
     // Sérialisation du tableau stat après le marqueur
     std::memcpy(buffer_stat + 1, partie.stat, sizeof(partie.stat));
 
@@ -237,9 +269,9 @@ void Server::sendToClient(){
     
     sprintf(buffer_pV, "V %d %d %d %d %d %d %d", partie.joueur[0].pV, partie.joueur[1].pV, partie.joueur[2].pV, partie.joueur[3].pV, partie.joueur[4].pV, partie.joueur[5].pV, 1);
 
-    for(int i = 0; i<NB_JOUEUR; i++){   
+    for(int i = 0; i<nb_joueur; i++){   
 
-        for(int j = 0; j<NB_JOUEUR; j++){
+        for(int j = 0; j<nb_joueur; j++){
 
             //recupère les tank/data processed de chaque joueur
             tank& tankjoueur = *(partie.joueur[j].Tank);
@@ -305,6 +337,27 @@ void Server::sendToClient(){
             perror("❌ Erreur lors de l'envoi des données du tableau stat");
         } else {
             //std::cout << "📨 Tableau stat envoyé avec succès (" << n << " octets)\n";
+        }
+
+        std::ostringstream oss;
+        oss << "R";
+        
+        for (int ligne = 0; ligne < 4; ++ligne) {
+            for (int col = 0; col < 3; ++col) {
+                oss << " " << partie.regen[ligne][col];
+            }
+        }
+
+        std::string buffer_regen = oss.str();
+        //std::cout << buffer_regen << std::endl;
+
+        n = sendto(sockfd[i], buffer_regen.c_str(), buffer_regen.size(), 0, 
+                            (const struct sockaddr*)&client[i], sizeof(client[i]));
+
+        if (n < 0) {
+            perror("Erreur lors de l'envoi des données des regens");
+        } else {
+            //std::cout << " Données des regens envoyées avec succès (" << n << " octets)\n";
         }
     }
     partie.listexplosion.maj();
@@ -490,7 +543,7 @@ void Server::init_send_fd(){
     int recup = send_sockfd;              //pour ne pas tout casse
     int port = port_connexion;
 
-    for(int i=0; i<NB_JOUEUR; i++){
+    for(int i=0; i<nb_joueur; i++){
         port_connexion = 3001 + i;
         createSocketConnexion(ip[i]);
         sockfd[i] = send_sockfd;
@@ -514,27 +567,84 @@ void Server::afficher_buffer(char tab[][5], int nb_lignes) {
     }
 }
 
+void Server::updateRegen(){
+
+    auto now = std::chrono::steady_clock::now();
+    if (std::chrono::duration_cast<std::chrono::seconds>(now - timerRegen) > std::chrono::seconds(10)) {
+        timerRegen = now; // Reset du timer de régénération
+
+        //mise à jour des spawn pris ou pas pris sinon peut spawner 2 fois au meme endroit
+        for(int i = 0; i<4; i++){ 
+            for(int j = 0; j<6; j++){
+                if((partie.regen[i][0] == 0) && (partie.regen[i][1] == spawnRegen[j][0]) && (partie.regen[i][2] == spawnRegen[j][1])){
+                    spawnRegen[j][2] = 0;
+                }
+            }
+        }
+
+        for(int i = 0; i<4; i++){
+
+            if(partie.regen[i][0] == 0){
+                bool dejapris = true;
+                int randomSpawn = 0;
+
+                while(dejapris){
+                    randomSpawn = rand() % 5; // Génère un nombre entre 1 et 6
+                    if(spawnRegen[randomSpawn][2] == 0){
+                        spawnRegen[randomSpawn][2] = 1;
+                        std::cout<<"nouveau spawn"<<std::endl;
+                        dejapris = false;
+                    }
+                }
+                std::cout << "10 secondes écoulées, régénération déclenchée en x: "<<spawnRegen[randomSpawn][0]<<" y: "<< spawnRegen[randomSpawn][1]<<std::endl;
+                partie.regen[i][0] = 1;
+                partie.regen[i][1] = spawnRegen[randomSpawn][0]; //nouveau x
+                partie.regen[i][2] = spawnRegen[randomSpawn][1]; // nouveau y
+                sf::Vector2f pos(partie.regen[i][1], partie.regen[i][2]);
+                partie.regenSprites[i].setPosition(pos);
+                break;
+            }
+        }
+
+    } 
+}
+
 void Server::processEvent(){
+
+    updateRegen();
+
     int compt = 0;
-    for(int i = 0; i<NB_JOUEUR; i++){
+    for(int i = 0; i<nb_joueur; i++){
+
         if(partie.joueur[i].pV>0){
+
             compt++;
             partie.joueur_courant = i;
-            if(partie.joueur[i].Xpressed && partie.utltiActive[i] != 1){ //cas où X pressé et l'ulti n'est pas encore activé 
+
+            if(partie.joueur[i].Xpressed && partie.utltiActive[i] != 1 && partie.utltiActive[i] == 0){ //cas où X pressé et l'ulti n'est pas encore activé 
+                
                 chronoUlti[i][0] = timer;
                 chronoUlti[i][1] = timer + std::chrono::seconds(3);
                 partie.utltiActive[i] = 1;
+                
                 if(partie.joueur[i].Tank->get_type() == 1){
                     partie.joueur[i].Tank->ultiClassicUse = false;
                 }
+
                 std::cout<<"activation de l'utli du joueur "<<i<<std::endl;
             }
+
             if(partie.utltiActive[i] == 1){ //cas où l'ulti actif
+                
                 if(timer > chronoUlti[i][1]){
+
                     partie.utltiActive[i] = -1;
                     std::cout<<"Desactivation de l'utli du joueur "<<i<<std::endl;
+
                 }
+                
             }
+
             partie.update();
         }
     }
@@ -543,7 +653,7 @@ void Server::processEvent(){
 void Server::majDead(char* buffer) {
     int offset = snprintf(buffer, 100, "D "); // Commence par "D "
 
-    for (int i = 0; i < NB_JOUEUR && offset < 100; i++) {
+    for (int i = 0; i < nb_joueur && offset < 100; i++) {
         offset += snprintf(buffer + offset, 100 - offset, "%d ", partie.joueur[i].vivant ? 1 : 0);
     }
 }
@@ -568,7 +678,9 @@ void Server::init_Spawn(){
 }
 
 void Server::startServer() {
-    
+
+    partie.client.mode = mode; 
+
     connexion();  // Lancement de la gestion des connexions
     init_send_fd();
     srand(time(0)); 
@@ -583,7 +695,7 @@ void Server::startServer() {
     partie.fondSprite.setScale(2, 2);
 
     // TYPE DE TANK BLANC POUR TOUS LES JOUEURS AU DEBUT
-    for (int i = 0; i < NB_JOUEUR; i ++) {
+    for (int i = 0; i < nb_joueur; i ++) {
         partie.joueur[i].setTank(std::make_unique<Tank_blanc>());
     }
     std::cout << "tank en début de partie sur le server\n";
@@ -645,9 +757,37 @@ std::string Server::extractPseudo(const std::string& message) {
     return "Batar"; // Retourne une chaîne vide si "N:  " n'est pas trouvé
 }
 
+int main(int argc, char* argv[]) {
+    std::ofstream pidFile("server.pid");
+    pidFile << getpid();  // Stocke son propre PID
+    pidFile.close();
 
-int main() {
     Server server;
+
+    // Vérifie s'il y a un argument et le convertit en entier
+    int nbJoueur = NB_JOUEUR; // Valeur par défaut
+    int m = -1;
+
+    if (argc > 2) {
+        nbJoueur = std::atoi(argv[1]);
+        m = std::atoi(argv[2]);
+        // Vérifie que nbJoueur est bien entre 0 et 6
+        if (nbJoueur < 0 || nbJoueur > 6) {
+            std::cerr << "Erreur: nbJoueur doit être compris entre 0 et 6." << std::endl;
+            return 1;  // Quitte le programme avec un code d'erreur
+        }
+        std::cout<<"le server est lancé pour "<<nbJoueur<<" joueurs"<<std::endl;
+
+        if(m != 1 && m != 2){
+            std::cerr << "Erreur: MODE doit être compris entre 1 et 2." << std::endl;
+            return 1;  // Quitte le programme avec un code d'erreur
+        }
+        std::cout<<"le server est lancé mode "<<m<<" (1 MG 2 MME)"<<std::endl;
+    }
+
+    server.mode = m;
+    server.nb_joueur = nbJoueur;
     server.startServer();
+    
     return 0;
 }

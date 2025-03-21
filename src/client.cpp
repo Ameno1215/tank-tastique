@@ -67,7 +67,6 @@ void Client::initconnexion() {
     printf("La fête commence !\n");
     
     etatConnexion = -1; // État : connexion avec le serveur en cours
-    int received_port;
     
     // Construction du message contenant l'IP locale et le pseudo
     std::string message = "C " + getLocalIPAddress() + " N: " + joueur.pseudo;
@@ -82,19 +81,24 @@ void Client::initconnexion() {
     
     num_port = SERVER_PORT; // Port par défaut : 3000
     createBindedSocket();
-    
+
+    char buffer_config[1024];
     // Réception du nouveau port attribué par le serveur
-    int n = recvfrom(recieve_sockfd, &received_port, sizeof(received_port), 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);
-    if (n < 0) {
+    int n = recvfrom(recieve_sockfd, buffer_config, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len); // Attente de la confirmation du serveur    if (n < 0) {
+    if(n<0){   
         perror("Erreur lors de la réception du port");
         close(recieve_sockfd);
         return;
     }
+    if(buffer_config[0]=='C'){
+        sscanf(buffer_config, "C %d %d",&num_port, &mode);
+        std::cout<<buffer_config<<std::endl;
+        std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
+    }
+    else{
+        std::cout<<"buffer config mal receptionné"<<std::endl;
+    }
     close(recieve_sockfd);
-    
-    // Conversion du port reçu en format hôte
-    num_port = ntohs(received_port);
-    std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
     
     // Attribution de l'ID du joueur en fonction du port
     joueur.id = num_port - 3001;
@@ -135,7 +139,7 @@ void Client::initconnexion() {
             std::cout << "Serveur prêt !\n";
             etatConnexion = 1;
     
-            // Récupération des pseudos
+            // Récupération des pseudos et des équipes si mode == 2
             int pseudoIndex = 0;  // Index pour remplir le tableau pseudos
             char* token = strtok(buffer, " ");  // Découper le message en tokens
     
@@ -143,23 +147,34 @@ void Client::initconnexion() {
             token = strtok(nullptr, " ");  // Passer au token suivant (nombre de joueurs)
             token = strtok(nullptr, " ");  // Passer au premier pseudo
     
-            // Remplir le tableau pseudos
             while (token != nullptr && pseudoIndex < 6) {
                 pseudos[pseudoIndex] = token;  // Stocker le pseudo dans le tableau
+                token = strtok(nullptr, " "); // Passer au token suivant (équipe si mode == 2)
+    
+                if (mode == 2 && token != nullptr) {
+                    if(pseudoIndex == joueur.id){
+                        joueur.equipe = atoi(token); //on stocke l'equipe du joueur
+                    }
+                    equipe[pseudoIndex] = atoi(token); // Stocker l'équipe du joueur
+                    token = strtok(nullptr, " "); // Passer au pseudo suivant
+                }
                 pseudoIndex++;
-                token = strtok(nullptr, " ");  // Passer au token suivant
             }
     
-            // Affichage des pseudos récupérés
+            // Affichage des pseudos et équipes récupérés
             std::cout << "Pseudos reçus :\n";
             for (int i = 0; i < pseudoIndex; ++i) {
-                std::cout << pseudos[i] << std::endl;
+                std::cout << pseudos[i];
+                if (mode == 2) {
+                    std::cout << " (Équipe " << equipe[i] << ")";
+                }
+                std::cout << std::endl;
             }
         } else {
             std::cerr << "❌ Erreur : format du message incorrect (" << buffer << ")" << std::endl;
         }
     } else {
-        std::cout << "Mauvais message du serveur !\n";
+        std::cout << "Mauvais message du serveur : "<<buffer<<std::endl;
     }
     
     // Fermeture du socket
