@@ -504,7 +504,7 @@ void Server::init_choix_tank(){
             // partie.affiche_type_tank();
         } 
         else{
-            std::cout<<"message bizarre recu pour le choix des tank"<<std::endl;
+            std::cout<<"message bizarre recu pour le choix des tank"<<buffer<<std::endl;
         }
         // Affichage des données reçues pour débogage
         /*std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
@@ -664,17 +664,19 @@ void Server::init_Spawn(){
         int dejapris = true;
         int random_spawn;
         while(dejapris){
-            random_spawn = rand() % 5; // Génère un nombre entre 1 et 6
+            random_spawn = rand() % 6; 
             if(tab_deja[random_spawn]==0){
                 tab_deja[random_spawn] = 1;
                 dejapris = false;
             }
+            std::cout<<random_spawn<<std::endl;
         }
         partie.joueur[i].Tank->set_x(spawn[random_spawn][0]);
         partie.joueur[i].Tank->set_y(spawn[random_spawn][1]);
         partie.joueur[i].Tank->updateHitbox(); //on met à jour la hitBox
         partie.hitboxes.push_back(partie.joueur[i].Tank->tankHitbox);
     }
+    std::cout<<"INITSPAWN FINI"<<std::endl;
 }
 
 void Server::startServer() {

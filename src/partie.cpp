@@ -955,56 +955,8 @@ void Partie::recieveTank(){
         }
     }
     else{
-        std::cout<<"message pour connaitre tank des autres joueurs impossible à lire\n"; 
+        std::cout<<"message pour connaitre tank des autres joueurs impossible à lire : "<<buffer<<std::endl; 
     }
-}
-
-
-int Partie::Solo() {
-    // Libérer la mémoire si une fenêtre existait déjà
-    if (window) {
-        delete window;
-    }
-    
-    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "SOLO");
-    windowSize = window->getSize();
-    window->setMouseCursorVisible(true);
-    
-    joueur_courant = 0;
-    nbJoueur =  1;
-
-    if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
-        std::cerr << "Erreur lors du chargement du curseur !\n";
-        return -1;
-    }
-
-    selectionTank();
-
-    window->clear();
-
-    window->setMouseCursorVisible(false);
-
-    cursorSprite.setTexture(textureCurseur);
-    cursorSprite.setScale(0.12f, 0.12f);
-
-    sf::Texture texturetest;
-    texturetest.loadFromFile("Image/classique/base_classique.png");
-    sf::Sprite cursorSprite(textureCurseur);
-    testSprite.setTexture(texturetest);
-    cursorSprite.setScale(0.08f, 0.08f);
-    testSprite.setScale(0.08f, 0.08f);
-    testSprite.setPosition(300, 300);
-
-    // Boucle de jeu
-    while (window->isOpen()) {
-        getEvent();
-        update();
-        renderWindow(0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(8));
-
-    }
-
-    return 0;
 }
 
 void Partie::initialiserpseudo(){
@@ -1038,7 +990,6 @@ int Partie::waitOthertank(){
 }
 
 void Partie::recup_equip(){
-    std::cout<<"RECCCCCCCUUUUUUP EQUIPE"<<std::endl;
     if(client.mode == 2){
         for(int i = 0; i < get_nbJoueur(); i++){
             joueur[i].equipe = client.equipe[i];
@@ -1059,6 +1010,9 @@ int Partie::multiJoueur() {
         std::cout<<"arret du thread de connexion"<<std::endl;
         if(client.get_etatConnexion() == 1){
             std::cout<<"le client a eu le feu vert"<<std::endl;
+        }
+        else{
+            std::cout<<"le client N'a PAS eu le feu vert"<<std::endl;
         }
         connexionThread.join();
     }
@@ -1114,7 +1068,9 @@ int Partie::multiJoueur() {
     // sélection par le joueur;
     choix_tank = selectionTank(); //recupération choix type de tank via window sfml
     sendTank(choix_tank); //envoie du choix de tank au server
-    
+    std::cout<<"tank envoyé"<<std::endl;
+
+    nbchoix = - 1; //pour etre sur
     std::thread recieveTankChoix([this]() { // thread qui tourne en parallèle de l'affichage d'attente des autre joueurs
         while(nbchoix != nbJoueur){         // tant que pas tout le monde a fait son choix 
             nbchoix = waitOthertank();
@@ -1505,7 +1461,6 @@ void Partie::affichageConnexion() {
 
         window->display();
     }
-    std::cout<<"je suis passé chez sosh"<<std::endl;
 }
 
 

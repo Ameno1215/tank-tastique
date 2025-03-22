@@ -163,7 +163,7 @@ class Partie {
         bool serverPret;
 
         int go = 0;
-        int nbchoix;
+        int nbchoix = -1;
         int coeurAjouter = 0;
 
         bool explosionActive = false;
