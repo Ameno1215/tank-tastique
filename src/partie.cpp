@@ -1186,6 +1186,12 @@ int Partie::multiJoueur() {
 }
 
 int Partie::finDePartie() {
+
+    if (window) {  
+        delete window;
+    }
+
+    window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "Tableau des scores");
     windowSize = window->getSize();
     
     if (!fondTexture.loadFromFile("Image/imagechargement.png")) {
@@ -1206,16 +1212,23 @@ int Partie::finDePartie() {
     float buttonWidth = 200.0f;
     float buttonHeight = 50.0f;
 
-    defaultView = window->getDefaultView(); // Sauvegarde et application de la vue par défaut
+    // Récupérer la vue par défaut
+    defaultView = window->getDefaultView();
+
+    // Centrer la vue sur le centre de la fenêtre
+    sf::Vector2u windowSize = window->getSize();
+    defaultView.setCenter(windowSize.x / 2.0f, windowSize.y / 2.0f);
+
+    // Appliquer la vue
     window->setView(defaultView);
 
-    sf::Vector2f center = defaultView.getCenter(); // Utilisation correcte de la vue
-
+    // Utiliser la vue pour positionner des éléments
+    sf::Vector2f center = defaultView.getCenter();
     float centerX = center.x;
-    float centerY = center.y * 0.85f;
+    float centerY = center.y;
 
-    Bouton boutonLobby(centerX - buttonWidth - 50, centerY, buttonWidth, buttonHeight, "Retourner au Lobby", font);
-    Bouton boutonQuitter(centerX + 50, centerY, buttonWidth, buttonHeight, "Quitter", font);
+    Bouton boutonLobby(centerX - buttonWidth - 50, centerY * 1.5, buttonWidth, buttonHeight, "Retourner au Lobby", font);
+    Bouton boutonQuitter(centerX + 50, centerY * 1.5, buttonWidth, buttonHeight, "Quitter", font);
 
     sf::Event event;
     while (window->isOpen()) {
@@ -1223,9 +1236,9 @@ int Partie::finDePartie() {
         center = defaultView.getCenter(); // Mettre à jour le centre
 
         centerX = center.x;
-        centerY = center.y * 0.85f;
-        boutonLobby.setPosition(sf::Vector2f(centerX - buttonWidth - 50, centerY));
-        boutonQuitter.setPosition(sf::Vector2f(centerX + 50, centerY));
+        centerY = center.y;
+        boutonLobby.setPosition(sf::Vector2f(centerX - buttonWidth - 50, centerY * 1.5));
+        boutonQuitter.setPosition(sf::Vector2f(centerX + 50, centerY * 1.5));
 
         while (window->pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -1695,19 +1708,26 @@ void Partie::afficheTableauScore(int fin) {
     if (fin == 0) {
         positionCentre = view.getCenter(); // Centrage par rapport à la vue
     } else {
-        sf::Vector2f center = view.getCenter(); // Récupérer le centre
-        center.x = center.x / 2.0f;
-        center.y = center.y / 2.0f;
+        sf::Vector2f center (950, 300); // Centre de la fenêtre
         positionCentre = center; // Centrage par rapport à la fenêtre
     }
 
-    // Définir la taille de la boîte centrale
-    sf::Vector2f scoreBoxSize(800, 400);
+    float scaleFactor = (fin == 1) ? 1.375f : 1.0f;
+
+    // Déclarer scoreBoxSize en dehors des blocs if/else
+    sf::Vector2f scoreBoxSize;
+
+    // Définir la taille de la boîte centrale en fonction de la valeur de 'fin'
+    if (fin == 0) {
+        scoreBoxSize = sf::Vector2f(800, 400); // Taille pour fin == 0
+    } else {
+        scoreBoxSize = sf::Vector2f(1100, 550); // Taille pour fin != 0
+    }
     sf::RectangleShape scoreBox(scoreBoxSize);
     scoreBox.setFillColor(sf::Color(0, 0, 0, 150)); 
-    scoreBox.setOutlineThickness(3);
+    scoreBox.setOutlineThickness(3*scaleFactor);
     scoreBox.setOutlineColor(sf::Color::White);
-
+    
     // Centrer la boîte dans la fenêtre
     scoreBox.setPosition(positionCentre.x - scoreBoxSize.x / 2, positionCentre.y - scoreBoxSize.y / 2);
     window->draw(scoreBox);
@@ -1719,7 +1739,7 @@ void Partie::afficheTableauScore(int fin) {
         return;
     }
 
-    sf::Text title("Tableau des Scores", font, 24);
+    sf::Text title("Tableau des Scores", font, 24*scaleFactor);
     title.setFillColor(sf::Color::White);
     title.setStyle(sf::Text::Bold);
     title.setPosition(scoreBox.getPosition().x + (scoreBoxSize.x - title.getLocalBounds().width) / 2,

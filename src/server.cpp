@@ -698,7 +698,7 @@ void Server::startServer() {
     for (int i = 0; i < nb_joueur; i ++) {
         partie.joueur[i].setTank(std::make_unique<Tank_blanc>());
     }
-    std::cout << "tank en début de partie sur le server\n";
+    
     partie.affiche_type_tank();
 
     init_choix_tank();
@@ -717,6 +717,8 @@ void Server::startServer() {
         chronoUlti[i][0] = timer;
         chronoUlti[i][1] = timer;
     }
+
+    std::cout << "tank en début de partie sur le server\n";
 
     // Boucle principale du serveur
     while (running) {
