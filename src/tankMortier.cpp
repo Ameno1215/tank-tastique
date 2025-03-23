@@ -19,8 +19,8 @@ Tank_mortier::Tank_mortier() : tank() {
     spriteBase.setScale(0.15f, 0.15f);
     spriteTourelle.setScale(0.15f, 0.15f);
 
-    getSpriteUlti().setScale(0.05f, 0.05f);
-    getSpriteUltiPret().setScale(0.05f, 0.05f);
+    getSpriteUlti().setScale(0.125f, 0.125f);
+    getSpriteUltiPret().setScale(0.125f, 0.125f);
 
 }
 

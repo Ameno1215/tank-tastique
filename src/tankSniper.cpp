@@ -16,8 +16,8 @@ Tank_sniper::Tank_sniper() : tank() {
     setSpriteUlti("Image/sniper/ulti.png");
     setSpriteUltiPret("Image/sniper/ulti_pret.png");
 
-    getSpriteUlti().setScale(0.24f, 0.24f);
-    getSpriteUltiPret().setScale(0.24f, 0.24f);
+    getSpriteUlti().setScale(0.6f, 0.6f);
+    getSpriteUltiPret().setScale(0.6f, 0.6f);
 }
 
 void Tank_sniper::setTexture() {

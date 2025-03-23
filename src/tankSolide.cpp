@@ -16,8 +16,8 @@ Tank_solide::Tank_solide() : tank() {
     setSpriteUlti("Image/solide/ulti.png");
     setSpriteUltiPret("Image/solide/ulti_pret.png");
 
-    getSpriteUlti().setScale(0.14f, 0.14f);
-    getSpriteUltiPret().setScale(0.14f, 0.14f);
+    getSpriteUlti().setScale(0.35f, 0.35f);
+    getSpriteUltiPret().setScale(0.35f, 0.35f);
 }
 
 void Tank_solide::setTexture() {

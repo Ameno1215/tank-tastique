@@ -11,9 +11,9 @@ Partie::Partie() {
     pvSprite.setTexture(pvTexture);
     pvSprite.setScale(0.06f, 0.06f);
 
-    mursTextures.resize(12);
+    mursTextures.resize(30);
 
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < 16; i++) {
         std::string filename = "Image/murs/mur" + std::to_string(i + 1) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
@@ -26,6 +26,21 @@ Partie::Partie() {
             mursSprites.push_back(sprite);
         }
     }
+
+    for (int i = 16; i < 30; i++) {
+        std::string filename = "Image/eaux/eau" + std::to_string(i - 15) + ".png";
+
+        if (!mursTextures[i].loadFromFile(filename)) {
+            std::cerr << "Erreur : Impossible de charger " << filename << std::endl;
+        } else {
+            sf::Sprite sprite;
+            sprite.setTexture(mursTextures[i]);
+            sprite.setScale(scale[i]);
+            sprite.setPosition(positions[i]); // Appliquer la position unique
+            mursSprites.push_back(sprite);
+        }
+    }
+
 
     for (int i = 0; i < 11; i++) {
         std::string filename = "Image/explosion/explosion_frame" + std::to_string(i + 1) + ".png";
@@ -43,7 +58,7 @@ Partie::Partie() {
             regen[i][2] = 0;
             sf::Sprite sprite;
             sprite.setTexture(regenTextures);
-            sprite.setScale(0.1f, 0.1f);
+            sprite.setScale(0.2f, 0.2f);
             sf::Vector2f pos(regen[i][1], regen[i][2]);
             sprite.setPosition(pos);
             regenSprites.push_back(sprite);
@@ -386,7 +401,7 @@ void Partie::update() {
                         //rien ahahaha
                     }
                     else{
-                        for (int i = 0; i < 12; i++) {
+                        for (int i = 0; i < 16; i++) {
 
                             sf::Sprite obus = courant->obus.get_Sprite();  
                         
@@ -515,9 +530,11 @@ void Partie::renderWindow(int multi) {
 
     window->draw(fondSprite);
 
-    // ---------------OBSTACLES -------------------
+    for(int i=16;i<30;i++){
+        window->draw(mursSprites[i]);
+    }
 
-    for(int i=0;i<12;i++){              //affcihage des sprites
+    for(int i=0;i<16;i++){
         window->draw(mursSprites[i]);
     }
 
@@ -628,6 +645,7 @@ void Partie::renderWindow(int multi) {
             }
     
             // -------   Explosions  ------------
+
             NoeudExplosion* courant = listexplosion.get_tete();
             while (courant) {
                 if (courant->frameActu < 20 && courant->frameActu > 0) {
@@ -661,7 +679,7 @@ void Partie::renderWindow(int multi) {
             for(int i = 0; i<4; i++){
                 if(regen[i][0] == 1){
                     regenSprites[i].setPosition(regen[i][1],regen[i][2]);
-                    regenSprites[i].setScale(0.1f, 0.1f);
+                    regenSprites[i].setScale(0.2f, 0.2f);
                     window->draw(regenSprites[i]);
                 }
             }
@@ -676,7 +694,7 @@ void Partie::renderWindow(int multi) {
                 boutonScore.draw(*window);
             }
             else{
-                sf::Vector2f ultiPosition(viewCenter.x + viewSize.x / 2 - 50, viewCenter.y + viewSize.y / 2 - 50);
+                sf::Vector2f ultiPosition(viewCenter.x + viewSize.x / 2 - 125, viewCenter.y + viewSize.y / 2 - 100);
                 if(utltiActive[joueur_courant]==0){
                     joueur[joueur_courant].Tank->getSpriteUltiPret().setPosition(ultiPosition.x, ultiPosition.y);
                     window->draw(joueur[joueur_courant].Tank->getSpriteUltiPret());

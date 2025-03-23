@@ -16,8 +16,8 @@ Tank_classique::Tank_classique() : tank() {
     setSpriteUlti("Image/classique/ulti.png");
     setSpriteUltiPret("Image/classique/ulti_pret.png");
 
-    getSpriteUlti().setScale(0.2f, 0.2f);
-    getSpriteUltiPret().setScale(0.2f, 0.2f);
+    getSpriteUlti().setScale(0.5f, 0.5f);
+    getSpriteUltiPret().setScale(0.5f, 0.5f);
 }
 
 void Tank_classique::setTexture() {

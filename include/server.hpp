@@ -47,21 +47,21 @@ private:
     std::string pseudos[6];
 
     int spawn[6][2] = {
-        {350, 1800},  // Position en haut à gauche
-        {2100, 400},  // Position en haut à droite
-        {1200, 1200}, // Position centrale
-        {400, 900},   // Position en bas à gauche
-        {1800, 1700}, // Position en bas à droite
-        {1000, 300}   // Position aléatoire en haut
+        {120, 1000},  
+        {120, 2450},  
+        {1870, 2450}, 
+        {1520, 120},   
+        {2600, 120}, 
+        {3580, 2500}
     };
 
     int spawnRegen[6][3] = {
-        {350, 1800, 0},  // Position en haut à gauche
-        {2100, 400, 0},  // Position en haut à droite
-        {1200, 1200, 0}, // Position centrale
-        {400, 900, 0},   // Position en bas à gauche
-        {1800, 1700, 0}, // Position en bas à droite
-        {1000, 300, 0}   // Position aléatoire en haut
+        {1905, 1645, 0},  
+        {800, 1400, 0}, 
+        {1870, 2230, 0}, 
+        {3320, 2100, 0}, 
+        {1905, 860, 0}, 
+        {3200, 120, 0}   
     };
     
     void majDead(char* buffer);

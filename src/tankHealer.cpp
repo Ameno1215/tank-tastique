@@ -21,8 +21,8 @@ Tank_healer::Tank_healer() : tank() {
     spriteTourelle.setScale(0.15f, 0.15f);
 
 
-    getSpriteUlti().setScale(0.07f, 0.07f);
-    getSpriteUltiPret().setScale(0.07f, 0.07f);
+    getSpriteUlti().setScale(0.175f, 0.175f);
+    getSpriteUltiPret().setScale(0.175f, 0.175f);
 }
 
 void Tank_healer::setTexture() {

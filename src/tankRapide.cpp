@@ -18,8 +18,8 @@ Tank_rapide::Tank_rapide() : tank() {
     setSpriteUlti("Image/petit/ulti.png");
     setSpriteUltiPret("Image/petit/ulti_pret.png");
 
-    getSpriteUlti().setScale(0.05f, 0.05f);
-    getSpriteUltiPret().setScale(0.05f, 0.05f);
+    getSpriteUlti().setScale(0.125f, 0.125f);
+    getSpriteUltiPret().setScale(0.125f, 0.125f);
 }
 
 void Tank_rapide::setTexture() {
