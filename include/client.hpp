@@ -29,8 +29,8 @@ class Client{
         int nbJoueur;
         int nbJoueurFinal;
         int mode;
-
         Client();
+
         void sendMessageToServer(const std::string& message);     // Fonction pour envoyer un message UDP au serveur
         void initconnexion();
         void sendData();

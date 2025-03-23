@@ -674,9 +674,8 @@ void Server::init_Spawn(){
         partie.joueur[i].Tank->set_x(spawn[random_spawn][0]);
         partie.joueur[i].Tank->set_y(spawn[random_spawn][1]);
         partie.joueur[i].Tank->updateHitbox(); //on met à jour la hitBox
-        partie.hitboxes.push_back(partie.joueur[i].Tank->tankHitbox);
+        partie.hitboxes.push_back(partie.joueur[i].Tank->get_tankHitbox());
     }
-    std::cout<<"INITSPAWN FINI"<<std::endl;
 }
 
 void Server::startServer() {

@@ -86,6 +86,7 @@ bool tank::isColliding() const { return collision; }     // Retourne l'état de 
 bool tank::isTouched(){ return touched;}// Retourne l'état de collision
 int tank::get_porte() const { return porte; }
 int tank::get_degat() const { return degat; }
+std::vector<sf::Vector2f>  tank::get_tankHitbox(){ return tankHitbox; }
 
 
 sf::Sprite& tank::getSpriteUltiPret() {
@@ -128,12 +129,6 @@ void tank::set_vie(int new_vie) {
 // Mise à jour de la hitbox du tank
 void tank::updateHitbox() { 
     tankHitbox = getTransformedPoints(getBaseSprite());
-
-    /*std::cout<<"debut hitbox\n";
-    for (const auto& p : tankHitbox) {
-        std::cout << "(" << p.x << ", " << p.y << ")\n";
-    }
-    std::cout<<"fin hitbox\n";*/
 }
 
 // Mise à jour de la collision avec un autre sprite
@@ -185,7 +180,6 @@ int tank::updateRegenCollision(std::vector<sf::Sprite> regenSprite){
 }
 
 void tank::collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::vector<sf::Vector2f>& hitbox2){
-    // Trouver les limites (AABB) de la première hitbox
     float hitbox1Left = hitbox1[0].x;
     float hitbox1Right = hitbox1[0].x;
     float hitbox1Top = hitbox1[0].y;
@@ -198,7 +192,6 @@ void tank::collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::ve
         hitbox1Bottom = std::max(hitbox1Bottom, point.y);
     }
 
-    // Trouver les limites (AABB) de la deuxième hitbox
     float hitbox2Left = hitbox2[0].x;
     float hitbox2Right = hitbox2[0].x;
     float hitbox2Top = hitbox2[0].y;
@@ -211,7 +204,6 @@ void tank::collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::ve
         hitbox2Bottom = std::max(hitbox2Bottom, point.y);
     }
 
-    // Vérifier si les AABB se chevauchent
     if (hitbox1Right >= hitbox2Left && 
         hitbox1Left <= hitbox2Right && 
         hitbox1Bottom >= hitbox2Top && 
@@ -223,7 +215,7 @@ void tank::collisionTank(const std::vector<sf::Vector2f>& hitbox1, const std::ve
 }
 
 
-void tank::updateTouched(const sf::Sprite& otherSprite) {      // ca marche bof detecte mal
+void tank::updateTouched(const sf::Sprite& otherSprite) {
     touched = false; 
 
     for (const auto& point : tankHitbox) {
@@ -238,14 +230,12 @@ void tank::updateTouched(const sf::Sprite& otherSprite) {      // ca marche bof 
 std::vector<sf::Vector2f> tank::getTransformedPoints(const sf::Sprite& sprite) {
     std::vector<sf::Vector2f> points;
 
-    // Récupérer les dimensions locales du sprite
     sf::FloatRect localBounds = sprite.getLocalBounds();
     
     // Nombre de points d’échantillonnage
     int samplesX = 10;  // Plus = plus précis
     int samplesY = 10;
 
-    // Calcul du pas entre les points
     float stepX = localBounds.width / (samplesX - 1);
     float stepY = localBounds.height / (samplesY - 1);
 

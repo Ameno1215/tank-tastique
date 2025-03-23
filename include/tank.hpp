@@ -71,7 +71,7 @@ public:
     void set_porte(int new_porte);
     void set_degat(int new_degat);
     void set_vie(int new_vie);
-    std::vector<sf::Vector2f> tankHitbox;
+    std::vector<sf::Vector2f> get_tankHitbox();
 
     void setSpriteUltiPret(const std::string& texturePath);
     void setSpriteUlti(const std::string& texturePath);
@@ -95,6 +95,7 @@ protected:
     sf::Texture textureUltiPret;
     sf::Texture textureUlti;
 
+    std::vector<sf::Vector2f> tankHitbox;
     bool collision = false;
     bool touched;
     int bornesHitBox[4];

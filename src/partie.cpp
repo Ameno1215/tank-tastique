@@ -52,25 +52,22 @@ Partie::Partie() {
     explosionSprite.setScale(4.0f,4.0f);
 }
 
-// Destructeur pour éviter les fuites mémoire
 Partie::~Partie() {
     if (window) {
         delete window;
         window = nullptr;
     }
-    
 }
 
 sf::Sprite& Partie::getpvSprite() { return pvSprite; }
 
-// Fonction pour ajouter un joueur jusqu'à un maximum de 6
+//ajoute jusqu'à 6 joueur dans le tableau de joueurs
 bool Partie::ajouteJoueur() {
     if (nbJoueur < 6) {
         port_actuel = 3001 + nbJoueur;
         joueur[nbJoueur].port = port_actuel;
         joueur[nbJoueur].id = nbJoueur; 
         nbJoueur++;
-        std::cout << "joueur ajouté nb de joueur :"<< nbJoueur;
         return true;
     } else {
         std::cout << "Nombre maximal de joueurs atteint !" << std::endl;
@@ -106,63 +103,84 @@ void Partie::set_nbJoueur(int i){
     nbJoueur = i;
 }
 
+//recupère les event : souris, click, touches et fermeture
 void Partie::getEvent() { 
 
     if (!window) return;
 
     sf::Event event;
+
     while (window->pollEvent(event)) {
 
         if (event.type == sf::Event::Closed){
+
+            //fermeture de la fenêtre
             window->close();
+
+            //fermeture du processus contenant eventuellement le server
             std::ifstream pidFile("server.pid");
             if (!pidFile) {
                 std::cerr << "Pas de server associé au processus client\n";
             }
+
             int pid;
             pidFile >> pid;
             if (pid > 0) {
                 std::cout << "\nArrêt du serveur...\n";
                 kill(pid, SIGTERM);  // Envoie SIGTERM au serveur
             }
+
             exit(0);
+
         }
             
     }
     
     // Réinitialiser les entrées clavier
-    joueur[joueur_courant].Zpressed = joueur[joueur_courant].Spressed = joueur[joueur_courant].Qpressed = joueur[joueur_courant].Dpressed = joueur[joueur_courant].Clicked = joueur[joueur_courant].Tabpressed = false;
+    joueur[joueur_courant].Zpressed = false;
+    joueur[joueur_courant].Spressed = false;
+    joueur[joueur_courant].Qpressed = false;
+    joueur[joueur_courant].Dpressed = false;
+    joueur[joueur_courant].Clicked = false;
+    joueur[joueur_courant].Tabpressed = false;
 
     if (window->hasFocus()) { //uniquement si on est sur la fenetre 
 
         joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
-        joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);   //la mettre dans le repère de la fenetre (je crois)
+        joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);   //la mettre dans le repère du jeu
         
-        if(joueur[joueur_courant].pV > 0){
-            joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);                      //recuperation des touches pressées
+        if(joueur[joueur_courant].pV > 0){ //si joueur toujours en jeu
+
+            joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);                  //recuperation des touches pressées
             joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
             joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
             joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
             joueur[joueur_courant].Xpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::X);
             joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
             joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
+
         }
-        else{
+        else{ //si joueur game over
+
+            //update des boutons replay et score
             boutonReplay.update(joueur[joueur_courant].worldMousePos);
             boutonScore.update(joueur[joueur_courant].worldMousePos);
+
+            //recup le click pour les boutons
             joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
 
             if(joueur[joueur_courant].Clicked){
+
                 if(boutonReplay.isClicked(joueur[joueur_courant].worldMousePos)){
-                    printf("bouton replay cliqué");
-                    boutonScore.clicked = false;
-                    visionnage = true;
+                    boutonScore.clicked = false;  //logiquement l'autre est false
+                    visionnage = true;            //en mode visionnage
                 }
+
                 if(boutonScore.isClicked(joueur[joueur_courant].worldMousePos)){
                     boutonReplay.clicked = false;
-                    printf("bouton score cliqué");
-                    visionnage = false;
+                    visionnage = false;  
                 }
+
             }
         }
     }
@@ -170,7 +188,9 @@ void Partie::getEvent() {
 
 void Partie::update() {
 
-    tank& mon_tank = *(joueur[joueur_courant].Tank); //pour pas que ca rallonge le code
+    tank& mon_tank = *(joueur[joueur_courant].Tank); //récupération du tank
+
+    //-----------------------Deplacement-------------------------
 
     sf::Vector2f dir = joueur[joueur_courant].worldMousePos - mon_tank.getTourelleSprite().getPosition();  
     
@@ -181,25 +201,25 @@ void Partie::update() {
 
     if (joueur[joueur_courant].Spressed) {
         
-        deplacement_verticale(mon_tank, rotation, speed); //on avance
-
-        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
-        updateRegen();
-        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+        deplacement_verticale(mon_tank, rotation, speed);                                   //on avance
+        mon_tank.updateHitbox();                                                            //on met à jour la hitBox
+        hitboxes[joueur_courant] = mon_tank.get_tankHitbox();                               // on rajoute la hitbox à la liste
+        mon_tank.updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites);  //check si ca touche un truc
+        updateRegen();                                                                      
+        if (joueur[joueur_courant].Tank->isColliding()) {                                   // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, -2*speed);
         }
+        
     }
 
     if (joueur[joueur_courant].Zpressed) {
         deplacement_verticale(mon_tank, rotation, -speed);
 
-        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
+        mon_tank.updateHitbox(); //on met à jour la hitBox
+        hitboxes[joueur_courant] = mon_tank.get_tankHitbox();
+        mon_tank.updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
         updateRegen();
-        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+        if (mon_tank.isColliding()) { // si c'est le cas on recul
             deplacement_verticale(mon_tank, rotation, 2*speed);
         }
     }
@@ -207,27 +227,27 @@ void Partie::update() {
     if (joueur[joueur_courant].Dpressed){
         deplacement_rotation(mon_tank, &rotation, 1.2);
         
-        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
+        mon_tank.updateHitbox(); //on met à jour la hitBox
+        hitboxes[joueur_courant] = mon_tank.get_tankHitbox();
+        mon_tank.updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
         updateRegen();
-        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+        if (mon_tank.isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, -1.2);
         }
     }
     
     if (joueur[joueur_courant].Qpressed){
         deplacement_rotation(mon_tank, &rotation, -1.2);
-        joueur[joueur_courant].Tank->updateHitbox(); //on met à jour la hitBox
-        hitboxes[joueur_courant] = joueur[joueur_courant].Tank->tankHitbox;
-        joueur[joueur_courant].Tank->updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
+        mon_tank.updateHitbox(); //on met à jour la hitBox
+        hitboxes[joueur_courant] = mon_tank.get_tankHitbox();
+        mon_tank.updateCollision(hitboxes, backgroundBounds, joueur_courant, mursSprites); //check si ca touche un truc
         updateRegen();
-        if (joueur[joueur_courant].Tank->isColliding()) { // si c'est le cas on recul
+        if (mon_tank.isColliding()) { // si c'est le cas on recul
             deplacement_rotation(mon_tank, &rotation, 1.2);
         }
     }
     
-    // Mise à jour de l'angle de la tourelle truc à Joshua
+    // Mise à jour de l'angle de la tourelle
     float angle_actu = mon_tank.getTourelleSprite().getRotation();
     float angle_voulu = atan2(dir.y, dir.x) * 180 / M_PI - 90;
     float diff = angle_voulu - angle_actu;
@@ -237,22 +257,23 @@ void Partie::update() {
     mon_tank.getTourelleSprite().setRotation(angle_actu + diff * vit_canon); //rotation tourelle
 
 
-    // ULTI
+    //---------------------ULTI----------------------
+
     if(utltiActive[joueur_courant]==1){
         // tank rapide double dégat
-        if (joueur[joueur_courant].Tank->get_type() == 2) {
-            joueur[joueur_courant].Tank->set_degat(2);
+        if (mon_tank.get_type() == 2) {
+            mon_tank.set_degat(2);
         }
         // tank solide one shot
-        else if (joueur[joueur_courant].Tank->get_type() == 5) {
-            joueur[joueur_courant].Tank->set_degat(10);
+        else if (mon_tank.get_type() == 5) {
+            mon_tank.set_degat(10);
         }
         // tank sniper augmente cadence de tir
-        else if (joueur[joueur_courant].Tank->get_type() == 6) {
-            joueur[joueur_courant].Tank->set_cadence_tir(MULT_CADENCE_TIR / 3);
+        else if (mon_tank.get_type() == 6) {
+            mon_tank.set_cadence_tir(MULT_CADENCE_TIR / 3);
         }
         // tank healer ajoute 2 coeurs
-        else if (joueur[joueur_courant].Tank->get_type() == 3) {
+        else if (mon_tank.get_type() == 3) {
             // si les coeurs sont pas encore ajouter on les ajoute
             if (!get_coeur_ajouter()) {
                 joueur[joueur_courant].pV += 2;
@@ -261,22 +282,26 @@ void Partie::update() {
         }
     }
     else {
-        if (joueur[joueur_courant].Tank->get_type() == 2) {
-            joueur[joueur_courant].Tank->set_degat(1);
+        if (mon_tank.get_type() == 2) {
+            mon_tank.set_degat(1);
         }
-        else if (joueur[joueur_courant].Tank->get_type() == 5) {
-            joueur[joueur_courant].Tank->set_degat(4);
+        else if (mon_tank.get_type() == 5) {
+            mon_tank.set_degat(4);
         }
-        else if (joueur[joueur_courant].Tank->get_type() == 6) {
-            joueur[joueur_courant].Tank->set_cadence_tir(MULT_CADENCE_TIR / 1);
+        else if (mon_tank.get_type() == 6) {
+            mon_tank.set_cadence_tir(MULT_CADENCE_TIR / 1);
         }
     }
 
 
-    // CALCUL DEPLACEMENT OBUS
+    // ----------------------DEPLACEMENT OBUS -----------------------------
+
     Noeud* courant = mon_tank.getListeObus().get_tete();
+
     while (courant) {
+
         if (courant->obus.get_status()) {
+
             // Calcul du déplacement
             sf::Vector2f deltaMove;
             deltaMove.x = mon_tank.get_vitesse_obus() * sin(courant->obus.get_Sprite().getRotation() * M_PI / 180);
@@ -287,6 +312,7 @@ void Partie::update() {
 
             // test si depassement de la porté du tir
             int longueur = sqrt(pow(courant->obus.get_Sprite().getPosition().x - courant->obus.get_position_tir().x, 2) + pow(courant->obus.get_Sprite().getPosition().y - courant->obus.get_position_tir().y, 2));
+
             if (longueur > courant->obus.get_porte()) {
                 courant->obus.set_status(0); // destruction obus
                 Noeud * temp = courant->suivant;
@@ -298,17 +324,22 @@ void Partie::update() {
                 bool obusDestructeur = false; //variable pour savoir si l'obus a touché quelque chose
 
                 for(int i = 0; i<nbJoueur; i++){
+
                     if(joueur[i].pV>0){
+
                         tank& testank = *(joueur[i].Tank);
                         testank.updateHitbox(); //il faut update car si le tank adverse bouge pas c'est pas bon 
                         testank.updateTouched(courant->obus.get_Sprite());
                         
                         if(testank.isTouched()){
+
                             listexplosion.ajouterFin(courant->obus.get_Sprite().getPosition().x, courant->obus.get_Sprite().getPosition().y, 0, 1); //on rajoute une explosion à afficher
-                            std::cout<<"x y ajouté en fin"<<std::endl;
+
                             if(joueur[i].pV > 0){
+
                                 //condition pour ulti bouclier
                                 if(joueur[i].Tank->get_type() ==  1 && utltiActive[i] == 1){
+
                                     if(joueur[i].Tank->ultiClassicUse == false){
                                         joueur[i].Tank->ultiClassicUse = true;
                                     }
@@ -316,23 +347,25 @@ void Partie::update() {
                                         joueur[i].pV -= courant->obus.get_degat();
                                         stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
                                     }
-                                }
 
+                                }
                                 else{
                                     joueur[i].pV -= courant->obus.get_degat();
                                     stat[joueur_courant][3] += courant->obus.get_degat(); //ajoute le nb de dégats
                                 }
+
                             }
-                            if(joueur[i].pV <= 0){
-                                std::cout<<"joueur X a perdu";
+
+                            if(joueur[i].pV <= 0){ //si game over
+
                                 joueur[i].pV = -1;
                                 listexplosion.ajouterFin(joueur[i].Tank->getBaseSprite().getGlobalBounds().width/2 + joueur[i].Tank->getBaseSprite().getPosition().x, joueur[i].Tank->getBaseSprite().getGlobalBounds().height/2 + joueur[i].Tank->getBaseSprite().getPosition().y, 0, 2);
                                 joueur[i].vivant = false;
                                 
-                                std::cout<<"teessssstttt"<<std::endl;
-                                if (i >= 0 && i < static_cast<int>(hitboxes.size())) {
-                                    std::cout<<"hitbox supprimée"<<std::endl;
+                                if (i >= 0 && i < static_cast<int>(hitboxes.size())){
+
                                     hitboxes[i].clear(); // Marque comme "supprimée"
+
                                 }
                             
                             }
@@ -349,7 +382,7 @@ void Partie::update() {
                 }
 
                 if(!obusDestructeur){
-                    if(joueur[joueur_courant].Tank->get_type() == 4 && utltiActive[joueur_courant] == 1){
+                    if(mon_tank.get_type() == 4 && utltiActive[joueur_courant] == 1){
                         //rien ahahaha
                     }
                     else{
@@ -381,19 +414,26 @@ void Partie::update() {
         }
     }
 
-    // TIR NOUVEL OBUS
+
+    // ---------------- TIR NOUVEL OBUS ------------------
+
     if (joueur[joueur_courant].Clicked) {
+
         if ((get_time_seconds() - mon_tank.getListeObus().get_time_dernier_tir()) > mon_tank.get_cadence_tir()) {
+
             // ajout création du nouvel obus et l'ajouter à la liste d'obus du tank
             int index = mon_tank.getListeObus().ajouterFin(mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getRotation(), mon_tank.get_vitesse_obus(), mon_tank.get_porte(), "Image/obus.png", mon_tank.get_degat());
             mon_tank.getListeObus().set_time_dernier_tir(get_time_seconds());
             mon_tank.getListeObus().trouverNoeud(index)->obus.initTir(mon_tank.getTourelleSprite().getRotation(), mon_tank.getTourelleSprite().getPosition().x, mon_tank.getTourelleSprite().getPosition().y, mon_tank.getTourelleSprite().getTexture()->getSize().y * mon_tank.getTourelleSprite().getScale().y / 2);
             stat[joueur_courant][1]++; //ajoute obus tiré
+
         }
     }
 
     stat[joueur_courant][0] = joueur[joueur_courant].pV;
 
+
+    // ---------- TEST GAGNANT -------------
     if(client.mode == 1){
         testGagnant();
     }
@@ -407,12 +447,11 @@ void Partie::updateRegen(){
     if(r > -1 ){
         regen[r][0] = 0; 
         utltiActive[joueur_courant] = 0;
-        //std::cout<<r<<" touché"<<std::endl;
     }
-    //std::cout<<"[0][0] "<<regen[0][0]<<std::endl;
 }
 
 //cette fonction renvoie -1 si il y a plusieurs joueurs en jeu, l'indice du joueur gagnant sinon
+//met à true la varaible partiefinie si la partie est finie 
 int Partie::testGagnant(){
     int compt = 0;
     int joueurVivant;
@@ -434,6 +473,8 @@ int Partie::testGagnant(){
     return -1;
 }
 
+//renvoie -1 si pas d'équipe gagnante 1 si equipe 1 et 2 pour l'autre equipe
+//met à true la varaible partiefinie si la partie est finie 
 int Partie::testEquipeGagnant(){
 
     int gagnant = -1;
@@ -463,27 +504,31 @@ int Partie::testEquipeGagnant(){
 
 }
 
+//fonction qui s'occupe du rendu de l'affichage
 void Partie::renderWindow(int multi) {
 
     window->clear();
 
+    // ------------- FOND --------------------
+
     window->draw(fondSprite);
 
-    for(int i=0;i<12;i++){
+    // ---------------OBSTACLES -------------------
+
+    for(int i=0;i<12;i++){              //affcihage des sprites
         window->draw(mursSprites[i]);
     }
 
-    // Obtenir les dimensions du fond
+    //-----------------VIEW--------------------------
+
     backgroundBounds = fondSprite.getGlobalBounds();
 
-    // Création de la View proportionnelle au background
-    float scaleFactor = 0.5f; // Modifier selon le niveau de zoom souhaité
+    float scaleFactor = 0.5f;
     view.setSize(backgroundBounds.width * scaleFactor, backgroundBounds.height * scaleFactor);
 
-    // Récupérer la position du tank
     sf::Vector2f tankPos = joueur[joueur_courant].Tank->getBaseSprite().getPosition();
 
-    // Calculer les limites de la vue pour qu'elle ne dépasse pas le background
+    //calcul le centre de la view
     float halfViewWidth = view.getSize().x / 2.0f;
     float halfViewHeight = view.getSize().y / 2.0f;
 
@@ -492,11 +537,10 @@ void Partie::renderWindow(int multi) {
     float minY = backgroundBounds.top + halfViewHeight;
     float maxY = backgroundBounds.top + backgroundBounds.height - halfViewHeight;
 
-    // Limiter la position de la vue pour qu'elle ne sorte pas du background
-    float Xview = std::clamp(tankPos.x, minX, maxX); //si pos < minX -> pos = minX, symétrie pour > maxX et reste inchangée sinon
+    float Xview = std::clamp(tankPos.x, minX, maxX);
     float Yview = std::clamp(tankPos.y, minY, maxY);
 
-    view.setCenter(Xview, Yview);
+    view.setCenter(Xview, Yview); //on centre la view 
 
     window->setView(view); // Appliquer la View
 
@@ -506,6 +550,7 @@ void Partie::renderWindow(int multi) {
     sf::Vector2f bottomLeftPosition(viewCenter.x - viewSize.x / 2 + 20, viewCenter.y + viewSize.y / 2 - 60);
     sf::Vector2f upperBottomLeftPosition(viewCenter.x - viewSize.x / 2 + 20, viewCenter.y + viewSize.y / 2 - 150);
 
+    // ----------------- Recupération des gagants ----------
     int gagnant;
     if(client.mode == 2){
         gagnant = testEquipeGagnant();
@@ -543,25 +588,18 @@ void Partie::renderWindow(int multi) {
                         stream >> type;
                         // vider la liste 
                         for (int i = 0; i < nbJoueur; i++) {
-                            // printf("Avant vidage\n");
-                            // joueur[i].Tank.getListeObus().afficher();   
                             joueur[i].Tank->getListeObus().vider();
-                            // printf("Apres vidage\n");
-                            // joueur[i].Tank.getListeObus().afficher();   
                         }
                     
                         int nb_obus;
                         stream >> nb_obus;
-                        // std::cout << "Nombre d'obus : " << nb_obus << std::endl;
     
                         while (!stream.eof()) {
                             int joueur_id;
                             float x, y, rotation;
     
                             stream >> joueur_id >> x >> y >> rotation;
-                            // std::cout << "Obus du joueur " << joueur_id << " -> Pos(" << x << ", " << y << ") | Rotation: " << rotation << std::endl;
                             joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, joueur[joueur_id].Tank->get_vitesse_obus(), joueur[joueur_id].Tank->get_porte(), "Image/obus.png", joueur[joueur_id].Tank->get_degat());
-                            // joueur[joueur_id].Tank->getListeObus().afficher();
                         }
                     }
                 
@@ -737,27 +775,25 @@ void Partie::renderWindow(int multi) {
     window->display();
 }
 
+//fonction qui affiche la minimap 
 void Partie::afficherMinimap(){
 
     sf::Vector2f tankPos = joueur[joueur_courant].Tank->getBaseSprite().getPosition();
     sf::Vector2f viewCenter = view.getCenter();
     sf::Vector2f viewSize = view.getSize();
 
-    // Définir la taille de la minimap en gardant le ratio du background
-    float minimapScale = 0.08f; // Échelle globale (20% de la taille du background)
+    float minimapScale = 0.08f; //echelle de la minimap
     minimapBackground.setSize(sf::Vector2f(fondSprite.getGlobalBounds().width * minimapScale,
                                             fondSprite.getGlobalBounds().height * minimapScale));
     minimapBackground.setFillColor(sf::Color(0, 0, 0, 150)); // Noir semi-transparent
 
     // Placer la minimap en haut à gauche de la view
-    minimapBackground.setPosition(viewCenter.x - viewSize.x / 2 + 10, 
+    minimapBackground.setPosition(viewCenter.x - viewSize.x / 2 + 10,  
                                 viewCenter.y - viewSize.y / 2 + 10);
 
-    // 🔹 Normaliser la position du tank entre 0 et 1 (proportionnel au sprite)
     float tankX_norm = tankPos.x / fondSprite.getGlobalBounds().width;
     float tankY_norm = tankPos.y / fondSprite.getGlobalBounds().height;
 
-    // 🔹 Convertir cette position normalisée dans l'espace de la minimap
     sf::Vector2f minimapTankPos(
         minimapBackground.getPosition().x + tankX_norm * minimapBackground.getSize().x,
         minimapBackground.getPosition().y + tankY_norm * minimapBackground.getSize().y
