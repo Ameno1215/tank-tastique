@@ -124,7 +124,7 @@ void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::
             return;
         }
         else{
-            for (int i=0;i<24;i++){
+            for (int i=0;i<30;i++){
                 if (mursSprites[i].getGlobalBounds().contains(point)) {
                     collision = true;
                     return;

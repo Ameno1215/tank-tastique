@@ -11,9 +11,9 @@ Partie::Partie() {
     pvSprite.setTexture(pvTexture);
     pvSprite.setScale(0.2f, 0.2f);
 
-    mursTextures.resize(28);
+    mursTextures.resize(30);
 
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < 16; i++) {
         std::string filename = "Image/murs/mur" + std::to_string(i + 1) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
@@ -27,8 +27,8 @@ Partie::Partie() {
         }
     }
 
-    for (int i = 14; i < 28; i++) {
-        std::string filename = "Image/eaux/eau" + std::to_string(i - 11) + ".png";
+    for (int i = 16; i < 30; i++) {
+        std::string filename = "Image/eaux/eau" + std::to_string(i - 15) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
             std::cerr << "Erreur : Impossible de charger " << filename << std::endl;
@@ -320,11 +320,11 @@ void Partie::renderWindow(int multi) {
 
     window->draw(fondSprite);
 
-    for(int i=12;i<24;i++){
+    for(int i=16;i<30;i++){
         window->draw(mursSprites[i]);
     }
 
-    for(int i=0;i<12;i++){
+    for(int i=0;i<16;i++){
         window->draw(mursSprites[i]);
     }
 
