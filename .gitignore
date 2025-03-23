@@ -1,4 +1,4 @@
-.o
-.exe
-.out
-.pid
+*.o
+*.exe
+*.out
+*.pid
