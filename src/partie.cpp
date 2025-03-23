@@ -11,9 +11,9 @@ Partie::Partie() {
     pvSprite.setTexture(pvTexture);
     pvSprite.setScale(0.2f, 0.2f);
 
-    mursTextures.resize(24);
+    mursTextures.resize(28);
 
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < 14; i++) {
         std::string filename = "Image/murs/mur" + std::to_string(i + 1) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
@@ -27,7 +27,7 @@ Partie::Partie() {
         }
     }
 
-    for (int i = 12; i < 24; i++) {
+    for (int i = 14; i < 28; i++) {
         std::string filename = "Image/eaux/eau" + std::to_string(i - 11) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
