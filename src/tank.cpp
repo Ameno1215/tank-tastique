@@ -3,21 +3,6 @@
 
 // Constructeur
 tank::tank() {
-
-    // // Chargement des textures
-    // if (!textureBase.loadFromFile("Image/classique/base_classique.png") || 
-    //     !textureTourelle.loadFromFile("Image/classique/tourelle_classique.png")) {
-    //     std::cerr << "Erreur de chargement des textures !" << std::endl;
-    // }
-
-    // // Assignation des textures aux sprites
-    // spriteBase.setTexture(textureBase);
-    // spriteTourelle.setTexture(textureTourelle);
-
-    // // Définir l'origine des sprites au centre
-    // spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
-    // spriteTourelle.setOrigin(spriteTourelle.getLocalBounds().width / 2, spriteTourelle.getLocalBounds().height / 2);
-
     // Positionnement initial
     x = 300;
     y = 200;
