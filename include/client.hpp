@@ -49,5 +49,6 @@ class Client{
 
     private :
         int etatConnexion = -1;
+
 };
 #endif

@@ -434,6 +434,7 @@ void Partie::update() {
 
 
     // ---------- TEST GAGNANT -------------
+
     if(client.mode == 1){
         testGagnant();
     }
@@ -441,6 +442,7 @@ void Partie::update() {
         testEquipeGagnant();
     }
 }
+
 
 void Partie::updateRegen(){
     int r = joueur[joueur_courant].Tank->updateRegenCollision(regenSprites);
@@ -563,29 +565,39 @@ void Partie::renderWindow(int multi) {
 
         if(joueur[joueur_courant].pV > 0 || visionnage){  //Joueur courant pas game over ou est en train de regarder la partie
 
-            //affichage Tank
+            // ---------Affichage tank------------
             for(int i = 0; i<nbJoueur; i++){
     
-                if(joueur[i].pV > 0){  //vivant
+                if(joueur[i].pV > 0){  // Si joueur vivant
+
                     tank& mon_tank = *(joueur[i].Tank);
                     
+                    //------- couleur pour les équipes ------
+
                     if((joueur[i].equipe == joueur[joueur_courant].equipe) && (client.mode == 2)){
+
                         sf::Sprite coloredSprite = mon_tank.getBaseSprite();
                         coloredSprite.setColor(sf::Color(100, 100, 255, 255)); // Bleu avec un effet doux
                         window->draw(coloredSprite);
                         sf::Sprite coloredTourelle = mon_tank.getTourelleSprite();
                         coloredTourelle.setColor(sf::Color(100, 100, 255, 255)); // Bleu avec un effet doux
                         window->draw(coloredTourelle);
+
                     }
                     else{
+
                         window->draw(mon_tank.getBaseSprite());
                         window->draw(mon_tank.getTourelleSprite());
+
                     }
-                    // OBUS
+
+                    // -------- OBUS --------------
+
                     if (multi) {
                         std::istringstream stream(get_buffer_missile());
                         char type;
                         stream >> type;
+
                         // vider la liste 
                         for (int i = 0; i < nbJoueur; i++) {
                             joueur[i].Tank->getListeObus().vider();
@@ -602,8 +614,7 @@ void Partie::renderWindow(int multi) {
                             joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, joueur[joueur_id].Tank->get_vitesse_obus(), joueur[joueur_id].Tank->get_porte(), "Image/obus.png", joueur[joueur_id].Tank->get_degat());
                         }
                     }
-                
-                    // Affichage Obus
+                                    
                     Noeud* courant = mon_tank.getListeObus().get_tete();
                     while (courant) {
                         if (courant->obus.get_status()) {
@@ -613,9 +624,10 @@ void Partie::renderWindow(int multi) {
                     
                     }
                 }
+
             }
     
-            //affichage des explosions
+            // -------   Explosions  ------------
             NoeudExplosion* courant = listexplosion.get_tete();
             while (courant) {
                 if (courant->frameActu < 20 && courant->frameActu > 0) {
@@ -675,10 +687,7 @@ void Partie::renderWindow(int multi) {
                 }
                 afficherMinimap();
             }
-            // dessiner actif ici (je crois)
-            /*if(utltiActive[joueur_courant]==1){
-                printf("ulti actif");
-            }*/
+            
         }
         else{ //si joueur courant est game over et ne regarde pas la partie
 
