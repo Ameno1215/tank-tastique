@@ -16,6 +16,11 @@ Tank_healer::Tank_healer() : tank() {
     setSpriteUlti("Image/healer/ulti.png");
     setSpriteUltiPret("Image/healer/ulti_pret.png");
 
+
+    spriteBase.setScale(0.15f, 0.15f);
+    spriteTourelle.setScale(0.15f, 0.15f);
+
+
     getSpriteUlti().setScale(0.07f, 0.07f);
     getSpriteUltiPret().setScale(0.07f, 0.07f);
 }

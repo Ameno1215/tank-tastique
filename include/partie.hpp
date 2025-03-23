@@ -32,9 +32,9 @@
 #define TEST 0    // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
 
 #define MULT_VITESSE_TANK 0.3
-#define MULT_CADENCE_TIR 1.5
-#define MULT_PORTE 80
-#define MULT_VITESSE_OBUS 0.4
+#define MULT_CADENCE_TIR 2.3
+#define MULT_PORTE 150
+#define MULT_VITESSE_OBUS 0.6
 #define MULT_VIE 2
 
 
