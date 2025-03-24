@@ -295,6 +295,7 @@ void ListeExplosion::maj() {
             }
             courant = courant->suivant;
             delete temp;
+            temp = nullptr;
             --compteur;
         } else {
             precedent = courant;
