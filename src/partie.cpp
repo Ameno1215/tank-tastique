@@ -1106,12 +1106,8 @@ int Partie::multiJoueur() {
     sf::Texture texturetest;
     texturetest.loadFromFile("Image/classique/base_classique.png");
     sf::Sprite cursorSprite(textureCurseur);
-    testSprite.setTexture(texturetest);
     cursorSprite.setScale(0.08f, 0.08f);
-    testSprite.setScale(0.08f, 0.08f);
-    testSprite.setPosition(300, 300);
 
-    
     int numport = client.num_port;
     client.num_port = 3000;         //creation du port d'envoie sur le port 3000
     client.createSocket();

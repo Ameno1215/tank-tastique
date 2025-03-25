@@ -41,98 +41,64 @@
 
 class Partie {
     public:
-        Partie(); // Constructeur pour initialiser les variables
-        ~Partie(); // Destructeur pour libérer la mémoire
 
-        Joueur joueur[6];
-        Client client;
+        //constructeur
+        Partie(); 
+        ~Partie(); 
 
-        float stat[6][4]; //dans l'ordre des colonnes : PV, obus tiré, obus touchés, dégats infligés.
-        bool ajouteJoueur(); // Fonction pour ajouter un joueur
-        int get_portactuel();
-        int get_nbJoueur();
-        std::string& get_buffer_missile();
-
-        int get_go();
-        void set_go(int val);
-        
-        int get_coeur_ajouter();
-        void set_coeur_ajouter(int val);
-
-        void setBufferMissile(const std::string& newBuffer);
-
-        sf::Sprite& getpvSprite();
-        bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
-        void afficheTableauScore(int fin);
-        void afficherStatJoueur(int i, float startX, float columnSpacing, float &currentY, float rowSpacing);
-
-        void renderExplosion(int x, int y);
-
-        sf::Sprite testSprite;
-        
-        //méthode que pour solo
-        int Solo();
-        
-        //methode pour Solo/Multi
+        //Fonctions Majeures
+        int multiJoueur();
         void getEvent(); 
         void update();
         void renderWindow(int multi);
+        int finDePartie();
         
-        //methodes que pour multi
-        int multiJoueur();
-        void affichageConnexion();
-        void sendData();
-        void sendTank(int type);
-        void recieveData();
-        void recieveTank();
-        void affichageAttenteTank();
-        void initialiserpseudo();
-
-        int waitOthertank();
-
-        // retourne le nombre d'obus actif dans la partie
-        int nb_obus();
-        
-        // rempli chaine (string) avec tous les obus (joueur, x, y, orientation) 
-        void string_obus(std::string& chaine);
-
-        int selectionTank();
-        void affiche_type_tank();
-
-        int joueur_courant;
-
-        ListeExplosion listexplosion;
-
+        //init
+        Joueur joueur[6];
+        Client client;
         void initialiserGameOverUI();
-
-        int testGagnant();
-        std::atomic<bool> partieFinie {false};
-
+        void set_nbJoueur(int i);
+        void initialiserpseudo();
+        void set_coeur_ajouter(int val);
+        void set_go(int val);
+        void setBufferMissile(const std::string& newBuffer);
+        
+        //affichage
+        void affichageAttenteTank();
+        void affichageConnexion();
+        void renderExplosion(int x, int y);
+        void afficheTableauScore(int fin);
+        void afficherStatJoueur(int i, float startX, float columnSpacing, float &currentY, float rowSpacing);
+        void affiche_type_tank();
+        void afficherMinimap();
+        sf::Sprite& getpvSprite();
         sf::Sprite fondSprite;
         sf::Texture fondTexture;
-        sf::FloatRect backgroundBounds;
-
-        void afficherMinimap();
-
-        int utltiActive[6] = {0, 0, 0, 0, 0, 0};
-
-        std::vector<std::vector<sf::Vector2f>> hitboxes;
-
-        std::vector<sf::Sprite> mursSprites;
-        int laissePasserObus[20];              //mettre à un pour laisser passer les obus
-
-        std::vector<sf::Sprite> regenSprites;
         sf::Texture regenTextures;
-
-        sf::Sprite bonus;
-        bool ultiClassicUse = false;
-        void updateRegen();
-        int regen[4][5];
         sf::View defaultView;
 
-        int finDePartie();
-
-        // Liste de positions spécifiques
+        //Calcul
+        void string_obus(std::string& chaine); // rempli chaine (string) avec tous les obus (joueur, x, y, orientation) 
+        int selectionTank();
+        int nb_obus();  // retourne le nombre d'obus actif dans la partie
+        void updateRegen();
+        bool ajouteJoueur(); // Fonction pour ajouter un joueur
+        int get_portactuel();
+        int get_nbJoueur();
+        void recup_equip();
+        std::string& get_buffer_missile();
+        int get_go();
+        int get_coeur_ajouter();
+        float stat[6][4]; //dans l'ordre des colonnes : PV, obus tiré, obus touchés, dégats infligés.
+        int utltiActive[6] = {0, 0, 0, 0, 0, 0};
+        int joueur_courant;
+        ListeExplosion listexplosion;
+        sf::FloatRect backgroundBounds;
+        std::vector<std::vector<sf::Vector2f>> hitboxes;
+        std::vector<sf::Sprite> mursSprites;
+        int laissePasserObus[20];              //mettre à un pour laisser passer les obus
+        std::vector<sf::Sprite> regenSprites;
+        sf::Sprite bonus;
         std::vector<sf::Vector2f> positions = {
             {245, 320}, {240, 170}, {710, 660}, {605, 1240}, {2, 1215},
             {1460,2370}, {2135, 2360}, {1780, 2}, {2810, 250}, {2805, 620}, {3162, 620},{3480, 620},
@@ -141,7 +107,6 @@ class Partie {
             {1310, 900}, {2355, 900}, {1570, 670}, {1570, 1720}, {2260, 1039},
             {2260,1336}, {1483, 1039}, {1483, 1336}, {1700, 1625},{1995, 1625},{1700, 820}, {1997, 820},{1768, 1120}, {335, 1835}
         };
-
         std::vector<sf::Vector2f> scale = {
             {2.2f, 2.2f}, {2.2f, 2.2f}, {2.05f, 2.05f}, {2.f, 2.f}, {2.f,2.f},
             {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f}, {2.f, 2.f},{2.f, 2.f},
@@ -150,11 +115,21 @@ class Partie {
             {2.2f, 2.1f}, {2.2, 2.1f}, {2.05f, 2.05f}, {2.05f, 2.05f}, {2.05f,2.05f},
             {2.05f,2.05f},{2.05f,2.05f},{2.05f,2.05f},{2.1f,2.3f},{2.1f,2.3f},{2.1f,2.1f},{2.1f,2.1f},{2.1f,2.1f},{2.1f,2.1f}
         };
+        bool ultiClassicUse = false;
+        int regen[4][5];
 
-        void set_nbJoueur(int i);
-        void recup_equip();
+        //Test
+        int testGagnant();
+        std::atomic<bool> partieFinie {false};
         int testEquipeGagnant();
+        bool partieComplete() { return nbJoueur >= NB_JOUEUR; }
 
+        //Reseau
+        void sendData();
+        void sendTank(int type);
+        void recieveData();
+        void recieveTank();
+        int waitOthertank();
 
     private:
         std::vector<sf::Texture> mursTextures;

@@ -10,7 +10,7 @@ SERVER_EXEC = $(BIN_DIR)/server
 
 # Compilateur et options
 CXX = g++
-CXXFLAGS = -g -Wall -Wextra -Wpedantic -Wnon-virtual-dtor -std=c++17 -I$(INCLUDE_DIR)
+CXXFLAGS = -g -Wall -Wextra -std=c++17 -I$(INCLUDE_DIR)
 
 # Flags SFML (ajustez si nécessaire)
 SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-network
@@ -33,19 +33,19 @@ SERVER_OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(filter $(SRC_D
 
 # Compilation du client
 $(CLIENT_EXEC): $(CLIENT_OBJ_FILES)
-	@echo "🔧 Compilation du client..."
+	@echo "Compilation du client..."
 	@mkdir -p $(BIN_DIR)  # Crée le répertoire pour l'exécutable si nécessaire
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(SFML_FLAGS)
 
 # Compilation du serveur
 $(SERVER_EXEC): $(SERVER_OBJ_FILES)
-	@echo "🔧 Compilation du serveur..."
+	@echo "Compilation du serveur..."
 	@mkdir -p $(BIN_DIR)  # Crée le répertoire pour l'exécutable si nécessaire
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(SFML_FLAGS)
 
 # Compilation des fichiers sources en objets pour le client
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	@echo "📄 Compilation de $<..."
+	@echo "Compilation de $<..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 
@@ -58,5 +58,5 @@ all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
 # Nettoyage des fichiers générés
 clean:
-	@echo "🧹 Suppression des fichiers compilés..."
+	@echo "Suppression des fichiers compilés..."
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
