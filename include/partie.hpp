@@ -29,7 +29,7 @@
 
 
 #define NB_JOUEUR 2       //defini le nb de joueur
-#define TEST 1    // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
+#define TEST 0    // 1 -> automatiquement en localHost, 0 -> choix ip/pseudo
 
 #define MULT_VITESSE_TANK 0.3
 #define MULT_CADENCE_TIR 2.3

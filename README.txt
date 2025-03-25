@@ -5,6 +5,9 @@ PRESENTATION
 
 Tanktastique est un jeu de combat de tanks en 2D multijoueur. C'est un battle royale où de 2 à 6 joueurs s'affrontent sur une carte, et le dernier tank ou la dernière équipe en vie remporte la partie.
 
+CONDITION
+
+Le jeu tourne uniquement sous LINUX UBUNTU et avec une version SMFL 2.6.1 ou plus
 
 
 LANCEMENT DU JEU

@@ -217,10 +217,8 @@ std::string Server::extractIP(const std::string& message) {
 void Server::recevoirEvent() {
     socklen_t len = sizeof(recieve_clientaddr);
 
-    // Initialiser le buffer pour éviter des problèmes de lecture
     memset(buffer, 0, sizeof(buffer));
 
-    //recupère n'importe quel message sur le port 3000
     int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
 
     if (receivedBytes < 0) {   //verifie
@@ -228,7 +226,6 @@ void Server::recevoirEvent() {
         return;
     }
 
-    //recupère les données 
     if (buffer[0] == 'A') {
         int i, z, q, s, d, x, mouseX, mouseY, clicked; 
         int valuesRead = sscanf(buffer, "A %d %d %d %d %d %d %d %d %d", &i, &z, &q, &s, &d, &x, &mouseX, &mouseY, &clicked);
@@ -247,10 +244,6 @@ void Server::recevoirEvent() {
         partie.joueur[i].worldMousePos = sf::Vector2f(mouseX, mouseY);
         partie.joueur[i].Clicked = (clicked != 0);
 
-        // Affichage des données reçues pour débogage
-        // std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
-        // std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
-        // std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl; 
     }
 }
 
@@ -282,11 +275,11 @@ void Server::sendToClient(){
             
             //verifiacation
             if (n < 0) {
-                perror("❌ Erreur lors de l'envoi des données du tank");
+                perror(" Erreur lors de l'envoi des données du tank");
                 return;
             } else {
                 //debugage
-                //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
+                //std::cout << " Données processed envoyées au client : " << buffer_processed_data << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
 
@@ -299,11 +292,11 @@ void Server::sendToClient(){
             
             //verifiacation
             if (n < 0) {
-                perror("❌ Erreur lors de l'envoi des données du nombre d'obus");
+                perror(" Erreur lors de l'envoi des données du nombre d'obus");
                 return;
             } else {
                 //debugage
-                //std::cout << "📨 Données processed envoyées au client : " << buffer_nb_obus << std::endl;
+                //std::cout << "Données processed envoyées au client : " << buffer_nb_obus << std::endl;
                 //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
         }
@@ -312,20 +305,20 @@ void Server::sendToClient(){
         int n = sendto(sockfd[i], buffer_pV, strlen(buffer_pV), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
         //verifiacation
         if (n < 0) {
-            perror("❌ Erreur lors de l'envoi des données des pV");
+            perror(" Erreur lors de l'envoi des données des pV");
             return;
         } else {
             //debugage
-            //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
+            //std::cout << "Données processed envoyées au client : " << buffer_processed_data << std::endl;
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
         if(partie.listexplosion.nouveau){
             //std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
             n = sendto(sockfd[i], buffer_explo, strlen(buffer_explo), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
             if (n < 0) {
-                perror("❌ Erreur lors de l'envoi des données des explosions");
+                perror(" Erreur lors de l'envoi des données des explosions");
             } else {
-                std::cout << "📨 Explosion envoyée avec succès (" << n << " octets)\n";
+                std::cout << " Explosion envoyée avec succès (" << n << " octets)\n";
             }
 
         }
@@ -334,9 +327,9 @@ void Server::sendToClient(){
         n = sendto(sockfd[i], buffer_stat, sizeof(buffer_stat), 0, 
                   (const struct sockaddr*)&client[i], sizeof(client[i]));
         if (n < 0) {
-            perror("❌ Erreur lors de l'envoi des données du tableau stat");
+            perror(" Erreur lors de l'envoi des données du tableau stat");
         } else {
-            //std::cout << "📨 Tableau stat envoyé avec succès (" << n << " octets)\n";
+            //std::cout << " Tableau stat envoyé avec succès (" << n << " octets)\n";
         }
 
         std::ostringstream oss;
@@ -378,7 +371,7 @@ void Server::sendTankToClient(){
             return;
         } else {
             //debugage
-            //std::cout << "📨 Données processed envoyées au client : " << buffer_processed_data << std::endl;
+            //std::cout << " Données processed envoyées au client : " << buffer_processed_data << std::endl;
             //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
     }     
@@ -425,14 +418,13 @@ int Server::getNbTanksRecus() {
 }
 
 void Server::string_tank(std::string& chaine) {
-    chaine = "B"; // Préfixe
-
+    chaine = "B"; 
+    
     for (int i = 0; i < partie.get_nbJoueur(); i++) {
         chaine += " " + std::to_string(i); // ID du joueur
         chaine += " " + std::to_string(partie.joueur[i].Tank->get_type()); // Type de tank
     }
 
-    // Exemple de sortie : "B 0 1 1 2 2 3"
 }
 
 void Server::init_choix_tank(){
@@ -452,7 +444,7 @@ void Server::init_choix_tank(){
         int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
 
         if (receivedBytes < 0) {   //verifie
-            std::cerr << "❌ Erreur lors de la réception des données" << std::endl;
+            std::cerr << " Erreur lors de la réception des données" << std::endl;
             return;
         }
 
@@ -506,11 +498,7 @@ void Server::init_choix_tank(){
         else{
             std::cout<<"message bizarre recu pour le choix des tank"<<buffer<<std::endl;
         }
-        // Affichage des données reçues pour débogage
-        /*std::cout << "✅ Données reçues pour le joueur " << i << " :\n";
-        std::cout << "Touches : Z=" << partie.joueur[i].Zpressed << " Q=" << partie.joueur[i].Qpressed << " S=" << partie.joueur[i].Spressed << " D=" << partie.joueur[i].Dpressed << std::endl;
-        std::cout << "Souris : X=" << partie.joueur[i].worldMousePos.x << " Y=" << partie.joueur[i].worldMousePos.y << "clicked : "<< partie.joueur[i].Clicked << std::endl;
-        */
+        
     }
 
     std::string listeTank;
