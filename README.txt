@@ -1,5 +1,5 @@
-Tanktastique - Règles du jeu et Notice
-
+TANKTASTIQUE - Règles du jeu et Notice
+by Antonin CENSIER & Antonin CHAUVET & Joshua HAUZAY
 
 PRESENTATION
 
