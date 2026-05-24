@@ -9,8 +9,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "tank.hpp"
-#include "tank.hpp"
 #include "tankClassique.hpp" 
+#include "networkProtocol.hpp"
 
 #define SERVER_PORT 3000  // Port du serveur
 #define BUFFER_SIZE 1024  // Taille du buffer de réception
@@ -22,9 +22,14 @@ public :
     // Méthode pour mettre à jour la position du tank
     void recup_TankPos(float x, float y);
     void afficherTypeTank() const;
-
-
     void setTank(std::unique_ptr<tank> newTank);
+    void assignTankByType(int type);
+    void resetInputs();
+    void captureLocalInput(const sf::RenderWindow& window, bool alive);
+    network::InputState toInputState() const;
+    void applyInputState(const network::InputState& input);
+    void applyTankState(const network::TankState& state);
+    static std::unique_ptr<tank> makeTankByType(int type);
 
     // Membres de la classe
     std::unique_ptr<tank> Tank;

@@ -2,3 +2,8 @@
 *.exe
 *.out
 *.pid
+*.zip
+*.tar.xz
+zbin/
+zobj/
+sfml-app

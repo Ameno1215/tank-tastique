@@ -135,7 +135,7 @@ void Partie::getEvent() {
             //fermeture du processus contenant eventuellement le server
             std::ifstream pidFile("server.pid");
             if (!pidFile) {
-                std::cerr << "Pas de server associé au processus client\n";
+                std::cerr << "[Client] Pas de server associé au processus client\n";
             }
 
             int pid;
@@ -151,31 +151,13 @@ void Partie::getEvent() {
             
     }
     
-    // Réinitialiser les entrées clavier
-    joueur[joueur_courant].Zpressed = false;
-    joueur[joueur_courant].Spressed = false;
-    joueur[joueur_courant].Qpressed = false;
-    joueur[joueur_courant].Dpressed = false;
-    joueur[joueur_courant].Clicked = false;
-    joueur[joueur_courant].Tabpressed = false;
+    joueur[joueur_courant].resetInputs();
 
     if (window->hasFocus()) { //uniquement si on est sur la fenetre 
 
-        joueur[joueur_courant].mousePos = sf::Mouse::getPosition(*window);                                  //recupération de la position de la souris
-        joueur[joueur_courant].worldMousePos = window->mapPixelToCoords(joueur[joueur_courant].mousePos);   //la mettre dans le repère du jeu
+        joueur[joueur_courant].captureLocalInput(*window, joueur[joueur_courant].pV > 0);
         
-        if(joueur[joueur_courant].pV > 0){ //si joueur toujours en jeu
-
-            joueur[joueur_courant].Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);                  //recuperation des touches pressées
-            joueur[joueur_courant].Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
-            joueur[joueur_courant].Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
-            joueur[joueur_courant].Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
-            joueur[joueur_courant].Xpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::X);
-            joueur[joueur_courant].Clicked = sf::Mouse::isButtonPressed(sf::Mouse::Left);
-            joueur[joueur_courant].Tabpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Tab);
-
-        }
-        else{ //si joueur game over
+        if(joueur[joueur_courant].pV <= 0){ //si joueur game over
 
             //update des boutons replay et score
             boutonReplay.update(joueur[joueur_courant].worldMousePos);
@@ -580,6 +562,47 @@ void Partie::renderWindow(int multi) {
 
     if(gagnant < 0){ //pas de gagnant 
 
+        if (multi) {
+            std::istringstream stream(get_buffer_missile());
+            char type = '\0';
+            int nbObusRecus = 0;
+
+            if ((stream >> type >> nbObusRecus) && type == 'O') {
+                for (int i = 0; i < nbJoueur; i++) {
+                    joueur[i].Tank->getListeObus().vider();
+                }
+
+                for (int indexObus = 0; indexObus < nbObusRecus; ++indexObus) {
+                    int joueur_id = -1;
+                    float x = 0.f;
+                    float y = 0.f;
+                    float rotation = 0.f;
+
+                    if (!(stream >> joueur_id >> x >> y >> rotation)) {
+                        std::cerr << "[Client] Paquet d'obus incomplet recu: "
+                                  << get_buffer_missile() << std::endl;
+                        break;
+                    }
+
+                    if (joueur_id < 0 || joueur_id >= nbJoueur || !joueur[joueur_id].Tank) {
+                        std::cerr << "[Client] Paquet d'obus invalide pour joueur "
+                                  << joueur_id << std::endl;
+                        continue;
+                    }
+
+                    joueur[joueur_id].Tank->getListeObus().ajouterFin(
+                        static_cast<int>(x),
+                        static_cast<int>(y),
+                        rotation,
+                        joueur[joueur_id].Tank->get_vitesse_obus(),
+                        joueur[joueur_id].Tank->get_porte(),
+                        "Image/obus.png",
+                        joueur[joueur_id].Tank->get_degat()
+                    );
+                }
+            }
+        }
+
         if(joueur[joueur_courant].pV > 0 || visionnage){  //Joueur courant pas game over ou est en train de regarder la partie
 
             // ---------Affichage tank------------
@@ -610,28 +633,6 @@ void Partie::renderWindow(int multi) {
 
                     // -------- OBUS --------------
 
-                    if (multi) {
-                        std::istringstream stream(get_buffer_missile());
-                        char type;
-                        stream >> type;
-
-                        // vider la liste 
-                        for (int i = 0; i < nbJoueur; i++) {
-                            joueur[i].Tank->getListeObus().vider();
-                        }
-                    
-                        int nb_obus;
-                        stream >> nb_obus;
-    
-                        while (!stream.eof()) {
-                            int joueur_id;
-                            float x, y, rotation;
-    
-                            stream >> joueur_id >> x >> y >> rotation;
-                            joueur[joueur_id].Tank->getListeObus().ajouterFin(static_cast<int>(x), static_cast<int>(y), rotation, joueur[joueur_id].Tank->get_vitesse_obus(), joueur[joueur_id].Tank->get_porte(), "Image/obus.png", joueur[joueur_id].Tank->get_degat());
-                        }
-                    }
-                                    
                     Noeud* courant = mon_tank.getListeObus().get_tete();
                     while (courant) {
                         if (courant->obus.get_status()) {
@@ -837,119 +838,66 @@ void Partie::afficherMinimap(){
 }
 
 void Partie::sendData(){
-
-    char buffer[100];  // Taille suffisante pour 5 floats sous forme de texte
-    int test = 1;      // valeur à mettre par précaution à la fin du buffer
-
-    sprintf(buffer, "A %d %d %d %d %d %d %d %d %d %d", joueur_courant, joueur[joueur_courant].Zpressed ? 1 : 0, joueur[joueur_courant].Qpressed ? 1 : 0, joueur[joueur_courant].Spressed ? 1 : 0, joueur[joueur_courant].Dpressed ? 1 : 0, joueur[joueur_courant].Xpressed ? 1 : 0, static_cast<int>(joueur[joueur_courant].worldMousePos.x), static_cast<int>(joueur[joueur_courant].worldMousePos.y), joueur[joueur_courant].Clicked ? 1 : 0, test);
-    //buffer = id Z Q S D X posX posY Clicked test
-    int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
-    if (n < 0) {
-        perror("❌ Erreur lors de l'envoi des données");
-        return;
-    } else {
-        //std::cout << "📨 Données envoyées : " << buffer << std::endl;
-    }
+    client.sendInput(joueur[joueur_courant]);
 }
 
 void Partie::sendTank(int type) {
-
-    char buffer[100]; 
-    int test = 1;      // valeur à mettre par précaution à la fin du buffer
-
-    sprintf(buffer, "K %d %d %d", joueur_courant, type, test);
-    int n = sendto(client.sockfd, buffer, strlen(buffer), 0, (const struct sockaddr*)&client.servaddr, sizeof(client.servaddr));
-    if (n < 0) {
-        perror("❌ Erreur lors de l'envoi du type de tank");
-        return;
-    } else {
-        //std::cout << "📨 Données envoyées : " << buffer << std::endl;
-    }
+    client.sendTankChoice(joueur_courant, type);
 }
 
 void Partie::recieveData(){
+    char buffer[BUFFER_SIZE];
+    ssize_t receivedBytes = 0;
 
-    char buffer[1024];
-    socklen_t addr_len = sizeof(client.recieve_servaddr);
-
-    ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
-    if (n < 0) {
-        perror("Erreur lors de la réception");
+    if (!client.receiveRawPacket(buffer, sizeof(buffer), receivedBytes)) {
         return;
     }
-    buffer[n] = '\0';
 
-    if (buffer[0] == 'T') {
-        int indice_joueur;
-        float x,y,ori, oritourelle;
-        int ulti;
-        sscanf(buffer, "T %d %f %f %f %f %d",&indice_joueur, &x, &y, &ori, &oritourelle, &ulti);
+    const std::string packet(buffer, static_cast<std::size_t>(receivedBytes));
 
-        tank& tankjoueur = *(joueur[indice_joueur].Tank);  // Utilisation d'une référence
-        tankjoueur.set_x(x);
-        tankjoueur.set_y(y);
-        tankjoueur.set_ori(ori);
-        tankjoueur.getTourelleSprite().setRotation(oritourelle);
-        utltiActive[indice_joueur] = ulti;
-
-        if (n < 0) {
-            perror("Erreur lors de la réception de la confirmation");
-            close(client.recieve_sockfd);
-            return;
-        }
+    if (const auto tankState = network::parseTankState(packet); tankState.has_value()) {
+        joueur[tankState->playerId].applyTankState(tankState.value());
+        utltiActive[tankState->playerId] = tankState->ultiState;
+        return;
     }
 
     // RECEPTION DE LA LISTE D'OBUS
-    if (buffer[0] == 'O') { 
-        setBufferMissile(std::string(buffer));
+    if (!packet.empty() && packet[0] == 'O') { 
+        setBufferMissile(packet);
+        return;
     }
         
-    if (buffer[0] == 'E') {
-        std::istringstream stream(std::string(buffer).substr(2));  // Supprime 'E ' et crée un flux
+    if (!packet.empty() && packet[0] == 'E') {
+        std::istringstream stream(packet.substr(2));  // Supprime 'E ' et crée un flux
         int x, y, big;
 
         while (stream >> x >> y >> big) {  // Extrait les couples de coordonnées car il peut y avoir plusieurs explosions à la fois
             listexplosion.ajouterFin(x, y, 0, big);
         }
+        return;
     }
 
-    if(buffer[0] == 'V'){
-        int pV[6];
-        sscanf(buffer, "V %d %d %d %d %d %d", &pV[0], &pV[1], &pV[2], &pV[3], &pV[4], &pV[5]);
-
+    if (const auto hp = network::parseHealthState(packet); hp.has_value()) {
         for(int i = 0; i< nbJoueur; i++){
-            Joueur& joueuri = joueur[i];  
-            joueuri.pV = pV[i];
+            joueur[i].pV = hp.value()[i];
         }
-
-        if (n < 0) {
-            perror("Erreur lors de la réception de la confirmation");
-            close(client.recieve_sockfd);
-            return;
-        }
-        // Affichage du buffer reçu
-        //printf("Buffer pV reçu : %s tesssstttt \n", buffer);
+        return;
     }
 
     // message pour dire de lancer la partie
-    if(buffer[0] == 'W'){
-        if (n < 0) {
-            perror("Erreur lors de la réception de la confirmation");
-            close(client.recieve_sockfd);
-            return;
-        }
-        
+    if (network::isReadySignal(packet)) {
         set_go(1);
+        return;
     }
 
-    if(buffer[0] == 'Z'){
-        std::memcpy(stat, buffer + 1, sizeof(stat)); // Désérialisation des données
+    if (network::parseStatsPacket(buffer, static_cast<std::size_t>(receivedBytes), stat)) {
+        return;
     }
 
-    if (buffer[0] == 'R') {
+    if (!packet.empty() && packet[0] == 'R') {
         int values[12];
 
-        int count = std::sscanf(buffer, "R %d %d %d %d %d %d %d %d %d %d %d %d", 
+        int count = std::sscanf(packet.c_str(), "R %d %d %d %d %d %d %d %d %d %d %d %d", 
                                 &values[0], &values[1], &values[2], 
                                 &values[3], &values[4], &values[5], 
                                 &values[6], &values[7], &values[8], 
@@ -970,98 +918,51 @@ void Partie::recieveData(){
 
 //met à jour les tank des autre joueurs
 void Partie::recieveTank(){
-
-    char buffer[1024];
-    socklen_t addr_len = sizeof(client.recieve_servaddr);
-
-    ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
-    // Vérification des erreurs
-    if (n <= 0) {
-        std::cerr << "Erreur de réception ou message vide." << std::endl;
+    std::string packet;
+    if (!client.receivePacket(packet)) {
         return;
     }
 
-    buffer[n] = '\0';  // Ajout du caractère de fin de chaîne
-    std::string message(buffer);
-    
-    std::istringstream stream(message);
-    char type;
-    stream >> type;
-    if (buffer[0] == 'B') { 
-        while (!stream.eof()) {
-            int joueur_id;
-            int type;
-
-            stream >> joueur_id >> type;
-            
-            // modfif du type du tank du joueur
-            if (type == 1) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_classique>());
-            }
-            else if (type == 2) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_rapide>());
-            }
-            else if (type == 3) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_healer>());
-            }
-            else if (type == 4) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_mortier>());
-            }
-            else if (type == 5) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_solide>());
-            }
-            else if (type == 6) {
-                joueur[joueur_id].setTank(std::make_unique<Tank_sniper>());
-            }
-            // std::cout << "J " << joueur_id << " T " << type << "\n";
-        
+    if (const auto tankList = network::parseTankList(packet); tankList.has_value()) {
+        for (const auto& [joueur_id, type] : tankList.value()) {
+            joueur[joueur_id].assignTankByType(type);
         }
     }
     else{
-        std::cout<<"message pour connaitre tank des autres joueurs impossible à lire : "<<buffer<<std::endl; 
+        std::cout<<"[Client] message pour connaitre tank des autres joueurs impossible à lire : "<<packet<<std::endl; 
     }
 }
 
 void Partie::initialiserpseudo(){
+    const auto& pseudos = client.getPseudos();
     for(int i = 0; i < nbJoueur; i++){
-        joueur[i].pseudo = client.pseudos[i];
+        joueur[i].pseudo = pseudos[i];
     }
 }
 
 //attend que le server nous donne combien de joueurs ont choisi leur tank
 int Partie::waitOthertank(){
-    int nb_choix_recu = 0;
-    char buffer[1024];
-    socklen_t addr_len = sizeof(client.recieve_servaddr);
-
-    ssize_t n = recvfrom(client.recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client.recieve_servaddr, &addr_len);
-    // Vérification des erreurs
-    if (n <= 0) {
-        std::cerr << "Erreur de réception ou message vide." << std::endl;
+    std::string packet;
+    if (!client.receivePacket(packet)) {
         return -1;
     }
 
-    buffer[n] = '\0';  // Ajout du caractère de fin de chaîne
-
-    if(buffer[0] == 'N'){
-        sscanf(buffer, "N %d", &nb_choix_recu);
-        return nb_choix_recu;
-    }
-    else{
-        return -1;
-    }
+    const auto progress = network::parseTankChoiceProgress(packet);
+    return progress.value_or(-1);
 }
 
 void Partie::recup_equip(){
     if(client.mode == 2){
+        const auto& equipes = client.getEquipes();
         for(int i = 0; i < get_nbJoueur(); i++){
-            joueur[i].equipe = client.equipe[i];
+            joueur[i].equipe = equipes[i];
             std::cout<<joueur[i].equipe<<std::endl;
         }
     }
 }
 
-int Partie::multiJoueur() {
+int Partie::multiJoueur(bool hebergePartieLocalement) {
+    hebergePartie = hebergePartieLocalement;
     joueur_courant = 0;
     client.test = TEST;
     std::thread connexionThread(&Client::initconnexion, &this->client);
@@ -1070,23 +971,27 @@ int Partie::multiJoueur() {
     initialiserGameOverUI();
     // Arrêter le thread proprement
     if (connexionThread.joinable()) {
-        std::cout<<"arret du thread de connexion"<<std::endl;
+        std::cout<<"[Client] arret du thread de connexion"<<std::endl;
         if(client.get_etatConnexion() == 1){
-            std::cout<<"le client a eu le feu vert"<<std::endl;
+            std::cout<<"[Client] le client a eu le feu vert"<<std::endl;
         }
         else{
-            std::cout<<"le client N'a PAS eu le feu vert"<<std::endl;
+            std::cout<<"[Client] le client N'a PAS eu le feu vert"<<std::endl;
         }
         connexionThread.join();
     }
 
     nbJoueur = client.nbJoueur;
     joueur_courant = client.joueur.id;
+    for (int i = 0; i < nbJoueur; ++i) {
+        joueur[i].id = i;
+    }
     initialiserpseudo();
     recup_equip(); //ne le fais pas si MG
 
     if (window) {
         delete window;
+        window = nullptr;
     }
     
     char title[50];
@@ -1096,7 +1001,7 @@ int Partie::multiJoueur() {
     windowSize = window->getSize();
     
     if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
-        std::cerr << "Erreur lors du chargement du curseur !\n";
+        std::cerr << "[Client] Erreur lors du chargement du curseur !\n";
         return -1;
     }
 
@@ -1108,12 +1013,6 @@ int Partie::multiJoueur() {
     sf::Sprite cursorSprite(textureCurseur);
     cursorSprite.setScale(0.08f, 0.08f);
 
-    int numport = client.num_port;
-    client.num_port = 3000;         //creation du port d'envoie sur le port 3000
-    client.createSocket();
-    client.num_port = numport;
-    client.createBindedSocket();    //creation du port d'écoute sur le port dédié au client
-    
     fondTexture.loadFromFile("Image/cartef.png");
     fondSprite.setTexture(fondTexture);
     fondSprite.setScale(2, 2);
@@ -1127,7 +1026,7 @@ int Partie::multiJoueur() {
     // sélection par le joueur;
     choix_tank = selectionTank(); //recupération choix type de tank via window sfml
     sendTank(choix_tank); //envoie du choix de tank au server
-    std::cout<<"tank envoyé"<<std::endl;
+    std::cout<<"[Client] tank envoyé"<<std::endl;
 
     nbchoix = - 1; //pour etre sur
     std::thread recieveTankChoix([this]() { // thread qui tourne en parallèle de l'affichage d'attente des autre joueurs
@@ -1144,9 +1043,9 @@ int Partie::multiJoueur() {
     }
 
     if (recieveTankChoix.joinable()) {
-        std::cout << "Fermeture du thread de réception..." << std::endl;
+        std::cout << "[Client] Fermeture du thread de réception des tanks..." << std::endl;
         recieveTankChoix.join();
-        std::cout << "Thread terminé proprement." << std::endl;
+        std::cout << "[Client] Thread de réception des tanks terminé proprement." << std::endl;
     }
     
     //-------------------------------JEU--------------------------------------
@@ -1171,7 +1070,7 @@ int Partie::multiJoueur() {
             // ✅ Démarrer le timer dès que la partie est terminée
             if (finPartieTime.time_since_epoch().count() == 0) {
                 finPartieTime = std::chrono::steady_clock::now();
-                std::cout << "Fin de la partie signalée, arrêt dans 3 secondes..." << std::endl;
+                std::cout << "[Client] Fin de la partie signalée, arrêt dans 3 secondes..." << std::endl;
             }
 
             // ✅ Vérifier si 3 secondes se sont écoulées
@@ -1183,9 +1082,9 @@ int Partie::multiJoueur() {
     }
 
     if (recievethread.joinable()) {
-        std::cout << "Fermeture du thread de réception..." << std::endl;
+        std::cout << "[Client] Fermeture du thread de la main loop..." << std::endl;
         recievethread.join();
-        std::cout << "Thread terminé proprement." << std::endl;
+        std::cout << "[Client] Thread de la main loop terminé proprement." << std::endl;
     }
     
     int fin = finDePartie();
@@ -1195,7 +1094,7 @@ int Partie::multiJoueur() {
         window = nullptr;
     }
     
-    std::cout << "Fenêtre supprimée proprement." << std::endl;
+    std::cout << "[Client] Fenêtre supprimée proprement." << std::endl;
     return fin;
 
 }
@@ -1204,6 +1103,7 @@ int Partie::finDePartie() {
 
     if (window) {  
         delete window;
+        window = nullptr;
     }
 
     window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "Tableau des scores");
@@ -1294,11 +1194,10 @@ int Partie::finDePartie() {
     return 0;
 }
 
-
-
 void Partie::affichageConnexion() {
     if (window) {  
         delete window;
+        window = nullptr;
     }
 
     window = new sf::RenderWindow(sf::VideoMode(1900, 1000), "MULTI");
@@ -1350,7 +1249,7 @@ void Partie::affichageConnexion() {
     float centerX = windowSize.x / 2.0f;
     int hauteurBloc = 600;
     // Texte d'invite
-    sf::Text inviteText("Adresse IP du server :", font, 60);
+    sf::Text inviteText("Adresse IP du serveur hote :", font, 60);
     inviteText.setOrigin(inviteText.getLocalBounds().width / 2.0f, 0);
     inviteText.setPosition(centerX, hauteurBloc); // hauteurChoisie est à définir
 
@@ -1364,6 +1263,12 @@ void Partie::affichageConnexion() {
     sf::Text nomText("Rentre ton blase :", font, 60);
     nomText.setOrigin(nomText.getLocalBounds().width / 2.0f, 0);
     nomText.setPosition(centerX, hauteurBloc); // hauteurChoisie est à définir
+
+    sf::Text hostInfoText("", font, 38);
+    hostInfoText.setFillColor(sf::Color::White);
+    hostInfoText.setPosition(centerX - 350, hauteurBloc + 10);
+
+    std::string hostIp = sf::IpAddress::getLocalAddress().toString();
 
     // Zone de texte pour le pseudo
     std::string pseudo;
@@ -1469,23 +1374,36 @@ void Partie::affichageConnexion() {
         }
 
         if(TEST){
-            client.server_ip = "127.0.0.1";      //affectation de l'adresse IP au client
-            client.ipValide = true;
-            client.joueur.pseudo = "Blase2test";
+            client.configureConnection("127.0.0.1", "Blase2test");
             validePseudo = true;  //le pseudo par defaut est envoyé côté client
         }
         else{
-            if(joueur[joueur_courant].Clicked || entree){
+            if(!client.ipValide.load() && (joueur[joueur_courant].Clicked || entree)){
                 if(valider.isClicked(joueur[joueur_courant].worldMousePos) || entree){
-                    if(validePseudo && !ip.empty()){
+                    if(hebergePartie){
+                        if(!pseudo.empty()){
+                            entree = false;
+                            std::cout << "[Client] Pseudo valide pour l'hote: "
+                                      << pseudo << ". IP locale: "
+                                      << "127.0.0.1" << std::endl;
+                            client.configureConnection("127.0.0.1", pseudo);
+                            std::cout << "[Client] Validation de l'IP terminee pour l'hote." << std::endl;
+                            validePseudo = true;
+                        }
+                    }
+                    else if(validePseudo && !ip.empty()){
                         entree = false;
-                        client.server_ip = ip;      //affectation de l'adresse IP au client
-                        client.ipValide = true;
+                        std::cout << "[Client] IP du serveur saisie: "
+                                  << ip << std::endl;
+                        client.configureConnection(ip, client.joueur.pseudo);
+                        std::cout << "[Client] Validation de l'IP terminee pour le client." << std::endl;
                     }
                     else{
                         if(!pseudo.empty()){
                             entree = false;
                             client.joueur.pseudo = pseudo;
+                            std::cout << "[Client] Pseudo saisi: "
+                                      << client.joueur.pseudo << std::endl;
                             validePseudo = true;
                         }       
                     }
@@ -1500,7 +1418,14 @@ void Partie::affichageConnexion() {
         window->draw(obusSprite);
 
         if(!TEST){
-            if(validePseudo){
+            if(hebergePartie){
+                hostInfoText.setString("Les autres joueurs doivent entrer cette IP : " + hostIp);
+                window->draw(hostInfoText);
+                window->draw(nomText);
+                valider.draw(*window);
+                window->draw(pseudoText);
+            }
+            else if(validePseudo){
                 window->draw(inviteText);
                 valider.draw(*window);
                 window->draw(ipText);
@@ -1668,9 +1593,9 @@ int Partie::nb_obus() {
 }
 
 void Partie::string_obus(std::string& chaine) {
-    chaine = "O";
-
-    chaine += std::to_string(nb_obus()) + " \n";
+    chaine = "O ";
+    chaine += std::to_string(nb_obus());
+    chaine += '\n';
 
     for (int i = 0; i < nbJoueur; i++) {
         tank& mon_tank = *(joueur[i].Tank);
@@ -1687,8 +1612,6 @@ void Partie::string_obus(std::string& chaine) {
             courant = courant->suivant;
         }
     }
-    
-    chaine += "1";
 }
 
 void Partie::renderExplosion(int x, int y) {
@@ -2075,4 +1998,3 @@ void Partie::initialiserGameOverUI() {
     boutonScore = Bouton(window->getSize().x / 2 - 100, window->getSize().y / 2, 200, 50, "Tableau Score", font);
     boutonReplay = Bouton(window->getSize().x / 2 - 100, window->getSize().y / 2 + 70, 200, 50, "Voir Partie", font);
 }
-

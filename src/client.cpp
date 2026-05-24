@@ -1,262 +1,240 @@
 #include "client.hpp"
 
-Client::Client(){
-    this->num_port = 3000;
-    sockfd = -1;  // Initialisation du socket dans le constructeur
+Client::Client() : num_port(SERVER_PORT_CONNEXION), sockfd(-1), nbJoueur(0), mode(1), test(0) {
+    std::memset(&servaddr, 0, sizeof(servaddr));
+    std::memset(&recieve_servaddr, 0, sizeof(recieve_servaddr));
+    std::cout << "[Client] Client initialise. Port de connexion par defaut: " << num_port << std::endl;
 }
 
-void Client::createSocket(){
+Client::~Client() {
+    closeSockets();
+}
+
+void Client::closeSockets() {
+    if (sockfd >= 0) {
+        close(sockfd);
+        sockfd = -1;
+    }
+
+    receive_port = 0;
+}
+
+void Client::createSocket() {
+    if (sockfd >= 0) {
+        close(sockfd);
+        sockfd = -1;
+    }
+
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
-        perror("Échec de la création du socket");
-        return;
-    }
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(num_port);
-    if (inet_pton(AF_INET, server_ip.c_str(), &servaddr.sin_addr) <= 0) {
-        perror("Échec de la conversion de l'IP");
-        close(sockfd);
-        return;
-    }
-}
-
-void Client::createBindedSocket(){
-
-    recieve_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    
-    if (recieve_sockfd < 0) {
-        perror("Échec de la création du socket");
+        perror("[Client] Echec de la creation du socket d'envoi");
         return;
     }
 
     int opt = 1;
-    setsockopt(recieve_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    // Configuration de l'adresse du serveur
-    memset(&recieve_servaddr, 0, sizeof(recieve_servaddr));
+    std::memset(&recieve_servaddr, 0, sizeof(recieve_servaddr));
     recieve_servaddr.sin_family = AF_INET;
-    recieve_servaddr.sin_port = htons(num_port);
-    if (inet_pton(AF_INET, server_ip.c_str(), &servaddr.sin_addr) <= 0) {
-        perror("Échec de la conversion de l'IP");
+    recieve_servaddr.sin_port = htons(0);
+    recieve_servaddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sockfd, reinterpret_cast<struct sockaddr*>(&recieve_servaddr), sizeof(recieve_servaddr)) < 0) {
+        perror("[Client] Echec du bind du socket client");
         close(sockfd);
-        return;
-    }
-    // Liaison du socket au port spécifié
-    if (bind(recieve_sockfd, (struct sockaddr*)&recieve_servaddr, sizeof(recieve_servaddr)) < 0) {
-        perror("Échec du bind du socket");
-        close(recieve_sockfd);
+        sockfd = -1;
         return;
     }
 
-    std::cout << "Socket créée et bindée sur le port " << num_port << std::endl;
+    socklen_t localAddrLen = sizeof(recieve_servaddr);
+    if (getsockname(sockfd, reinterpret_cast<struct sockaddr*>(&recieve_servaddr), &localAddrLen) < 0) {
+        perror("[Client] Echec de la recuperation du port local");
+        close(sockfd);
+        sockfd = -1;
+        return;
+    }
+
+    receive_port = ntohs(recieve_servaddr.sin_port);
+
+    std::memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(num_port);
+
+    if (inet_pton(AF_INET, server_ip.c_str(), &servaddr.sin_addr) <= 0) {
+        perror("[Client] Echec de la conversion de l'IP du serveur");
+        close(sockfd);
+        sockfd = -1;
+        return;
+    }
+
+    std::cout << "[Client] Socket d'envoi configure vers " << server_ip
+              << ":" << num_port << std::endl;
+    std::cout << "[Client] Socket de reception binde sur le port local "
+              << receive_port << std::endl;
 }
 
-// Fonction pour envoyer un message UDP au serveur
 void Client::sendMessageToServer(const std::string& message) {
-    createSocket();
-    sendto(sockfd, message.c_str(), message.length(), 0, (const struct sockaddr*)&servaddr, sizeof(servaddr));
-    close(sockfd);
+    if (sockfd < 0) {
+        createSocket();
+    }
+
+    if (sockfd < 0) {
+        return;
+    }
+
+    const ssize_t sent = sendto(sockfd, message.c_str(), message.size(), 0, reinterpret_cast<const struct sockaddr*>(&servaddr), sizeof(servaddr));
+    if (sent < 0) {
+        perror("[Client] Erreur lors de l'envoi au serveur");
+    }
+}
+
+bool Client::sendInput(const Joueur& joueurLocal) {
+    sendMessageToServer(network::makeInputState(joueurLocal.toInputState()));
+    return sockfd >= 0;
+}
+
+bool Client::sendTankChoice(int playerId, int tankType) {
+    sendMessageToServer(network::makeTankChoice({playerId, tankType}));
+    return sockfd >= 0;
+}
+
+bool Client::receivePacket(std::string& packet) {
+    char buffer[BUFFER_SIZE];
+    ssize_t receivedBytes = 0;
+
+    if (!receiveRawPacket(buffer, sizeof(buffer), receivedBytes)) {
+        return false;
+    }
+
+    packet.assign(buffer, static_cast<std::size_t>(receivedBytes));
+    return true;
+}
+
+bool Client::receiveRawPacket(char* buffer, std::size_t bufferSize, ssize_t& receivedBytes) {
+    if (sockfd < 0) {
+        return false;
+    }
+
+    socklen_t addrLen = sizeof(recieve_servaddr);
+    receivedBytes = recvfrom(sockfd, buffer, bufferSize, 0, reinterpret_cast<struct sockaddr*>(&recieve_servaddr), &addrLen);
+
+    if (receivedBytes < 0) {
+        perror("[Client] Erreur lors de la reception");
+        return false;
+    }
+
+    std::cout << "[Client] Paquet recu (" << receivedBytes << " octets)" << std::endl;
+    return true;
+}
+
+void Client::configureConnection(const std::string& ip, const std::string& pseudo) {
+    {
+        std::lock_guard<std::mutex> lock(connectionMutex);
+        server_ip = ip;
+        joueur.pseudo = pseudo;
+        connectionConfigured = true;
+        ipValide.store(true);
+    }
+
+    connectionCv.notify_one();
 }
 
 void Client::initconnexion() {
+    std::string configuredIp;
+    std::string configuredPseudo;
 
-    while (!ipValide) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Attente active jusqu'à ce que l'IP soit valide
+    {
+        std::unique_lock<std::mutex> lock(connectionMutex);
+        std::cout << "[Client] En attente de la configuration de l'IP du serveur..." << std::endl;
+        connectionCv.wait(lock, [this]() { return connectionConfigured; });
+        configuredIp = server_ip;
+        configuredPseudo = joueur.pseudo;
     }
-    printf("La fête commence !\n");
-    
-    etatConnexion = -1; // État : connexion avec le serveur en cours
-    
-    // Construction du message contenant l'IP locale et le pseudo
-    std::string message = "C " + getLocalIPAddress() + " N: " + joueur.pseudo;
-    printf("\n%s\n", message.c_str());
-    
-    socklen_t recieve_len = sizeof(recieve_servaddr);
-    
-    // Envoi du premier message au serveur sur le port 3000
-    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // On attend que le server soit pret
-    sendMessageToServer(message);
-    std::cout << "Requête et IP envoyées au serveur.\n";
-    
-    num_port = SERVER_PORT; // Port par défaut : 3000
-    createBindedSocket();
 
-    char buffer_config[1024];
-    // Réception du nouveau port attribué par le serveur
-    int n = recvfrom(recieve_sockfd, buffer_config, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len); // Attente de la confirmation du serveur    if (n < 0) {
-    if(n<0){   
-        perror("Erreur lors de la réception du port");
-        close(recieve_sockfd);
+    std::cout << "[Client] Configuration IP detectee. Sortie de l'attente." << std::endl;
+
+    etatConnexion.store(-1);
+    num_port = SERVER_PORT_CONNEXION;
+    std::cout << "[Client] IP configuree: " << configuredIp << ". Demarrage de la connexion." << std::endl;
+    createSocket();
+
+    if (sockfd < 0) {
         return;
     }
-    if(buffer_config[0]=='C'){
-        sscanf(buffer_config, "C %d %d",&num_port, &mode);
-        std::cout<<buffer_config<<std::endl;
-        std::cout << "Nouveau port reçu du serveur : " << num_port << "\n";
-    }
-    else{
-        std::cout<<"buffer config mal receptionné"<<std::endl;
-    }
-    close(recieve_sockfd);
-    
-    // Attribution de l'ID du joueur en fonction du port
-    joueur.id = num_port - 3001;
-    
-    std::this_thread::sleep_for(std::chrono::milliseconds(50)); //on attend que le server soit pret
-    sendMessageToServer("T");                                    // Envoi du message de test "T" sur le nouveau port
-    std::cout << "Message 'T' envoyé au serveur sur le port " << num_port << ".\n";
-    
-    // Création d'un nouveau socket lié au nouveau port
-    createBindedSocket();
 
-    char buffer[1024];
-    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len); // Attente de la confirmation du serveur
-    if (n < 0) {
-        perror("Erreur lors de la réception de la confirmation");
-        close(recieve_sockfd);
+    const network::ConnectionRequest request{getLocalIPAddress(), configuredPseudo};
+    std::cout << "[Client] Envoi de la demande de connexion pour le pseudo: "
+              << configuredPseudo << std::endl;
+    sendMessageToServer(network::makeConnectionRequest(request));
+
+    std::string packet;
+    if (!receivePacket(packet)) {
+        closeSockets();
         return;
     }
-    buffer[n] = '\0';
-    std::cout << "Confirmation du serveur : " << buffer << "\n";
-    
-    etatConnexion = 0;  // Changement d'état : attente des autres joueurs
-    
-    n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_servaddr, &recieve_len);  // Attente du message "P" du serveur (nombre de joueurs et pseudos)
-    if (n < 0) {
-        perror("Erreur lors de la réception de la confirmation");
-        close(recieve_sockfd);
+
+    const auto config = network::parseConnectionConfig(packet);
+    if (!config.has_value()) {
+        std::cerr << "[Client] Configuration serveur invalide : " << packet << std::endl;
+        closeSockets();
         return;
     }
-    buffer[n] = '\0';
-    
-    // Traitement du message "P"
-    if (buffer[0] == 'P') {
-        int parsed = sscanf(buffer, "P %d", &nbJoueur);
-    
-        if (parsed == 1) {  // Vérifie que sscanf a bien trouvé un nombre
-            std::cout << "CLIENT nb joueurs : " << nbJoueur << std::endl;
-            std::cout << "Serveur prêt !\n";
-            etatConnexion = 1;
-    
-            // Récupération des pseudos et des équipes si mode == 2
-            int pseudoIndex = 0;  // Index pour remplir le tableau pseudos
-            char* token = strtok(buffer, " ");  // Découper le message en tokens
-    
-            // Ignorer les premiers tokens ("P" et le nombre de joueurs)
-            token = strtok(nullptr, " ");  // Passer au token suivant (nombre de joueurs)
-            token = strtok(nullptr, " ");  // Passer au premier pseudo
-    
-            while (token != nullptr && pseudoIndex < 6) {
-                pseudos[pseudoIndex] = token;  // Stocker le pseudo dans le tableau
-                token = strtok(nullptr, " "); // Passer au token suivant (équipe si mode == 2)
-    
-                if (mode == 2 && token != nullptr) {
-                    if(pseudoIndex == joueur.id){
-                        joueur.equipe = atoi(token); //on stocke l'equipe du joueur
-                    }
-                    equipe[pseudoIndex] = atoi(token); // Stocker l'équipe du joueur
-                    token = strtok(nullptr, " "); // Passer au pseudo suivant
-                }
-                pseudoIndex++;
-            }
-    
-            // Affichage des pseudos et équipes récupérés
-            std::cout << "Pseudos reçus :\n";
-            for (int i = 0; i < pseudoIndex; ++i) {
-                std::cout << pseudos[i];
-                if (mode == 2) {
-                    std::cout << " (Équipe " << equipe[i] << ")";
-                }
-                std::cout << std::endl;
-            }
-        } else {
-            std::cerr << "❌ Erreur : format du message incorrect (" << buffer << ")" << std::endl;
-        }
-    } else {
-        std::cout << "Mauvais message du serveur : "<<buffer<<std::endl;
+
+    num_port = config->port;
+    mode = config->mode;
+    joueur.id = config->playerId;
+    std::cout << "[Client] Configuration recue. Port attribue: " << num_port
+              << ", mode: " << mode << ", joueur id: " << joueur.id << std::endl;
+
+    etatConnexion.store(0);
+    std::cout << "[Client] Connexion validee. En attente du lobby..." << std::endl;
+
+    if (!receivePacket(packet)) {
+        closeSockets();
+        return;
     }
-    
-    // Fermeture du socket
-    close(recieve_sockfd);
+
+    const auto lobbyState = network::parseLobbyState(packet, mode);
+    if (!lobbyState.has_value()) {
+        std::cerr << "[Client] Etat du lobby invalide : " << packet << std::endl;
+        closeSockets();
+        return;
+    }
+
+    nbJoueur = lobbyState->nbJoueurs;
+    pseudos = lobbyState->pseudos;
+    equipe = lobbyState->equipes;
+
+    if (mode == 2 && joueur.id >= 0 && joueur.id < nbJoueur) {
+        joueur.equipe = equipe[joueur.id];
+    }
+
+    servaddr.sin_port = htons(SERVER_PORT_CONNEXION);
+    etatConnexion.store(1);
+    std::cout << "[Client] Lobby recu. Nombre de joueurs: " << nbJoueur
+              << ". Connexion terminee." << std::endl;
 }
 
-void Client::sendData(){
-    char buffer[1024];
-
-    snprintf(buffer, sizeof(buffer), "T %.2f %.2f %.2f", joueur.Tank->get_x(), joueur.Tank->get_y(), joueur.Tank->get_ori());
-
-    sendMessageToServer(buffer);
+int Client::get_etatConnexion() {
+    return etatConnexion.load();
 }
 
-void Client::udpdateData(Joueur& joueur){
-    char buffer[1024];
-    struct sockaddr_in serverAddr;
-    socklen_t addrLen = sizeof(serverAddr);
-
-    if (sockfd <= 0) {
-        sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (sockfd < 0) {
-            std::cerr << "❌ Erreur: Impossible de créer le socket UDP. Code erreur: " << errno << " (" << strerror(errno) << ")\n";
-            return;
-        }
-        std::cout << "✅ Socket UDP créé avec succès: " << sockfd << std::endl;
-
-        // Configuration de l'adresse du client
-        memset(&serverAddr, 0, sizeof(serverAddr));
-        serverAddr.sin_family = AF_INET;
-        serverAddr.sin_addr.s_addr = INADDR_ANY;  
-        serverAddr.sin_port = htons(num_port);
-
-        int opt = 1;
-        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-        // Liaison du socket au port
-        if (bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-            std::cerr << "❌ Erreur: Impossible de lier le socket. Code erreur: " << errno << " (" << strerror(errno) << ")\n";
-            close(sockfd);
-            sockfd = -1;  
-            return;
-        }
-        std::cout << "✅ Socket lié au port " << num_port << std::endl;
-    }
-    
-    int n = recvfrom(sockfd, buffer, sizeof(buffer) - 1, 0, (struct sockaddr*)&serverAddr, &addrLen);
-    
-    if (n < 0) {
-        perror("Erreur lors de la réception");
-        return;
-    }
-
-    buffer[n] = '\0'; // Assurer une terminaison correcte de la chaîne
-
-    // Vérifier que le message commence bien par 'T'
-    if (buffer[0] == 'T') {
-        float x, y, ori;
-        if (sscanf(buffer, "T %f %f %f", &x, &y, &ori) == 3) {
-            joueur.Tank->set_x(x);
-            joueur.Tank->set_y(y);
-            joueur.Tank->set_ori(ori);
-        } else {
-            std::cerr << "Format de message invalide !" << std::endl;
-        }
-    } else {
-        std::cerr << "Message non valide reçu : " << buffer << std::endl;
-    }
-
+int Client::getReceivePort() const {
+    return receive_port;
 }
 
-int Client::get_etatConnexion(){
-    return etatConnexion;
+const std::array<std::string, network::kMaxPlayers>& Client::getPseudos() const {
+    return pseudos;
+}
+
+const std::array<int, network::kMaxPlayers>& Client::getEquipes() const {
+    return equipe;
 }
 
 std::string Client::getLocalIPAddress() {
-    sf::IpAddress ip;
-    if(test){
-        ip = "127.0.0.1";
+    if (test) {
+        return "127.0.0.1";
     }
-    else{
-        ip = sf::IpAddress::getLocalAddress();
-    }
-    return ip.toString();
+
+    return sf::IpAddress::getLocalAddress().toString();
 }

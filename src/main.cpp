@@ -46,21 +46,23 @@ int main(){
         sleep(0.2);
         Lobby lobby;
         choix =  lobby.choix();
-
+        
+        //créer partie
         if(choix == 1){
             signal(SIGINT, signalHandler);
             std::string startServer = "./zbin/server " + std::to_string(lobby.nbJoueurChoisi) + " " + std::to_string(lobby.mode) + "&";
             std::system(startServer.c_str());
             sleep(1);
-            //voir si on peut greffer le code de Joshua
-            retourLobby = partie.multiJoueur(); // boucle principale infinie*
+
+            retourLobby = partie.multiJoueur(true); // boucle principale infinie*
             stopServer();
+            retourLobby = 0;
         }
-    
+        
+        // rejoindre partie
         if(choix == 2){
             std::cout << "Partie Multijoueur" << std::endl;
-            retourLobby = partie.multiJoueur();
-            // donc ici ce qu'il faut faire : créer un objet client, joueur et faire tourné tout ca. merci au revoir.
+            retourLobby = partie.multiJoueur(false);
         }
 
     }

@@ -47,7 +47,7 @@ class Partie {
         ~Partie(); 
 
         //Fonctions Majeures
-        int multiJoueur();
+        int multiJoueur(bool hebergePartie = false);
         void getEvent(); 
         void update();
         void renderWindow(int multi);
@@ -162,6 +162,7 @@ class Partie {
         Bouton boutonScore;
         Bouton boutonReplay;
         bool visionnage = false;
+        bool hebergePartie = false;
 
         sf::RectangleShape minimapBackground;
         sf::CircleShape tankPoint;

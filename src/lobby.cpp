@@ -186,8 +186,8 @@ void Lobby::loadResources() {
 
 int Lobby::choix(){
     // Boutons
-    Bouton button1(440, 300, 400, 150, "Creer Partie", font);
-    Bouton button2(440, 500, 400, 150, "Rejoindre Partie", font);
+    Bouton button_creer(440, 300, 400, 150, "Creer Partie", font);
+    Bouton button_rejoindre(440, 500, 400, 150, "Rejoindre Partie", font);
 
     sf::Text responseText;
     responseText.setFont(font);
@@ -207,16 +207,16 @@ int Lobby::choix(){
             }
 
             sf::Vector2f mousePos(sf::Mouse::getPosition(window));
-            button1.update(mousePos); // effet de grossissement 
-            button2.update(mousePos);
+            button_creer.update(mousePos); // effet de grossissement 
+            button_rejoindre.update(mousePos);
             
             if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.mouseButton.button == sf::Mouse::Left) {
-                    if (button1.isClicked(mousePos)) {
+                    if (button_creer.isClicked(mousePos)) {
                         config();
                         choixUtilisateur = 1;
                     }
-                    if (button2.isClicked(mousePos)) {
+                    if (button_rejoindre.isClicked(mousePos)) {
                         choixUtilisateur = 2;
                     }
                 }
@@ -226,8 +226,8 @@ int Lobby::choix(){
 
         window.clear();
         window.draw(backgroundSprite);  // Dessiner l'image de fond
-        button1.draw(window);
-        button2.draw(window);
+        button_creer.draw(window);
+        button_rejoindre.draw(window);
         window.display();
 
         if (choixUtilisateur != 0) {

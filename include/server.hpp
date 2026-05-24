@@ -19,6 +19,7 @@
 
 #include "joueur.hpp"
 #include "partie.hpp"
+#include "networkProtocol.hpp"
 
 #define SERVER_IP "192.168.1.48"
 #define SERVER_PORT 3000
@@ -31,8 +32,9 @@ class Server {
 private:
 
     char buffer[100];
-    int recieve_sockfd, send_sockfd = SERVER_PORT;
-    int port_connexion;
+    int recieve_sockfd = -1;
+    int send_sockfd = -1;
+    int port_connexion = SERVER_PORT;
     int sockfd[6];
     struct sockaddr_in recieve_clientaddr, send_clientaddr; //connexion
     struct sockaddr_in client[6];
@@ -66,16 +68,14 @@ private:
     
     void majDead(char* buffer);
 
-    void createSocketConnexion(const std::string& ip);
-    void createBindedSocket();
+    void createSocketConnexion(const std::string& ip, int port);
+    void createBindedSocket(int port);
     void connexion();
     void afficher_buffer(char tab[][5], int nb_lignes);
     void sendTankToClient();
     void string_tank(std::string& chaine);
     void sendTankRecu();
 
-    std::string extractIP(const std::string& message);
-    std::string extractPseudo(const std::string& message);
     std::chrono::time_point<std::chrono::steady_clock> timer;
     std::array<std::array<std::chrono::time_point<std::chrono::steady_clock>, 2>, 6> chronoUlti;        
     void updateRegen();
