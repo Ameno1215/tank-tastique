@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstring>
+#include "logguru.hpp"
 
 #define CADENCE_EXPLO 3
 

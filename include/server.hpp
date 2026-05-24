@@ -16,6 +16,7 @@
 #include <fstream>
 #include <algorithm>
 #include <random>
+#include "logguru.hpp"
 
 #include "joueur.hpp"
 #include "partie.hpp"

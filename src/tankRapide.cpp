@@ -24,7 +24,7 @@ Tank_rapide::Tank_rapide() : tank() {
 
 void Tank_rapide::setTexture() {
     if (!textureBase.loadFromFile("Image/petit/base_petit.png") || !textureTourelle.loadFromFile("Image/petit/tourelle_petit.png")) {
-        std::cerr << "Erreur chargement texture Tank rapide\n";
+        LOG_F(ERROR, "Erreur chargement texture Tank rapide");
     }
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);

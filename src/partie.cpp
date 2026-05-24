@@ -5,7 +5,7 @@ Partie::Partie() {
     port_actuel = 0;
     joueur_courant = 0;
     if (!pvTexture.loadFromFile("Image/pv.png")) {
-        std::cerr << "Erreur lors du chargement de la texture des PV !\n";
+        LOG_F(ERROR, "Erreur lors du chargement de la texture des PV");
     }
 
     pvSprite.setTexture(pvTexture);
@@ -17,7 +17,7 @@ Partie::Partie() {
         std::string filename = "Image/murs/mur" + std::to_string(i + 1) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
-            std::cerr << "Erreur : Impossible de charger " << filename << std::endl;
+            LOG_F(ERROR, "Impossible de charger %s", filename.c_str());
         } else {
             sf::Sprite sprite;
             sprite.setTexture(mursTextures[i]);
@@ -31,7 +31,7 @@ Partie::Partie() {
         std::string filename = "Image/eaux/eau" + std::to_string(i - 15) + ".png";
 
         if (!mursTextures[i].loadFromFile(filename)) {
-            std::cerr << "Erreur : Impossible de charger " << filename << std::endl;
+            LOG_F(ERROR, "Impossible de charger %s", filename.c_str());
         } else {
             sf::Sprite sprite;
             sprite.setTexture(mursTextures[i]);
@@ -45,13 +45,13 @@ Partie::Partie() {
     for (int i = 0; i < 11; i++) {
         std::string filename = "Image/explosion/explosion_frame" + std::to_string(i + 1) + ".png";
         if (!explosionTextureFrames[i].loadFromFile(filename)) {
-            std::cerr << "Erreur : Impossible de charger l'image d'explosion (" << filename << ").\n";
+            LOG_F(ERROR, "Impossible de charger l'image d'explosion %s", filename.c_str());
         }
     }
 
     for (int i = 0; i < 4; i++) {
         if (!regenTextures.loadFromFile("Image/base_vert.png")) {
-            std::cerr << "Erreur : Impossible de charger " << "Image/base_vert.png" << std::endl;
+            LOG_F(ERROR, "Impossible de charger Image/base_vert.png");
         } else {
             regen[i][0] = 0; // y en a pas au debut
             regen[i][1] = 0;
@@ -85,7 +85,7 @@ bool Partie::ajouteJoueur() {
         nbJoueur++;
         return true;
     } else {
-        std::cout << "Nombre maximal de joueurs atteint !" << std::endl;
+        LOG_F(WARNING, "Nombre maximal de joueurs atteint");
         return false;
     }
 }
@@ -135,13 +135,13 @@ void Partie::getEvent() {
             //fermeture du processus contenant eventuellement le server
             std::ifstream pidFile("server.pid");
             if (!pidFile) {
-                std::cerr << "[Client] Pas de server associé au processus client\n";
+                LOG_F(WARNING, "[Client] Pas de serveur associe au processus client");
             }
 
             int pid;
             pidFile >> pid;
             if (pid > 0) {
-                std::cout << "\nArrêt du serveur...\n";
+                LOG_F(INFO, "Arret du serveur");
                 kill(pid, SIGTERM);  // Envoie SIGTERM au serveur
             }
 
@@ -579,14 +579,12 @@ void Partie::renderWindow(int multi) {
                     float rotation = 0.f;
 
                     if (!(stream >> joueur_id >> x >> y >> rotation)) {
-                        std::cerr << "[Client] Paquet d'obus incomplet recu: "
-                                  << get_buffer_missile() << std::endl;
+                        LOG_F(WARNING, "[Client] Paquet d'obus incomplet recu: %s", get_buffer_missile().c_str());
                         break;
                     }
 
                     if (joueur_id < 0 || joueur_id >= nbJoueur || !joueur[joueur_id].Tank) {
-                        std::cerr << "[Client] Paquet d'obus invalide pour joueur "
-                                  << joueur_id << std::endl;
+                        LOG_F(WARNING, "[Client] Paquet d'obus invalide pour joueur %d", joueur_id);
                         continue;
                     }
 
@@ -910,7 +908,7 @@ void Partie::recieveData(){
                 }
             }
         } else {
-            std::cerr << " Erreur lors de la lecture des données de regen !" << std::endl;
+            LOG_F(WARNING, "Erreur lors de la lecture des donnees de regen");
         }
     }
     
@@ -929,7 +927,7 @@ void Partie::recieveTank(){
         }
     }
     else{
-        std::cout<<"[Client] message pour connaitre tank des autres joueurs impossible à lire : "<<packet<<std::endl; 
+        LOG_F(WARNING, "[Client] Message de liste des tanks illisible : %s", packet.c_str());
     }
 }
 
@@ -956,7 +954,7 @@ void Partie::recup_equip(){
         const auto& equipes = client.getEquipes();
         for(int i = 0; i < get_nbJoueur(); i++){
             joueur[i].equipe = equipes[i];
-            std::cout<<joueur[i].equipe<<std::endl;
+            LOG_F(DEBUG, "Joueur %d affecte a l'equipe %d", i, joueur[i].equipe);
         }
     }
 }
@@ -971,12 +969,12 @@ int Partie::multiJoueur(bool hebergePartieLocalement) {
     initialiserGameOverUI();
     // Arrêter le thread proprement
     if (connexionThread.joinable()) {
-        std::cout<<"[Client] arret du thread de connexion"<<std::endl;
+        LOG_F(DEBUG, "[Client] Arret du thread de connexion");
         if(client.get_etatConnexion() == 1){
-            std::cout<<"[Client] le client a eu le feu vert"<<std::endl;
+            LOG_F(DEBUG, "[Client] Le client a eu le feu vert");
         }
         else{
-            std::cout<<"[Client] le client N'a PAS eu le feu vert"<<std::endl;
+            LOG_F(WARNING, "[Client] Le client n'a pas eu le feu vert");
         }
         connexionThread.join();
     }
@@ -1001,7 +999,7 @@ int Partie::multiJoueur(bool hebergePartieLocalement) {
     windowSize = window->getSize();
     
     if (!textureCurseur.loadFromFile("Image/curseur_rouge.png")) {
-        std::cerr << "[Client] Erreur lors du chargement du curseur !\n";
+        LOG_F(ERROR, "[Client] Erreur lors du chargement du curseur");
         return -1;
     }
 
@@ -1026,7 +1024,7 @@ int Partie::multiJoueur(bool hebergePartieLocalement) {
     // sélection par le joueur;
     choix_tank = selectionTank(); //recupération choix type de tank via window sfml
     sendTank(choix_tank); //envoie du choix de tank au server
-    std::cout<<"[Client] tank envoyé"<<std::endl;
+    LOG_F(INFO, "[Client] Tank envoye : %d", choix_tank);
 
     nbchoix = - 1; //pour etre sur
     std::thread recieveTankChoix([this]() { // thread qui tourne en parallèle de l'affichage d'attente des autre joueurs
@@ -1043,9 +1041,9 @@ int Partie::multiJoueur(bool hebergePartieLocalement) {
     }
 
     if (recieveTankChoix.joinable()) {
-        std::cout << "[Client] Fermeture du thread de réception des tanks..." << std::endl;
+        LOG_F(DEBUG, "[Client] Fermeture du thread de reception des tanks");
         recieveTankChoix.join();
-        std::cout << "[Client] Thread de réception des tanks terminé proprement." << std::endl;
+        LOG_F(DEBUG, "[Client] Thread de reception des tanks termine proprement");
     }
     
     //-------------------------------JEU--------------------------------------
@@ -1070,7 +1068,7 @@ int Partie::multiJoueur(bool hebergePartieLocalement) {
             // ✅ Démarrer le timer dès que la partie est terminée
             if (finPartieTime.time_since_epoch().count() == 0) {
                 finPartieTime = std::chrono::steady_clock::now();
-                std::cout << "[Client] Fin de la partie signalée, arrêt dans 3 secondes..." << std::endl;
+                LOG_F(INFO, "[Client] Fin de la partie signalee, arret dans 3 secondes");
             }
 
             // ✅ Vérifier si 3 secondes se sont écoulées
@@ -1082,9 +1080,9 @@ int Partie::multiJoueur(bool hebergePartieLocalement) {
     }
 
     if (recievethread.joinable()) {
-        std::cout << "[Client] Fermeture du thread de la main loop..." << std::endl;
+        LOG_F(DEBUG, "[Client] Fermeture du thread de la main loop");
         recievethread.join();
-        std::cout << "[Client] Thread de la main loop terminé proprement." << std::endl;
+        LOG_F(DEBUG, "[Client] Thread de la main loop termine proprement");
     }
     
     int fin = finDePartie();
@@ -1094,7 +1092,7 @@ int Partie::multiJoueur(bool hebergePartieLocalement) {
         window = nullptr;
     }
     
-    std::cout << "[Client] Fenêtre supprimée proprement." << std::endl;
+    LOG_F(INFO, "[Client] Fenetre supprimee proprement");
     return fin;
 
 }
@@ -1110,7 +1108,7 @@ int Partie::finDePartie() {
     windowSize = window->getSize();
     
     if (!fondTexture.loadFromFile("Image/imagechargement.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+        LOG_F(ERROR, "Impossible de charger l'image de fond du tableau des scores");
     }
 
     sf::Sprite backgroundSprite(fondTexture);
@@ -1121,7 +1119,7 @@ int Partie::finDePartie() {
 
     sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
-        std::cerr << "Erreur : Impossible de charger la police.\n";
+        LOG_F(ERROR, "Impossible de charger la police du tableau des scores");
     }
 
     float buttonWidth = 200.0f;
@@ -1205,7 +1203,7 @@ void Partie::affichageConnexion() {
 
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("Image/imagechargement.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+        LOG_F(ERROR, "Impossible de charger l'image de fond de connexion");
     }
     sf::Sprite backgroundSprite(backgroundTexture);
     backgroundSprite.setScale(
@@ -1215,14 +1213,14 @@ void Partie::affichageConnexion() {
 
     sf::Texture tankChargementTexture;
     if (!tankChargementTexture.loadFromFile("Image/tank_chargement.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image du tank de chargement.\n";
+        LOG_F(ERROR, "Impossible de charger l'image du tank de chargement");
     }
     sf::Sprite tankChargementSprite(tankChargementTexture);
     tankChargementSprite.setPosition(100, windowSize.y - tankChargementSprite.getGlobalBounds().height - 230);
 
     sf::Texture obusTexture;
     if (!obusTexture.loadFromFile("Image/obus.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de l'obus.\n";
+        LOG_F(ERROR, "Impossible de charger l'image de l'obus");
     }
     sf::Sprite obusSprite(obusTexture);
     obusSprite.setScale(0.5f, 0.5f);
@@ -1233,7 +1231,7 @@ void Partie::affichageConnexion() {
 
     sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
-        std::cerr << "Impossible de charger la police.\n";
+        LOG_F(ERROR, "Impossible de charger la police de connexion");
     }
 
     sf::Text statusText;
@@ -1383,27 +1381,23 @@ void Partie::affichageConnexion() {
                     if(hebergePartie){
                         if(!pseudo.empty()){
                             entree = false;
-                            std::cout << "[Client] Pseudo valide pour l'hote: "
-                                      << pseudo << ". IP locale: "
-                                      << "127.0.0.1" << std::endl;
+                            LOG_F(INFO, "[Client] Pseudo valide pour l'hote: %s. IP locale: 127.0.0.1", pseudo.c_str());
                             client.configureConnection("127.0.0.1", pseudo);
-                            std::cout << "[Client] Validation de l'IP terminee pour l'hote." << std::endl;
+                            LOG_F(INFO, "[Client] Validation de l'IP terminee pour l'hote");
                             validePseudo = true;
                         }
                     }
                     else if(validePseudo && !ip.empty()){
                         entree = false;
-                        std::cout << "[Client] IP du serveur saisie: "
-                                  << ip << std::endl;
+                        LOG_F(INFO, "[Client] IP du serveur saisie: %s", ip.c_str());
                         client.configureConnection(ip, client.joueur.pseudo);
-                        std::cout << "[Client] Validation de l'IP terminee pour le client." << std::endl;
+                        LOG_F(INFO, "[Client] Validation de l'IP terminee pour le client");
                     }
                     else{
                         if(!pseudo.empty()){
                             entree = false;
                             client.joueur.pseudo = pseudo;
-                            std::cout << "[Client] Pseudo saisi: "
-                                      << client.joueur.pseudo << std::endl;
+                            LOG_F(INFO, "[Client] Pseudo saisi: %s", client.joueur.pseudo.c_str());
                             validePseudo = true;
                         }       
                     }
@@ -1452,7 +1446,7 @@ void Partie::affichageAttenteTank() {
     
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("Image/imagechargement.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+        LOG_F(ERROR, "Impossible de charger l'image de fond d'attente des tanks");
     }
 
     
@@ -1478,14 +1472,14 @@ void Partie::affichageAttenteTank() {
 
     sf::Texture tankChargementTexture;
     if (!tankChargementTexture.loadFromFile("Image/tank_chargement.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image du tank de chargement.\n";
+        LOG_F(ERROR, "Impossible de charger l'image du tank de chargement");
     }
     sf::Sprite tankChargementSprite(tankChargementTexture);
     tankChargementSprite.setPosition(100, window->getSize().y - tankChargementSprite.getGlobalBounds().height - 230);
 
     sf::Texture obusTexture;
     if (!obusTexture.loadFromFile("Image/obus.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de l'obus.\n";
+        LOG_F(ERROR, "Impossible de charger l'image de l'obus");
     }
     sf::Sprite obusSprite(obusTexture);
     obusSprite.setScale(0.5f, 0.5f);
@@ -1496,7 +1490,7 @@ void Partie::affichageAttenteTank() {
 
     sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
-        std::cerr << "Impossible de charger la police.\n";
+        LOG_F(ERROR, "Impossible de charger la police d'attente des tanks");
     }
 
     sf::Text statusText("Les adversaires selectionnent leur tank...", font, 50);
@@ -1672,7 +1666,7 @@ void Partie::afficheTableauScore(int fin) {
     // Recalcul dynamique des positions du texte
     static sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
-        std::cerr << "Erreur: Impossible de charger la police!" << std::endl;
+        LOG_F(ERROR, "Impossible de charger la police du tableau des scores");
         return;
     }
 
@@ -1791,7 +1785,7 @@ int Partie::selectionTank() {
 
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("Image/imagechargement.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+        LOG_F(ERROR, "Impossible de charger l'image de fond de selection de tank");
     }
 
     
@@ -1812,7 +1806,7 @@ int Partie::selectionTank() {
     updateBackgroundSize(); // Appliquer le scale une fois
     sf::Font font;
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
-        std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
+        LOG_F(ERROR, "Impossible de charger la police de selection de tank");
     }
 
     struct TankInfo {
@@ -1855,7 +1849,7 @@ int Partie::selectionTank() {
         int y = startY + row * (tankHeight + paddingY + 150);
 
         if (!textures[i].loadFromFile(tanks[i].imagePath)) {
-            std::cerr << "Impossible de charger l'image pour " << tanks[i].name << "\n";
+            LOG_F(ERROR, "Impossible de charger l'image pour %s", tanks[i].name.c_str());
         }
         sprites[i].setTexture(textures[i]);
         sprites[i].setOrigin(textures[i].getSize().x / 2, textures[i].getSize().y / 2);
@@ -1969,16 +1963,16 @@ int Partie::selectionTank() {
 
 
 void Partie::affiche_type_tank() {
-    std::cout << "Les types de tanks de la parties sont : \n";
+    LOG_F(DEBUG, "Les types de tanks de la partie sont :");
     for (int i = 0; i < nbJoueur; i++) {
-        std::cout << "joueur " << i << " ";
+        LOG_F(DEBUG, "joueur %d", i);
         joueur[i].afficherTypeTank();
     }
 }
 
 void Partie::initialiserGameOverUI() {
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
-        std::cerr << "Erreur de chargement de la police" << std::endl;
+        LOG_F(ERROR, "Erreur de chargement de la police du game over");
     }
 
     // Initialisation du texte "GAME OVER"

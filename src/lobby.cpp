@@ -95,7 +95,7 @@ void Lobby::config() {
                         nbJoueurChoisi = std::stoi(bouton.getLabel());
                         nbJoueur = true;
                         bouton.setOutline(sf::Color::Green, 4.0f);
-                        std::cout << "Nombre de joueurs choisi : " << nbJoueurChoisi << std::endl;
+                        LOG_F(INFO, "Nombre de joueurs choisi : %d", nbJoueurChoisi);
                     }
 
                 }
@@ -124,7 +124,7 @@ void Lobby::config() {
                         }
                         equipe = true;
                         bouton.setOutline(sf::Color::Green, 4.0f);
-                        std::cout << "Mode choisi "<<mode<< std::endl;
+                        LOG_F(INFO, "Mode choisi : %d", mode);
                     }
                 }
             }
@@ -133,7 +133,7 @@ void Lobby::config() {
             if(nbJoueur && equipe){
                 if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
                     if (validerButton.isClicked(mousePos)) {
-                        std::cout << "Validation effectuée ! Nombre de joueurs : " << nbJoueurChoisi << std::endl;
+                        LOG_F(INFO, "Validation effectuee. Nombre de joueurs : %d", nbJoueurChoisi);
                         return;  // Ferme la fonction config
                     }
                 }
@@ -169,7 +169,7 @@ Lobby::Lobby()
 void Lobby::loadResources() {
     // Charger l'image de fond
     if (!backgroundTexture.loadFromFile("Image/lobby.png")) {
-        std::cerr << "Erreur : Impossible de charger l'image de fond.\n";
+        LOG_F(ERROR, "Impossible de charger l'image de fond du lobby");
     }
     backgroundSprite.setTexture(backgroundTexture);
     backgroundSprite.setScale(
@@ -179,7 +179,7 @@ void Lobby::loadResources() {
 
     // Charger la police
     if (!font.loadFromFile("Image/the-bomb-sound.regular.ttf")) {
-        std::cerr << "Impossible de charger la police, le texte ne s'affichera pas.\n";
+        LOG_F(ERROR, "Impossible de charger la police du lobby");
     }
 }
 
@@ -237,5 +237,4 @@ int Lobby::choix(){
     }
     return 0; 
 }
-
 

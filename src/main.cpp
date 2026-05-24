@@ -8,7 +8,7 @@
 int getServerPID() {
     std::ifstream pidFile("server.pid");
     if (!pidFile) {
-        std::cerr << "Impossible de lire le fichier PID\n";
+        LOG_F(WARNING, "Impossible de lire le fichier PID");
         return -1;
     }
     
@@ -21,7 +21,7 @@ int getServerPID() {
 void stopServer() {
     int pid = getServerPID();
     if (pid > 0) {
-        std::cout << "\nArrêt du serveur...\n";
+        LOG_F(INFO, "Arret du serveur");
         kill(pid, SIGTERM);  // Envoie SIGTERM au serveur
     }
 }
@@ -29,13 +29,16 @@ void stopServer() {
 // Gestionnaire de signal pour Ctrl+C
 void signalHandler(int signum) {
     if (signum == SIGINT) {
-        std::cout << "\nCtrl+C détecté ! Fermeture propre...\n";
+        LOG_F(INFO, "Ctrl+C detecte, fermeture propre");
         stopServer();
         exit(0);  // Quitte le programme proprement
     }
 }
 
 int main(){
+    int argc = 0;
+    char** argv = nullptr;
+    logguru::init(argc, argv);
 
     int choix = 0;
     int retourLobby = 1;
@@ -61,7 +64,7 @@ int main(){
         
         // rejoindre partie
         if(choix == 2){
-            std::cout << "Partie Multijoueur" << std::endl;
+            LOG_F(INFO, "Ouverture d'une partie multijoueur");
             retourLobby = partie.multiJoueur(false);
         }
 

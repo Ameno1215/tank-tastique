@@ -27,7 +27,7 @@ Tank_healer::Tank_healer() : tank() {
 
 void Tank_healer::setTexture() {
     if (!textureBase.loadFromFile("Image/healer/base_healer.png") || !textureTourelle.loadFromFile("Image/healer/tourelle_healer.png")) {
-        std::cerr << "Erreur chargement texture Tank healer\n";
+        LOG_F(ERROR, "Erreur chargement texture Tank healer");
     }
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);

@@ -2,7 +2,7 @@
 
 Server::Server() {
     std::memset(sockfd, 0, sizeof(sockfd));
-    std::cout << "[Server] Serveur initialise." << std::endl;
+    LOG_F(INFO, "[Server] Serveur initialise");
 
     for (int i = 0; i < 6; i++) {
         tank_recu[i] = 0;
@@ -21,25 +21,24 @@ Server::~Server() {
             close(sockfd[i]);
         }
     }
-    std::cout << "[Server] Serveur arrete." << std::endl;
+    LOG_F(INFO, "[Server] Serveur arrete");
 }
 
 void Server::createSocketConnexion(const std::string& ip, int port){
     send_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (send_sockfd < 0) {
-        perror("[Server] Echec de la creation du socket d'envoi");
+        PLOG_F(ERROR, "[Server] Echec de la creation du socket d'envoi");
         return;
     }
     memset(&send_clientaddr, 0, sizeof(send_clientaddr));
     send_clientaddr.sin_family = AF_INET;
     send_clientaddr.sin_port = htons(port);
     if (inet_pton(AF_INET, ip.c_str(), &send_clientaddr.sin_addr) <= 0) {
-        perror("[Server] Echec de la conversion de l'IP");
+        PLOG_F(ERROR, "[Server] Echec de la conversion de l'IP");
         close(send_sockfd);
         return;
     }
-    std::cout << "[Server] Socket d'envoi pret vers " << ip
-              << ":" << port << std::endl;
+    LOG_F(DEBUG, "[Server] Socket d'envoi pret vers %s:%d", ip.c_str(), port);
 }
 
 
@@ -51,7 +50,7 @@ void Server::createBindedSocket(int port){
 
     recieve_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (recieve_sockfd < 0) {
-        perror("[Server] Echec de la creation du socket de reception");
+        PLOG_F(ERROR, "[Server] Echec de la creation du socket de reception");
         return;
     }
     int opt = 1;
@@ -65,15 +64,14 @@ void Server::createBindedSocket(int port){
 
     // Liaison du socket au port spécifié
     if (bind(recieve_sockfd, (struct sockaddr*)&recieve_clientaddr, sizeof(recieve_clientaddr)) < 0) {
-        perror("[Server] Echec du bind du socket de reception");
+        PLOG_F(ERROR, "[Server] Echec du bind du socket de reception");
         close(recieve_sockfd);
         recieve_sockfd = -1;
         return;
     }
     char bindIpBuffer[INET_ADDRSTRLEN] = {0};
     inet_ntop(AF_INET, &recieve_clientaddr.sin_addr, bindIpBuffer, sizeof(bindIpBuffer));
-    std::cout << "[Server] Socket de reception binde sur le port "
-              << port << " (IP d'ecoute: " << bindIpBuffer << ")" << std::endl;
+    LOG_F(INFO, "[Server] Socket de reception binde sur le port %d (IP d'ecoute: %s)", port, bindIpBuffer);
 }
 
 void Server::connexion() {
@@ -83,12 +81,11 @@ void Server::connexion() {
     createBindedSocket(SERVER_PORT);
 
     while (nb_joueur > partie.get_nbJoueur()) {
-        std::cout << "[Server] En attente d'une demande de connexion sur le port "
-                  << SERVER_PORT << std::endl;
+        LOG_F(INFO, "[Server] En attente d'une demande de connexion sur le port %d", SERVER_PORT);
         int n = recvfrom(recieve_sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&recieve_clientaddr, &len);
 
         if (n < 0) {
-            perror("[Server] Erreur lors de la reception");
+            PLOG_F(ERROR, "[Server] Erreur lors de la reception");
             continue;
         }
         buffer[n] = '\0'; // Ajoute un terminateur de chaîne
@@ -101,12 +98,11 @@ void Server::connexion() {
             char sourceIpBuffer[INET_ADDRSTRLEN] = {0};
             inet_ntop(AF_INET, &recieve_clientaddr.sin_addr, sourceIpBuffer, sizeof(sourceIpBuffer));
             const std::string ipJoueur(sourceIpBuffer);
-            std::cout << "[Server] Demande de connexion recue. Pseudo: " << pseudo
-                      << ", IP source: " << ipJoueur << std::endl;
+            LOG_F(INFO, "[Server] Demande de connexion recue. Pseudo: %s, IP source: %s", pseudo.c_str(), ipJoueur.c_str());
 
             const int playerIndex = partie.get_nbJoueur();
             if (!partie.ajouteJoueur()) {
-                std::cout << "[Server] Impossible d'ajouter un joueur supplementaire." << std::endl;
+                LOG_F(WARNING, "[Server] Impossible d'ajouter un joueur supplementaire");
                 continue;
             }
 
@@ -124,18 +120,14 @@ void Server::connexion() {
             close(send_sockfd);
             send_sockfd = -1;
 
-            std::cout << "[Server] Joueur " << pseudo
-                      << " enregistre avec l'id " << playerIndex
-                      << " et le port client " << partie.joueur[playerIndex].port << std::endl;
-            std::cout << "[Server] Nombre de joueurs connectes : "
-                      << partie.get_nbJoueur() << std::endl;
+            LOG_F(INFO, "[Server] Joueur %s enregistre avec l'id %d et le port client %d", pseudo.c_str(), playerIndex, partie.joueur[playerIndex].port);
+            LOG_F(INFO, "[Server] Nombre de joueurs connectes : %d", partie.get_nbJoueur());
         } else {
-            std::cout << "[Server] Message de connexion invalide recu: "
-                      << message << std::endl;
+            LOG_F(WARNING, "[Server] Message de connexion invalide recu: %s", message.c_str());
         }
     }
     
-    std::cout << "[Server] Tous les joueurs sont connectes." << std::endl;
+    LOG_F(INFO, "[Server] Tous les joueurs sont connectes");
     // Préparation du message "P" contenant le nombre de joueurs et leurs pseudos
     network::LobbyState lobbyState;
     lobbyState.nbJoueurs = partie.get_nbJoueur();
@@ -172,8 +164,7 @@ void Server::connexion() {
     const std::string msg_pret = network::makeLobbyState(lobbyState, mode);
     
     // Affichage du message final pour vérification
-    std::cout << "[Server] Etat final du lobby prepare pour " << lobbyState.nbJoueurs
-              << " joueurs." << std::endl;
+    LOG_F(INFO, "[Server] Etat final du lobby prepare pour %d joueurs", lobbyState.nbJoueurs);
     
     // Envoi du message "P" à tous les joueurs
     for (int i = 0; i < nb_joueur; i++) {
@@ -182,10 +173,9 @@ void Server::connexion() {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
         int sent = sendto(send_sockfd, msg_pret.c_str(), msg_pret.size(), 0, (struct sockaddr*)&send_clientaddr, sizeof(send_clientaddr));
         if (sent < 0) {
-            perror("[Server] Erreur lors de l'envoi du message au joueur");
+            PLOG_F(ERROR, "[Server] Erreur lors de l'envoi du message au joueur");
         } else {
-            std::cout << "[Server] Message de lobby envoye au joueur "
-                      << partie.joueur[i].id << " sur le port " << partie.joueur[i].port << ".\n";
+            LOG_F(DEBUG, "[Server] Message de lobby envoye au joueur %d sur le port %d", partie.joueur[i].id, partie.joueur[i].port);
         }
         close(send_sockfd);
         send_sockfd = -1;
@@ -200,7 +190,7 @@ void Server::recevoirEvent() {
     int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
 
     if (receivedBytes < 0) {   //verifie
-        std::cerr << "[Server] Erreur lors de la reception des donnees" << std::endl;
+        PLOG_F(ERROR, "[Server] Erreur lors de la reception des donnees");
         return;
     }
 
@@ -241,12 +231,8 @@ void Server::sendToClient(){
             
             //verifiacation
             if (n < 0) {
-                perror(" Erreur lors de l'envoi des données du tank");
+                PLOG_F(ERROR, "[Server] Erreur lors de l'envoi des donnees du tank");
                 return;
-            } else {
-                //debugage
-                //std::cout << " Données processed envoyées au client : " << buffer_processed_data << std::endl;
-                //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
 
             // ENVOIE DE LA LISTE D'OBUS
@@ -258,12 +244,8 @@ void Server::sendToClient(){
             
             //verifiacation
             if (n < 0) {
-                perror(" Erreur lors de l'envoi des données du nombre d'obus");
+                PLOG_F(ERROR, "[Server] Erreur lors de l'envoi des donnees des obus");
                 return;
-            } else {
-                //debugage
-                //std::cout << "Données processed envoyées au client : " << buffer_nb_obus << std::endl;
-                //std::cout << "Sur le port " << sockfd[0] << std::endl;
             }
         }
 
@@ -271,20 +253,16 @@ void Server::sendToClient(){
         int n = sendto(sockfd[i], buffer_pV.c_str(), buffer_pV.size(), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
         //verifiacation
         if (n < 0) {
-            perror(" Erreur lors de l'envoi des données des pV");
+            PLOG_F(ERROR, "[Server] Erreur lors de l'envoi des donnees de points de vie");
             return;
-        } else {
-            //debugage
-            //std::cout << "Données processed envoyées au client : " << buffer_processed_data << std::endl;
-            //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
         if(partie.listexplosion.nouveau){
             //std::cout << "buffer envoyé au client : " << buffer_explo << " (taille: " << strlen(buffer_explo) << ")\n";
             n = sendto(sockfd[i], buffer_explo, strlen(buffer_explo), 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
             if (n < 0) {
-                perror(" Erreur lors de l'envoi des données des explosions");
+                PLOG_F(ERROR, "[Server] Erreur lors de l'envoi des donnees des explosions");
             } else {
-                std::cout << " Explosion envoyée avec succès (" << n << " octets)\n";
+                LOG_F(DEBUG, "[Server] Explosion envoyee avec succes (%d octets)", n);
             }
 
         }
@@ -293,9 +271,7 @@ void Server::sendToClient(){
         n = sendto(sockfd[i], buffer_stat.data(), buffer_stat.size(), 0, 
                   (const struct sockaddr*)&client[i], sizeof(client[i]));
         if (n < 0) {
-            perror(" Erreur lors de l'envoi des données du tableau stat");
-        } else {
-            //std::cout << " Tableau stat envoyé avec succès (" << n << " octets)\n";
+            PLOG_F(ERROR, "[Server] Erreur lors de l'envoi des donnees du tableau de stats");
         }
 
         std::ostringstream oss;
@@ -314,9 +290,7 @@ void Server::sendToClient(){
                             (const struct sockaddr*)&client[i], sizeof(client[i]));
 
         if (n < 0) {
-            perror("Erreur lors de l'envoi des données des regens");
-        } else {
-            //std::cout << " Données des regens envoyées avec succès (" << n << " octets)\n";
+            PLOG_F(ERROR, "[Server] Erreur lors de l'envoi des donnees des regens");
         }
     }
     partie.listexplosion.maj();
@@ -333,12 +307,8 @@ void Server::sendTankToClient(){
         
         //verifiacation
         if (n < 0) {
-            perror("❌ Erreur lors de l'envoi des données du tank");
+            PLOG_F(ERROR, "[Server] Erreur lors de l'envoi de la liste des tanks");
             return;
-        } else {
-            //debugage
-            //std::cout << " Données processed envoyées au client : " << buffer_processed_data << std::endl;
-            //std::cout << "Sur le port " << sockfd[0] << std::endl;
         }
     }     
 }
@@ -352,11 +322,10 @@ void Server::sendTankRecu() {
         
         //verifiacation
         if (n < 0) {
-            perror("❌ Erreur lors de l'envoi des données du tank");
+            PLOG_F(ERROR, "[Server] Erreur lors de l'envoi du signal de depart");
             return;
         } else {
-            //debugage
-            std::cout <<"le server envoie le feu vert à"<< i<<std::endl;
+            LOG_F(DEBUG, "[Server] Signal de depart envoye au joueur %d", i);
         }
     }     
 }
@@ -407,7 +376,7 @@ void Server::init_choix_tank(){
         int receivedBytes = recvfrom(recieve_sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&recieve_clientaddr, &len);
 
         if (receivedBytes < 0) {   //verifie
-            std::cerr << " Erreur lors de la réception des données" << std::endl;
+            PLOG_F(ERROR, "[Server] Erreur lors de la reception des choix de tank");
             return;
         }
 
@@ -416,13 +385,13 @@ void Server::init_choix_tank(){
             const int type_tank = choice->tankType;
             const int id = choice->playerId;
             // Stockage des données dans la partie
-            printf("[Server] joueur %d à selectionner le tank : %d \n", id, type_tank);
+            LOG_F(INFO, "[Server] Joueur %d a selectionne le tank : %d", id, type_tank);
             partie.joueur[id].assignTankByType(type_tank);
             joueursAyantChoisi.push_back(id);
             nb_choix_recu ++;
 
             const std::string progressMessage = network::makeTankChoiceProgress(nb_choix_recu);
-            printf("[Server] buffer de confirmation %s", progressMessage.c_str());
+            LOG_F(DEBUG, "[Server] Buffer de confirmation %s", progressMessage.c_str());
 
             //envoie du nb de tank reçu à tous les joueurs ayant choisi (dont le joueur qui a envoyé son choix)
             for (const int indice : joueursAyantChoisi) {
@@ -431,14 +400,14 @@ void Server::init_choix_tank(){
             // partie.affiche_type_tank();
         } 
         else{
-            std::cout<<"[Server]  message bizarre recu pour le choix des tank"<<buffer<<std::endl;
+            LOG_F(WARNING, "[Server] Message bizarre recu pour le choix des tanks: %s", buffer);
         }
         
     }
 
     std::string listeTank;
     string_tank(listeTank);
-    std::cout<<listeTank<<std::endl;
+    LOG_F(DEBUG, "[Server] Liste des tanks: %s", listeTank.c_str());
     //envoi de tous les tanks (au complet) aux joueurs
     for (int i = 0; i < totalPlayers; i++) {
 
@@ -448,37 +417,36 @@ void Server::init_choix_tank(){
         int n = sendto(sockfd[i], message, message_size, 0, (const struct sockaddr*)&client[i], sizeof(client[i]));
 
         if (n < 0) {
-            perror("Erreur lors de l'envoi des données du tank");
+            PLOG_F(ERROR, "[Server] Erreur lors de l'envoi des donnees de tank");
             return;
         }else {
-            std::cout <<"le server envoie le feu vert à joueur "<<i<<std::endl;
+            LOG_F(DEBUG, "[Server] Liste des tanks envoyee au joueur %d", i);
         }
     }     
 }
 
 void Server::init_send_fd(){
-    std::cout << "Initialisation des sockfd et clientaddr de chaque client\n";
+    LOG_F(INFO, "[Server] Initialisation des canaux de jeu des clients");
 
     for(int i=0; i<nb_joueur; i++){
         createSocketConnexion(ip[i], partie.joueur[i].port);
         sockfd[i] = send_sockfd;
         client[i] = send_clientaddr;
-        std::cout << "[Server] Canal de jeu configure pour le joueur " << i
-                  << " vers le port client " << partie.joueur[i].port << std::endl;
+        LOG_F(INFO, "[Server] Canal de jeu configure pour le joueur %d vers le port client %d", i, partie.joueur[i].port);
     }
     send_sockfd = -1;
-    std::cout << "Fin de l'initialisation\n";
+    LOG_F(INFO, "[Server] Fin de l'initialisation des canaux");
 }
 
 
 void Server::afficher_buffer(char tab[][5], int nb_lignes) {
-    printf("Tableau buffer obus\n");
+    LOG_F(DEBUG, "Tableau buffer obus");
     for (int i = 0; i < nb_lignes; i++) {
-        std::cout << "Ligne " << i << " : ";
+        std::string line = "Ligne " + std::to_string(i) + " :";
         for (int j = 0; j < 5; j++) {
-            std::cout << static_cast<int>(tab[i][j]) << " "; // Convertir en int pour affichage lisible
+            line += " " + std::to_string(static_cast<int>(tab[i][j]));
         }
-        std::cout << std::endl;
+        LOG_F(DEBUG, "%s", line.c_str());
     }
 }
 
@@ -507,11 +475,11 @@ void Server::updateRegen(){
                     randomSpawn = rand() % 5; // Génère un nombre entre 1 et 6
                     if(spawnRegen[randomSpawn][2] == 0){
                         spawnRegen[randomSpawn][2] = 1;
-                        std::cout<<"nouveau spawn"<<std::endl;
+                        LOG_F(DEBUG, "[Server] Nouveau spawn de regen reserve");
                         dejapris = false;
                     }
                 }
-                std::cout << "10 secondes écoulées, régénération déclenchée en x: "<<spawnRegen[randomSpawn][0]<<" y: "<< spawnRegen[randomSpawn][1]<<std::endl;
+                LOG_F(INFO, "[Server] Regeneration declenchee en x=%d y=%d", spawnRegen[randomSpawn][0], spawnRegen[randomSpawn][1]);
                 partie.regen[i][0] = 1;
                 partie.regen[i][1] = spawnRegen[randomSpawn][0]; //nouveau x
                 partie.regen[i][2] = spawnRegen[randomSpawn][1]; // nouveau y
@@ -546,7 +514,7 @@ void Server::processEvent(){
                     partie.joueur[i].Tank->ultiClassicUse = false;
                 }
 
-                std::cout<<"activation de l'utli du joueur "<<i<<std::endl;
+                LOG_F(INFO, "[Server] Activation de l'ulti du joueur %d", i);
             }
 
             if(partie.utltiActive[i] == 1){ //cas où l'ulti actif
@@ -554,7 +522,7 @@ void Server::processEvent(){
                 if(timer > chronoUlti[i][1]){
 
                     partie.utltiActive[i] = -1;
-                    std::cout<<"Desactivation de l'utli du joueur "<<i<<std::endl;
+                    LOG_F(INFO, "[Server] Desactivation de l'ulti du joueur %d", i);
 
                 }
                 
@@ -584,7 +552,7 @@ void Server::init_Spawn(){
                 tab_deja[random_spawn] = 1;
                 dejapris = false;
             }
-            std::cout<<random_spawn<<std::endl;
+            LOG_F(DEBUG, "[Server] Tentative de spawn initial %d", random_spawn);
         }
         partie.joueur[i].Tank->set_x(spawn[random_spawn][0]);
         partie.joueur[i].Tank->set_y(spawn[random_spawn][1]);
@@ -629,7 +597,7 @@ void Server::startServer() {
         chronoUlti[i][1] = timer;
     }
 
-    std::cout << "tank en début de partie sur le server\n";
+    LOG_F(DEBUG, "[Server] Tanks en debut de partie sur le serveur");
 
     // Boucle principale du serveur
     while (running) {
@@ -644,7 +612,7 @@ void Server::startServer() {
             // Démarrer le timerr dès que la partie est terminée
             if (finPartieTime.time_since_epoch().count() == 0) {
                 finPartieTime = std::chrono::steady_clock::now();
-                std::cout << "Fin de la partie signalée, arrêt dans 3 secondes..." << std::endl;
+                LOG_F(INFO, "[Server] Fin de la partie signalee, arret dans 5 secondes");
             }
 
             // Vérifier si 3 secondes se sont écoulées
@@ -663,6 +631,8 @@ void Server::startServer() {
 }
 
 int main(int argc, char* argv[]) {
+    logguru::init(argc, argv);
+
     std::ofstream pidFile("server.pid");
     pidFile << getpid();  // Stocke son propre PID
     pidFile.close();
@@ -678,16 +648,16 @@ int main(int argc, char* argv[]) {
         m = std::atoi(argv[2]);
         // Vérifie que nbJoueur est bien entre 0 et 6
         if (nbJoueur < 0 || nbJoueur > 6) {
-            std::cerr << "Erreur: nbJoueur doit être compris entre 0 et 6." << std::endl;
+            LOG_F(ERROR, "nbJoueur doit etre compris entre 0 et 6");
             return 1;  // Quitte le programme avec un code d'erreur
         }
-        std::cout<<"le server est lancé pour "<<nbJoueur<<" joueurs"<<std::endl;
+        LOG_F(INFO, "Serveur lance pour %d joueurs", nbJoueur);
 
         if(m != 1 && m != 2){
-            std::cerr << "Erreur: MODE doit être compris entre 1 et 2." << std::endl;
+            LOG_F(ERROR, "MODE doit etre compris entre 1 et 2");
             return 1;  // Quitte le programme avec un code d'erreur
         }
-        std::cout<<"le server est lancé mode "<<m<<" (1 MG 2 MME)"<<std::endl;
+        LOG_F(INFO, "Serveur lance en mode %d (1 MG 2 MME)", m);
     }
 
     server.mode = m;

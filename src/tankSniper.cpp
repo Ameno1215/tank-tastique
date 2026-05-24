@@ -22,7 +22,7 @@ Tank_sniper::Tank_sniper() : tank() {
 
 void Tank_sniper::setTexture() {
     if (!textureBase.loadFromFile("Image/sniper/base_sniper.png") || !textureTourelle.loadFromFile("Image/sniper/tourelle_sniper.png")) {
-        std::cerr << "Erreur chargement texture Tank sniper\n";
+        LOG_F(ERROR, "Erreur chargement texture Tank sniper");
     }
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);

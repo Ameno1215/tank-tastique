@@ -26,7 +26,7 @@ Tank_mortier::Tank_mortier() : tank() {
 
 void Tank_mortier::setTexture() {
     if (!textureBase.loadFromFile("Image/mortier/base_mortier.png") || !textureTourelle.loadFromFile("Image/mortier/tourelle_mortier.png")) {
-        std::cerr << "Erreur chargement texture Tank mortier\n";
+        LOG_F(ERROR, "Erreur chargement texture Tank mortier");
     }
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);

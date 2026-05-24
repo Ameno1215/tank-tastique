@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string>
+#include "logguru.hpp"
 
 #include "bouton.hpp"
 

@@ -13,6 +13,7 @@
 #include <iomanip> 
 #include <fstream>
 #include <signal.h>
+#include "logguru.hpp"
 
 #include "joueur.hpp" 
 #include "bouton.hpp"

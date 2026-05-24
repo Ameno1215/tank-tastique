@@ -22,7 +22,7 @@ Tank_solide::Tank_solide() : tank() {
 
 void Tank_solide::setTexture() {
     if (!textureBase.loadFromFile("Image/solide/base_solide.png") || !textureTourelle.loadFromFile("Image/solide/tourelle_solide.png")) {
-        std::cerr << "Erreur chargement texture Tank solide\n";
+        LOG_F(ERROR, "Erreur chargement texture Tank solide");
     }
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);

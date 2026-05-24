@@ -66,9 +66,6 @@ void Joueur::captureLocalInput(const sf::RenderWindow& window, bool alive) {
     }
 
     Zpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Z);
-    if (Zpressed){
-        printf("Test");
-    }
     Spressed = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
     Qpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Q);
     Dpressed = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
@@ -110,8 +107,8 @@ void Joueur::applyTankState(const network::TankState& state) {
 
 void Joueur::afficherTypeTank() const {
     if (Tank) {
-        std::cout << "Type de tank : " << Tank->getType() << std::endl;
+        LOG_F(DEBUG, "Type de tank : %s", Tank->getType().c_str());
     } else {
-        std::cout << "Aucun tank assigné." << std::endl;
+        LOG_F(WARNING, "Aucun tank assigne");
     }
 }

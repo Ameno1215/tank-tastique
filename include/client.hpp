@@ -14,6 +14,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include "logguru.hpp"
 
 #define SERVER_IP "192.168.1.48"
 #define SERVER_PORT_CONNEXION 3000

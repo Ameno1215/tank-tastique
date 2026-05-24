@@ -3,7 +3,7 @@
 Client::Client() : num_port(SERVER_PORT_CONNEXION), sockfd(-1), nbJoueur(0), mode(1), test(0) {
     std::memset(&servaddr, 0, sizeof(servaddr));
     std::memset(&recieve_servaddr, 0, sizeof(recieve_servaddr));
-    std::cout << "[Client] Client initialise. Port de connexion par defaut: " << num_port << std::endl;
+    LOG_F(INFO, "[Client] Client initialise. Port de connexion par defaut: %d", num_port);
 }
 
 Client::~Client() {
@@ -27,7 +27,7 @@ void Client::createSocket() {
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
-        perror("[Client] Echec de la creation du socket d'envoi");
+        PLOG_F(ERROR, "[Client] Echec de la creation du socket d'envoi");
         return;
     }
 
@@ -40,7 +40,7 @@ void Client::createSocket() {
     recieve_servaddr.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(sockfd, reinterpret_cast<struct sockaddr*>(&recieve_servaddr), sizeof(recieve_servaddr)) < 0) {
-        perror("[Client] Echec du bind du socket client");
+        PLOG_F(ERROR, "[Client] Echec du bind du socket client");
         close(sockfd);
         sockfd = -1;
         return;
@@ -48,7 +48,7 @@ void Client::createSocket() {
 
     socklen_t localAddrLen = sizeof(recieve_servaddr);
     if (getsockname(sockfd, reinterpret_cast<struct sockaddr*>(&recieve_servaddr), &localAddrLen) < 0) {
-        perror("[Client] Echec de la recuperation du port local");
+        PLOG_F(ERROR, "[Client] Echec de la recuperation du port local");
         close(sockfd);
         sockfd = -1;
         return;
@@ -61,16 +61,14 @@ void Client::createSocket() {
     servaddr.sin_port = htons(num_port);
 
     if (inet_pton(AF_INET, server_ip.c_str(), &servaddr.sin_addr) <= 0) {
-        perror("[Client] Echec de la conversion de l'IP du serveur");
+        PLOG_F(ERROR, "[Client] Echec de la conversion de l'IP du serveur");
         close(sockfd);
         sockfd = -1;
         return;
     }
 
-    std::cout << "[Client] Socket d'envoi configure vers " << server_ip
-              << ":" << num_port << std::endl;
-    std::cout << "[Client] Socket de reception binde sur le port local "
-              << receive_port << std::endl;
+    LOG_F(INFO, "[Client] Socket d'envoi configure vers %s:%d", server_ip.c_str(), num_port);
+    LOG_F(DEBUG, "[Client] Socket de reception binde sur le port local %d", receive_port);
 }
 
 void Client::sendMessageToServer(const std::string& message) {
@@ -84,7 +82,7 @@ void Client::sendMessageToServer(const std::string& message) {
 
     const ssize_t sent = sendto(sockfd, message.c_str(), message.size(), 0, reinterpret_cast<const struct sockaddr*>(&servaddr), sizeof(servaddr));
     if (sent < 0) {
-        perror("[Client] Erreur lors de l'envoi au serveur");
+        PLOG_F(ERROR, "[Client] Erreur lors de l'envoi au serveur");
     }
 }
 
@@ -119,11 +117,11 @@ bool Client::receiveRawPacket(char* buffer, std::size_t bufferSize, ssize_t& rec
     receivedBytes = recvfrom(sockfd, buffer, bufferSize, 0, reinterpret_cast<struct sockaddr*>(&recieve_servaddr), &addrLen);
 
     if (receivedBytes < 0) {
-        perror("[Client] Erreur lors de la reception");
+        PLOG_F(ERROR, "[Client] Erreur lors de la reception");
         return false;
     }
 
-    std::cout << "[Client] Paquet recu (" << receivedBytes << " octets)" << std::endl;
+    LOG_F(DEBUG, "[Client] Paquet recu (%zd octets)", receivedBytes);
     return true;
 }
 
@@ -145,17 +143,17 @@ void Client::initconnexion() {
 
     {
         std::unique_lock<std::mutex> lock(connectionMutex);
-        std::cout << "[Client] En attente de la configuration de l'IP du serveur..." << std::endl;
+        LOG_F(DEBUG, "[Client] En attente de la configuration de l'IP du serveur");
         connectionCv.wait(lock, [this]() { return connectionConfigured; });
         configuredIp = server_ip;
         configuredPseudo = joueur.pseudo;
     }
 
-    std::cout << "[Client] Configuration IP detectee. Sortie de l'attente." << std::endl;
+    LOG_F(INFO, "[Client] Configuration IP detectee. Sortie de l'attente");
 
     etatConnexion.store(-1);
     num_port = SERVER_PORT_CONNEXION;
-    std::cout << "[Client] IP configuree: " << configuredIp << ". Demarrage de la connexion." << std::endl;
+    LOG_F(INFO, "[Client] IP configuree: %s. Demarrage de la connexion", configuredIp.c_str());
     createSocket();
 
     if (sockfd < 0) {
@@ -163,8 +161,7 @@ void Client::initconnexion() {
     }
 
     const network::ConnectionRequest request{getLocalIPAddress(), configuredPseudo};
-    std::cout << "[Client] Envoi de la demande de connexion pour le pseudo: "
-              << configuredPseudo << std::endl;
+    LOG_F(INFO, "[Client] Envoi de la demande de connexion pour le pseudo: %s", configuredPseudo.c_str());
     sendMessageToServer(network::makeConnectionRequest(request));
 
     std::string packet;
@@ -175,7 +172,7 @@ void Client::initconnexion() {
 
     const auto config = network::parseConnectionConfig(packet);
     if (!config.has_value()) {
-        std::cerr << "[Client] Configuration serveur invalide : " << packet << std::endl;
+        LOG_F(ERROR, "[Client] Configuration serveur invalide : %s", packet.c_str());
         closeSockets();
         return;
     }
@@ -183,11 +180,10 @@ void Client::initconnexion() {
     num_port = config->port;
     mode = config->mode;
     joueur.id = config->playerId;
-    std::cout << "[Client] Configuration recue. Port attribue: " << num_port
-              << ", mode: " << mode << ", joueur id: " << joueur.id << std::endl;
+    LOG_F(INFO, "[Client] Configuration recue. Port attribue: %d, mode: %d, joueur id: %d", num_port, mode, joueur.id);
 
     etatConnexion.store(0);
-    std::cout << "[Client] Connexion validee. En attente du lobby..." << std::endl;
+    LOG_F(INFO, "[Client] Connexion validee. En attente du lobby");
 
     if (!receivePacket(packet)) {
         closeSockets();
@@ -196,7 +192,7 @@ void Client::initconnexion() {
 
     const auto lobbyState = network::parseLobbyState(packet, mode);
     if (!lobbyState.has_value()) {
-        std::cerr << "[Client] Etat du lobby invalide : " << packet << std::endl;
+        LOG_F(ERROR, "[Client] Etat du lobby invalide : %s", packet.c_str());
         closeSockets();
         return;
     }
@@ -211,8 +207,7 @@ void Client::initconnexion() {
 
     servaddr.sin_port = htons(SERVER_PORT_CONNEXION);
     etatConnexion.store(1);
-    std::cout << "[Client] Lobby recu. Nombre de joueurs: " << nbJoueur
-              << ". Connexion terminee." << std::endl;
+    LOG_F(INFO, "[Client] Lobby recu. Nombre de joueurs: %d. Connexion terminee", nbJoueur);
 }
 
 int Client::get_etatConnexion() {

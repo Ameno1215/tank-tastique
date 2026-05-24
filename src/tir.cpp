@@ -69,7 +69,7 @@ void Obus::set_porte(int new_porte) {
 
 void Obus::set_texture(const std::string& nom) {
     if (!texture.loadFromFile(nom)) {
-        std::cerr << "Erreur : Impossible de charger la texture " << nom << std::endl;
+        LOG_F(ERROR, "Impossible de charger la texture d'obus : %s", nom.c_str());
     }
 }
 
@@ -186,14 +186,16 @@ Noeud* ListeObus::trouverNoeud(int index) {
 void ListeObus::afficher() const {
     Noeud* courant = tete;
     while (courant) {
-        std::cout << "Obus Index: " << courant->index
-                  << " | Position: (" << courant->obus.get_Sprite().getPosition().x << ", " << courant->obus.get_Sprite().getPosition().y << ")"
-                  << " | Orientation: " << courant->obus.get_orientation()
-                  << " | Vitesse: " << courant->obus.get_vitesse()
-                  << " | Portée: " << courant->obus.get_porte()
-                  << " | Temps: " << courant->obus.get_time_tir()
-                  << " | Status: " << courant->obus.get_status()
-                  << std::endl;
+        LOG_F(DEBUG,
+              "Obus index=%d position=(%.2f, %.2f) orientation=%.2f vitesse=%.2f portee=%d temps=%.3f status=%d",
+              courant->index,
+              courant->obus.get_Sprite().getPosition().x,
+              courant->obus.get_Sprite().getPosition().y,
+              courant->obus.get_orientation(),
+              courant->obus.get_vitesse(),
+              courant->obus.get_porte(),
+              courant->obus.get_time_tir(),
+              courant->obus.get_status());
         courant = courant->suivant;
     }
 }
@@ -261,7 +263,7 @@ NoeudExplosion* ListeExplosion::trouverNoeud(int index) {
 void ListeExplosion::afficher() const {
     NoeudExplosion* courant = tete;
     while (courant) {
-        std::cout << "Explosion: (" << courant->x << ", " << courant->y << ") Frame: " << courant->frameActu << std::endl;
+        LOG_F(DEBUG, "Explosion: (%d, %d) frame=%d", courant->x, courant->y, courant->frameActu);
         courant = courant->suivant;
     }
 }
@@ -324,7 +326,7 @@ void ListeExplosion::toCharArray(char buffer[100]) {
             if (strlen(buffer) + strlen(temp) < 100) {
                 strcat(buffer, temp);
             } else {
-                std::cerr << "⚠ Explosion tronquée : message trop long !" << std::endl;
+                LOG_F(WARNING, "Explosion tronquee : message trop long");
                 break;
             }
         }

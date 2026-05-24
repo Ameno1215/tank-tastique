@@ -22,7 +22,7 @@ Tank_classique::Tank_classique() : tank() {
 
 void Tank_classique::setTexture() {
     if (!textureBase.loadFromFile("Image/classique/base_classique.png") || !textureTourelle.loadFromFile("Image/classique/tourelle_classique.png")) {
-        std::cerr << "Erreur chargement texture Tank Classique\n";
+        LOG_F(ERROR, "Erreur chargement texture Tank Classique");
     }
     spriteBase.setTexture(textureBase);
     spriteTourelle.setTexture(textureTourelle);

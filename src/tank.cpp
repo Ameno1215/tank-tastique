@@ -28,7 +28,7 @@ tank::tank(int x_init, int y_init, float orientation_init, float vitesse_tank, f
     // Chargement des textures
     if (!textureBase.loadFromFile(chemin_img_tank) || 
         !textureTourelle.loadFromFile(chemin_img_tourelle)) {
-        std::cerr << "Erreur de chargement des textures !" << std::endl;
+        LOG_F(ERROR, "Erreur de chargement des textures du tank");
     }
 
     // Assignation des textures aux sprites
@@ -84,7 +84,7 @@ sf::Sprite& tank::getSpriteUlti() {
 
 void tank::setSpriteUltiPret(const std::string& texturePath) {
     if (!textureUltiPret.loadFromFile(texturePath)) {
-        std::cerr << "Erreur : Impossible de charger la texture " << texturePath << std::endl;
+        LOG_F(ERROR, "Impossible de charger la texture d'ulti prete : %s", texturePath.c_str());
         return;
     }
     spriteUltiPret.setTexture(textureUltiPret);
@@ -92,7 +92,7 @@ void tank::setSpriteUltiPret(const std::string& texturePath) {
 
 void tank::setSpriteUlti(const std::string& texturePath) {
     if (!textureUlti.loadFromFile(texturePath)) {
-        std::cerr << "Erreur : Impossible de charger la texture " << texturePath << std::endl;
+        LOG_F(ERROR, "Impossible de charger la texture d'ulti : %s", texturePath.c_str());
         return;
     }
     spriteUlti.setTexture(textureUlti);
@@ -145,7 +145,7 @@ void tank::updateCollision(std::vector<std::vector<sf::Vector2f>> hitboxes, sf::
             else{
                 collisionTank(tankHitbox, hitboxes[i]);
                 if (collision) { //collision à true/false
-                    std::cout<<"touché"<<std::endl;
+                    LOG_F(DEBUG, "Collision detectee entre tanks");
                     return;
                 }
             }
@@ -260,6 +260,5 @@ void tank::set_vit_can(float new_vit_canon) { vitesse_canon = new_vit_canon; }
 void tank::set_cadence_tir(float new_cadence) { cadence_tir = new_cadence; }
 
 void tank::set_vitesse_obus(float new_vitesse_obus) { vitesse_obus = new_vitesse_obus; }
-
 
 

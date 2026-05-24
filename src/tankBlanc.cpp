@@ -16,7 +16,7 @@ Tank_blanc::Tank_blanc() : tank() {
 
 void Tank_blanc::setTexture() {
     if (!textureBase.loadFromFile("Image/base_blanc.png")) {
-        std::cerr << "Erreur chargement texture Tank Blanc\n";
+        LOG_F(ERROR, "Erreur chargement texture Tank Blanc");
     }
     spriteBase.setTexture(textureBase);
     spriteBase.setOrigin(spriteBase.getLocalBounds().width / 2, spriteBase.getLocalBounds().height / 2);
